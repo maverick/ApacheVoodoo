@@ -146,7 +146,7 @@ sub debug {
 
 	# sometimes Voodoo modules are called from outside Apache
 	# (most common case are cronjobs) 
-	if ($Apache::Voodoo::Handler::debug) {
+	if (defined($Apache::Voodoo::Handler::debug)) {
 		$Apache::Voodoo::Handler::debug->debug(@_);
 	}
 	else {
