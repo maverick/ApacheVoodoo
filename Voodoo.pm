@@ -22,6 +22,7 @@ with Voodoo.  It also provides a set of extremely useful methods.
 package Apache::Voodoo;
 
 use strict;
+use Data::Dumper;
 
 sub new {
 	my $class = shift;
@@ -143,7 +144,19 @@ If the first paramater to debug is a reference, then the structure is printed us
 sub debug { 
 	my $self = shift;
 
-	$Apache::Voodoo::Handler::debug->debug(@_);
+	# sometimes Voodoo modules are called from outside Apache
+	# (most common case are cronjobs) 
+	if ($Apache::Voodoo::Handler::debug) {
+		$Apache::Voodoo::Handler::debug->debug(@_);
+	}
+	else {
+		if (ref($_[0])) {
+			print Dumper @_;
+		}
+		else {
+			print join("\n",@_),"\n";
+		}
+	}
 }
 
 #####################################################################################
