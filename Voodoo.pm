@@ -707,9 +707,7 @@ Eventually I'm going to subclass DBI for Voodoo and include this there :)
 
 sub last_insert_id {
 	my $self = shift;
-	my $p    = shift;
-
-	my $dbh = $p->{'dbh'};
+	my $dbh  = shift;
 
 	my $res = $dbh->selectall_arrayref("SELECT LAST_INSERT_ID()") || $self->db_error();
 	

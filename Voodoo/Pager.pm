@@ -15,14 +15,14 @@ typically found on any search engine results page.  This module can be used in
 any scenario where data must be paginated.
 
     my $pager = Apache::Voodoo::Pager->new('count'   => 40,
-                                   'window'  => 10,
-                                   'limit'   => 500,
-                                   'persist' => [ ]);
+                                           'window'  => 10,
+                                           'limit'   => 500,
+                                           'persist' => [ 'url_param', ... ]);
 
     $pager->set_configuration('count'   => 40,
                               'window'  => 10,
                               'limit'   => 500,
-                              'persist' => [ ]);
+                              'persist' => [ 'url_param', ... ]);
 
     my $template_params = $pager->paginate($all_url_params,$number_of_rows_in_results);
 
@@ -197,6 +197,48 @@ showall is set to 1 when the entire result set is being displayed at once.  Thes
 be used by the caller to determine how to properly cut the result set.
 
 =back
+
+=head1 VOODOO EXAMPLE 
+
+    use Apache::Voodoo::Pager;
+
+    sub init {
+        my $self = shift;
+
+        $self->{'pager'} = Apache::Voodoo::Pager->new(
+            'count'  => 10,
+            'window' => 5,
+            'limit'  => 100,
+            'perisist' => [ 'value' ]
+        );
+    }
+
+    sub list {
+        my $self = shift;
+        my $p    = shift;
+
+        my $params = $p->{'params'};
+        my $dbh    = $p->{'dbh'};
+
+        my $value   = $params->{'value'};
+        my $count   = $params->{'count'}   || 10;
+        my $page    = $params->{'page'}    || 1;
+        my $showall = $params->{'showall'} || 0;
+
+        # Parameter validation and other security checks omitted for brevity
+
+        my $stmt = "SELECT SQL_CALC_FOUND_ROWS col1,col2,col3 FROM some_table WHERE col1 = ?";
+        unless ($showall) {
+            $stmt .= " LIMIT $count OFFSET ". $count * ($page-1);
+        }
+           
+        my $results = $dbh->selectall_arrayref($stmt,undef,$value);
+        my $matches = $dbh->selectall_arrayref("SELECT FOUND_ROWS()");
+
+        my $template_stuff = $self->{'pager'}->paginate($params,$matches->[0]->[0]);
+
+        # other stuff this method does
+    }
 
 =head1 EXAMPLE HTML::Template
 
