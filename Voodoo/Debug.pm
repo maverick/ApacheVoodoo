@@ -32,7 +32,7 @@ sub new {
 
 	bless($self,$class);
 
-	my $file = $INC{"Voodoo/Debug.pm"};
+	my $file = $INC{"Apache/Voodoo/Debug.pm"};
 
 	$file =~ s/Debug.pm/Template\/debug.tmpl/;
 
