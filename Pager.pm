@@ -2,6 +2,8 @@
 
 =head1 Voodoo::Pager
 
+$Id$
+
 =head1 Initial Coding: Maverick
 
 This module generates all the necessary 'next', 'previous' and page number links
