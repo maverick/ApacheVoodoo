@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Voodoo::display_error
+Apache::Voodoo::display_error
 
 =head1 VERSION
 
@@ -11,13 +11,13 @@ $Id$
 =head1 SYNOPSIS
 
 This module is internal to Voodoo. It's used to provide a generic error page.  End
-user interaction is through L<Voodoo::Base>::display_error()
+user interaction is through L<Apache::Voodoo>::display_error()
 
 =cut ################################################################################
-package Voodoo::display_error;
+package Apache::Voodoo::display_error;
 
 use strict;
-use base ("Voodoo::Base");
+use base ("Apache::Voodoo");
 
 sub handle {
 	my $self = shift;

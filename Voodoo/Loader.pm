@@ -1,6 +1,6 @@
 #####################################################################################
 
-=head1 Voodoo::Loader
+=head1 Apache::Voodoo::Loader
 
 $Id$
 
@@ -11,7 +11,7 @@ and Loader::Dynamic
 
 =cut ################################################################################
 
-package Voodoo::Loader;
+package Apache::Voodoo::Loader;
 
 use strict;
 
@@ -42,7 +42,7 @@ sub load_module {
 		$module =~ s/^[^:]+:://;
 
 		require "Voodoo/Zombie.pm";
-		$obj = Voodoo::Zombie->new();
+		$obj = Apache::Voodoo::Zombie->new();
 
 		$obj->module($module);
 		$obj->error($error);

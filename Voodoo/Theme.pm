@@ -1,6 +1,6 @@
 #####################################################################################
 
-=head1 Voodoo::Theme
+=head1 Apache::Voodoo::Theme
 
 $Id$
 
@@ -12,7 +12,7 @@ This implements a post_include module that handles all the theme processing.
 
 =cut ################################################################################
 
-package Voodoo::Theme;
+package Apache::Voodoo::Theme;
 use strict;
 
 use Data::Dumper;
@@ -20,7 +20,7 @@ use Config::General;
 use IPC::SharedCache;
 use HTML::Template;
 
-use base("Voodoo::Base");
+use base("Apache::Voodoo");
 
 sub handle {
 	my $self = shift;

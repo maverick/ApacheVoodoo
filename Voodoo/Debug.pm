@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Voodoo::Base
+Apache::Voodoo
 
 =head1 VERSION
 
@@ -13,12 +13,12 @@ $Id$
 This object is used by Voodoo internally to handling various types of debugging
 information and to produce and end user display of that information.  End users 
 never interact with this module directly, instead they use the debug() and mark()
-methods from L<Voodoo::Base>
+methods from L<Apache::Voodoo>
 
 =head1 OUTPUT
 
 =cut ###########################################################################
-package Voodoo::Debug;
+package Apache::Voodoo::Debug;
 
 use strict;
 use Time::HiRes;

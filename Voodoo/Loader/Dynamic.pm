@@ -1,7 +1,7 @@
 # $Id$
-package Voodoo::Loader::Dynamic;
+package Apache::Voodoo::Loader::Dynamic;
 use strict;
-use base("Voodoo::Loader");
+use base("Apache::Voodoo::Loader");
 use IPC::Shareable;
 
 sub new {
@@ -54,7 +54,7 @@ sub refresh {
 # 
 # Override the build in 'can' to allow:
 #   a) trigger dynamically reloading the module as needed
-#   b) dynamically create closures to link Voodoo::Handler with userland modules
+#   b) dynamically create closures to link Apache::Voodoo::Handler with userland modules
 # 
 # This has some nice side effects.  
 #   Static vs Dynamic loading is totally transparent to the interaction 
@@ -74,7 +74,7 @@ sub can {
 	if (defined $self->{'provides'}->{$method}) {
 		return 1;
 	}
-	elsif ($self->{'object'}->isa("Voodoo::Zombie") || $self->{'object'}->can($method)) {
+	elsif ($self->{'object'}->isa("Apache::Voodoo::Zombie") || $self->{'object'}->can($method)) {
 		# either we have a dead module and we map whatever was requested or
 		# we have a live one and it can do the requested method
 
@@ -120,7 +120,7 @@ sub _handle {
 					$link =~ s/([^\/]+)$/$method."_".$1/e;
 				}
 
-				#FIXME replace with a instance of Voodoo::Zombie
+				#FIXME replace with a instance of Apache::Voodoo::Zombie
 				$self->debug("ZOMBIE: $self->{'module'} $method");
 				return $self->display_error($error,"/$link");
 			}

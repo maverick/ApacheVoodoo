@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Voodoo::Handler - Main interface between mod_perl and Voodoo
+Apache::Voodoo::Handler - Main interface between mod_perl and Voodoo
 
 =head1 VERSION
 
@@ -15,7 +15,7 @@ handles session control, database connections, and interfaces with the
 application's page handling modules.
 
 =cut ################################################################################
-package Voodoo::Handler;
+package Apache::Voodoo::Handler;
 
 use strict;
 
@@ -31,9 +31,9 @@ use Time::HiRes;
 use Data::Dumper;
 $Data::Dumper::Terse = 1;
 
-use Voodoo::ServerConfig;
-use Voodoo::Debug;
-use Voodoo::display_error;
+use Apache::Voodoo::ServerConfig;
+use Apache::Voodoo::Debug;
+use Apache::Voodoo::display_error;
 
 ######################################
 # GLOBAL CONFIG VARIABLES            #
@@ -49,9 +49,9 @@ my %session;
 # Debugging object.  I don't like using an 'our' variable, but it is just too much
 # of a pain to pass this thing around to everywhere it needs to go. So, I just tell
 # myself that this is STDERR on god's own steroids so I can sleep at night.
-our $debug = Voodoo::Debug->new();
+our $debug = Apache::Voodoo::Debug->new();
 
-$Voodoo::Handler = bless {};
+$Apache::Voodoo::Handler = bless {};
 
 sub handle($$) {
 	my $self = shift;
@@ -567,7 +567,7 @@ sub restart($$) {
 
 sub start_host {
 	my $self = shift;
-	my $conf = Voodoo::ServerConfig->new(shift);
+	my $conf = Apache::Voodoo::ServerConfig->new(shift);
 
 	# check to see if we can get a database connection
 	foreach (@{$conf->{'dbs'}}) {
@@ -607,13 +607,13 @@ sub start_host {
 
 	# ick..this feels wrong...don't know of a cleaner way yet.
 	unless (defined($conf->{'handlers'}->{'display_error'})) {
-		$conf->{'handlers'}->{'display_error'} = Voodoo::display_error->new();
+		$conf->{'handlers'}->{'display_error'} = Apache::Voodoo::display_error->new();
 	}
 
 	if ($conf->{'use_themes'} && !defined($self->{'theme_handler'})) {
 		# we're using themes and the theme handler hasn't been initialized yet
 		require "Voodoo/Theme.pm";
-		$self->{'theme_handler'} = Voodoo::Theme->new();
+		$self->{'theme_handler'} = Apache::Voodoo::Theme->new();
 	}
 }
 
@@ -675,14 +675,14 @@ helpful ;)
   PerlModule HTML::Template
 
   # load the Apache Handler
-  PerlModule Voodoo::Handler
+  PerlModule Apache::Voodoo::Handler
 
   # hook in the restart function
-  PerlRestartHandler $Voodoo::Handler->restart
+  PerlRestartHandler $Apache::Voodoo::Handler->restart
 
  <Directory /data/sites/test_app/html>
-	SetHandler perl-script
-    PerlHandler $Voodoo::Handler->handle
+    SetHandler perl-script
+    PerlHandler $Apache::Voodoo::Handler->handle
     PerlSetVar ID test_app
 
     Options Indexes Includes FollowSymLinks
@@ -697,7 +697,7 @@ be used in the same manner.
 
 =over 4
 
-=item PerlModule Voodoo::Handler
+=item PerlModule Apache::Voodoo::Handler
 
 Loads Voodoo.  This line must be present somewhere inside the 'main' section of the
 apache configuration file...ie. not within a <directory> or <virtual> block.
@@ -706,7 +706,7 @@ apache configuration file...ie. not within a <directory> or <virtual> block.
 
 Tells Apache that a mod_perl is going to be use for this directory or virtual host
 	
-=item PerlHandler $Voodoo::Handler->handle
+=item PerlHandler $Apache::Voodoo::Handler->handle
 	
 Tells Apache what method to call to handle requests for this directory
 
@@ -794,7 +794,7 @@ This is the directory that Apache::Session will use to store session information
 
 =item debug
 
-Enables or disables the debug() method from Voodoo::Base. and its associated output on each page.  See L<Voodoo::Debug> for more information.
+Enables or disables the debug() method from Apache::Voodoo. and its associated output on each page.  See L<Apache::Voodoo::Debug> for more information.
 
 =item halt_on_errors
 
@@ -844,9 +844,9 @@ Any other params will be passed to the tempalte directly.
 
 =head1 PAGE MODULES
 
-Each page module must inherit from Voodoo::Base.  This modules provides the new() method to 
+Each page module must inherit from Apache::Voodoo.  This modules provides the new() method to 
 make the package a proper object under Voodoo, along with some other minor black magic.  
 Inheriting from this module provides access to some essential methods for interacting 
-with Voodoo.  See L<Voodoo::Base>.
+with Voodoo.  See L<Apache::Voodoo>.
 
 =cut ################################################################################

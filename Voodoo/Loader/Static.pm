@@ -1,7 +1,7 @@
 # $Id$
-package Voodoo::Loader::Static;
+package Apache::Voodoo::Loader::Static;
 use strict;
-use base("Voodoo::Loader");
+use base("Apache::Voodoo::Loader");
 
 sub new {
 	my $class = shift;

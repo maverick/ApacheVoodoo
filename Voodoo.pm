@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Voodoo::Base - Base class for all Voodoo::Page handling modules
+Apache::Voodoo - Base class for all Voodoo page handling modules
 
 =head1 VERSION
 
@@ -19,7 +19,7 @@ with Voodoo.  It also provides a set of extremely useful methods.
 
 =cut ################################################################################
 
-package Voodoo::Base;
+package Apache::Voodoo;
 
 use strict;
 
@@ -39,7 +39,7 @@ sub new {
 =item init()
 
 Since the new() method is reserved for some Voodoo specific black magic, you may 
-create method in your modules to do basically the same sorts of things that you
+add the init method in your modules to do basically the same sorts of things that you
 would normally do inside a new().  For example:
 
  usage:
@@ -54,12 +54,12 @@ sub init { }
 
 #####################################################################################
 
-=item redirect()
+=item redirect($uri)
 
-Redirects the user to the given URI.
+Redirects the user to the given URI. These may be absolute or relative
 
  usage:
-	return $self->redirect($some_uri);
+	return $self->redirect('/some/uri');
 
 =cut ################################################################################
 sub redirect {
@@ -70,12 +70,12 @@ sub redirect {
 
 #####################################################################################
 
-=item display_error()
+=item display_error($error,$uri)
 
 Redirects the user to a generic error message display page.
 
  usage:
-	return $self->display_error($error_message,$click_here_to_continue_uri);
+	return $self->display_error('stuff went bang!','/index');
 
 =cut ################################################################################
 sub display_error {
@@ -85,7 +85,7 @@ sub display_error {
 
 #####################################################################################
 
-=item access_denied()
+=item access_denied( [ $uri ] )
 
 This method is used to indicate to the Handler that the user is not allowed
 to access the URI requested.  If the optional parameter is not supplied the standard 
@@ -104,45 +104,51 @@ sub access_denied {
 
 #####################################################################################
 
-=item raw_mode()
+=item raw_mode($content_type,$conents, [ \%optional_http_headers ] )
 
 This method is used to bypass the normal templating subsystem and allows the 'contents'
 to be streamed directly to the browser.  Useful for generating CSVs and binary data 
 from within Voodoo.
 
  usage:
-     return $self->raw_mode($content_type,$contents,\%optional_http_headers);
+    return $self->raw_mode(
+        'text/csv',
+        $contents,
+        {
+            'Content-disposition' => "attachment;filename=SomeFile.csv"
+        }
+    );
 
 =cut ################################################################################
 sub raw_mode {
 	shift;
-	return [ 'RAW_MODE' , @_];
+	return [ 'RAW_MODE' , @_ ];
 }
 
 
 #####################################################################################
 
-=item debug()
+=item debug($one_message, [ $two_message, ... ] )
 
 Prints user debugging messages to the error_log file and to the 'Debug' section of the DEBUG 
-template block. (See L<Voodoo::Debug> for more details).  Messages can be turn on or off 
+template block. (See L<Apache::Voodoo::Debug> for more details).  Messages can be turn on or off 
 globally using the DEBUG option of the Voodoo configuration file.
 
 If the first paramater to debug is a reference, then the structure is printed using Data::Dumper.
 
  usage:
-     return $self->debug($one_message,$two_message, ...);
+     return $self->debug('The value of foo is:',$foo);
 
 =cut ################################################################################
 sub debug { 
 	my $self = shift;
 
-	$Voodoo::Handler::debug->debug(@_) if $Voodoo::Handler::debug;
+	$Apache::Voodoo::Handler::debug->debug(@_) if $Apache::Voodoo::Handler::debug;
 }
 
 #####################################################################################
 
-=item mark()
+=item mark($message)
 
 Optionally addeds a Time::HiRes time stamp to the 'Generation Time' section of the DEBUG
 block.  Messages can be turn on or off globally using the DEBUG option of the configuration.
@@ -162,7 +168,7 @@ block.  Messages can be turn on or off globally using the DEBUG option of the co
 sub mark {
 	my $self = shift;
 
-	$Voodoo::Handler::debug->mark(@_) if $Voodoo::Handler::debug;
+	$Apache::Voodoo::Handler::debug->mark(@_) if $Apache::Voodoo::Handler::debug;
 }
 
 #####################################################################################
@@ -202,7 +208,7 @@ sub db_error {
 
 #####################################################################################
 
-=item prep_select()
+=item prep_select($array_of_arrays, [ $selected_value ] )
 
 Ever notice how when you're making select lists or lists of radio buttons that you end up 
 doing 95% of them exactly the same way?  This method does the HTML::Template-ifying of the
@@ -275,12 +281,12 @@ sub prep_select {
 
 #####################################################################################
 
-=item trim()
+=item trim($string)
 
 Removes leading and trailing whitespace
 
  usage:
-    $value = $self->trim($original);
+    $value = $self->trim("  <-- these spaces will be removed -->  ");
 
 =cut ################################################################################
 sub trim {
@@ -521,7 +527,7 @@ sub pretty_mysql_timestamp {
 	return $self->sql_to_date("$p[0]$p[1]-$p[2]-$p[3]")." ".$self->sql_to_time("$p[4]:$p[5]:$p[6]");
 }
 
-# this sub is for use with the callback structure of Voodoo::Table.
+# this sub is for use with the callback structure of Apache::Voodoo::Table.
 # $params is injected with a arrayref of column to translate
 #
 # since $params is a reference, the actual columns as seen by the db
@@ -603,7 +609,7 @@ sub safe_text {
 
 #####################################################################################
 
-=item history()
+=item history($voodo_session,$index)
 
 Voodoo keeps a running list of the last 10 urls visited in the current session.
 This method provides access to that list.  $index == 0 is the current page,
@@ -614,7 +620,7 @@ the URI parameters for that entry in the history.  For example, if you click the
 for each of those pages.
 
  usage:
-    $url = $self->history($session_hash,$index);
+    $url = $self->history($p->{'session'},3);
 
 =cut ################################################################################
 sub history {
@@ -627,7 +633,7 @@ sub history {
 
 #####################################################################################
 
-=item tardis()
+=item tardis($p, $uri1, [$uri2, ...] )
 
 Often within a website there is the need to go back to a previous page that the user
 has already visited.  For example the page that let's you view a record contains an 
@@ -636,6 +642,11 @@ the user back to that view page.  This can quickly lead to a lot of tedious para
 management for those return-to pages. Plus there may be more than one entry point for the
 current module only adding to the complexity.  Tardis provides a convient way search the
 history for a set of URI's and redirect the user back to the first one it finds.
+
+The uri's must contain the full path, relative uri's don't work.  You do not need
+to specify the parameters for that page, in fact doing so would kinda defeate the point :)
+
+If no history items match, it redirects to the previously accessed uri.
 
  usage:
     return $self->tardis($p,'/first/url/no_params','/second/url/no_params');

@@ -1,6 +1,6 @@
 =pod ################################################################################
 
-=head1 Voodoo::Table::Probe::mysql
+=head1 Apache::Voodoo::Table::Probe::mysql
 
 $Id: mysql.pm,v 1.4 2001/12/27 05:01:16 maverick Exp $
 
@@ -9,7 +9,7 @@ $Id: mysql.pm,v 1.4 2001/12/27 05:01:16 maverick Exp $
 Probes a MySQL database to get information about various tables.
 
 =cut ################################################################################
-package Voodoo::Table::Probe::mysql;
+package Apache::Voodoo::Table::Probe::mysql;
 
 use DBI;
 

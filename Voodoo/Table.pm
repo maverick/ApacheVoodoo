@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Voodoo::Table - framework to handle common database operations
+Apache::Voodoo::Table - framework to handle common database operations
 
 =head1 VERSION
 
@@ -16,17 +16,17 @@ $Id$
 
 =cut ################################################################################
 
-package Voodoo::Table::Beta;
+package Apache::Voodoo::Table;
 
 use strict;
 
-use base("Voodoo::Base");
+use base("Apache::Voodoo");
 use Data::Dumper;
 
 use Email::Valid;
 
-use Voodoo::Valid_URL;
-use Voodoo::Pager;
+use Apache::Voodoo::Valid_URL;
+use Apache::Voodoo::Pager;
 
 sub new {
 	my $class = shift;
@@ -35,15 +35,15 @@ sub new {
 
 	$self->set_configuration(shift);
 
-	$self->{'pager'} = Voodoo::Pager->new('count'   => 40,
-	                                      'window'  => 10,
-	                                      'persist' => [ 
-	                                          'pattern',
-	                                          'limit',
-	                                          'sort',
-	                                          'last_sort',
-	                                          'desc'
-	                                      ]);
+	$self->{'pager'} = Apache::Voodoo::Pager->new('count'   => 40,
+	                                              'window'  => 10,
+	                                              'persist' => [ 
+	                                                  'pattern',
+	                                                  'limit',
+	                                                  'sort',
+	                                                  'last_sort',
+	                                                  'desc'
+	                                              ]);
 	return $self;
 }
 
@@ -179,7 +179,7 @@ sub set_configuration {
 	if (@errors) {
 		$self->{'config_invalid'} = 1;
 
-		print STDERR "Errors in Voodoo::Table configuration for $self->{'table'}\n";
+		print STDERR "Errors in Apache::Voodoo::Table configuration for $self->{'table'}\n";
 		print STDERR join("\n",@errors,"\n");
 		return;
 	}
@@ -911,7 +911,7 @@ sub _process_params {
 				}
 			}
 			elsif($_->{'valid'} eq "url") {
-				if (length($v{$_->{'name'}}) && Voodoo::Valid_URL::valid_url($v{$_->{'name'}}) == 0) {
+				if (length($v{$_->{'name'}}) && Apache::Voodoo::Valid_URL::valid_url($v{$_->{'name'}}) == 0) {
 					$errors{'BAD_'.$_->{'name'}} = 1;
 				}
 			}

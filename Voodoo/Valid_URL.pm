@@ -1,4 +1,4 @@
-package Voodoo::Valid_URL;
+package Apache::Voodoo::Valid_URL;
 
 use strict;
 

@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Voodoo::Zombie - Internal module used by Voodoo when a end user module dies on load.
+Apache::Voodoo::Zombie - Internal module used by Voodoo when a end user module dies on load.
 
 =head1 VERSION
 
@@ -10,18 +10,18 @@ $Id$
 
 =head1 SYNOPSIS
 
-This module is used by Voodoo::ServerConfig as a facimily replacement for a dead module
+This module is used by Apache::Voodoo::ServerConfig as a facimily replacement for a dead module
 when halt_on_errors is 0 in the server configuration.  Any calls to this module
-displays and error message via Voodoo::Base::display_error describing what blew up and
+displays and error message via Apache::Voodoo::display_error describing what blew up and
 where.  This is a development tool...you shouldn't have any Zombies in your 
 production server :)
 
 =cut ################################################################################
-package Voodoo::Zombie;
+package Apache::Voodoo::Zombie;
 
 use strict;
 
-use base("Voodoo::Base");
+use base("Apache::Voodoo");
 
 sub module { my $self = shift; $self->{'module'} = shift; }
 sub error  { my $self = shift; $self->{'error'}  = shift; }

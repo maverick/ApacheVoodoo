@@ -1,6 +1,6 @@
 #####################################################################################
 
-=head1 Voodoo::ServerConfig
+=head1 Apache::Voodoo::ServerConfig
 
 $Id$
 
@@ -10,7 +10,7 @@ This handles all of the config file parsing and module loading.
 
 =cut ################################################################################
 
-package Voodoo::ServerConfig;
+package Apache::Voodoo::ServerConfig;
 
 use strict;
 use Config::General;
@@ -239,13 +239,13 @@ sub load_module {
 	if ($self->{'dynamic_loading'}) {
 		require "Voodoo/Loader/Dynamic.pm";
 
-		return Voodoo::Loader::Dynamic->new($self->{'base_package'}."::$module");
+		return Apache::Voodoo::Loader::Dynamic->new($self->{'base_package'}."::$module");
 	}
 	else {
 		require "Voodoo/Loader/Static.pm";
 
-		my $obj = Voodoo::Loader::Static->new($self->{'base_package'}."::$module");
-		if (ref($obj) eq "Voodoo::Zombie") {
+		my $obj = Apache::Voodoo::Loader::Static->new($self->{'base_package'}."::$module");
+		if (ref($obj) eq "Apache::Voodoo::Zombie") {
 			# doh! the module went boom
 			$self->{'errors'}++;
 		}
