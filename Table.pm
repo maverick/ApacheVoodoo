@@ -2,9 +2,13 @@
 
 =head1 Voodoo::Table
 
-$Id: Beta.pm,v 1.2 2003/01/03 22:15:19 maverick Exp $
+$Id$
 
 =head1 Initial Coding: Maverick
+
+FIXME
+FIXME  Add the TONS of necessary documentation
+FIXME
 
 =cut ################################################################################
 
@@ -13,881 +17,70 @@ package Voodoo::Table;
 use strict;
 
 use base("Voodoo::Base");
-use Data::Dumper;
 
 use Voodoo::Valid_URL;
 use Email::Valid;
 
 sub new {
-	my $class = shift;
+	my $that = shift;
+	my $class = ref($that) || $that;
 	my $self = {};
+
+	my $c = shift;
+
+	# here's the config parameters that this object takes
+	my %params = (
+		'TABLE'              => 1,
+		'PKEY'               => 1,
+		'PKEY_TYPE'          => 1,
+		'PKEY_USER_SUPPLIED' => 1,
+		'PKEY_REGEXP'        => 1,
+		'PARAM_LIST'         => 1,
+		'LIST_COLS'          => 1,
+		'SORT_COLS'          => 1,
+		'SEARCH_COLS'        => 1,
+		'REQUIRED_LIST'      => 1,
+		'UNIQUE'             => 1,
+		'VARCHARS'           => 1,
+		'SELECTIONS'         => 1,
+		'LEFT_JOINS'         => 1,
+		'SIGNED_DECIMALS'    => 1,
+		'UNSIGNED_DECIMALS'  => 1,
+		'SIGNED_INTEGERS'    => 1,
+		'UNSIGNED_INTEGERS'  => 1,
+		'DATES'              => 1,
+		'TIMES'              => 1,
+	);
+
+	my @bad_keys;
+	foreach (keys %{$c} ) {
+		my $key  = $_;
+		my $ukey = uc($_);
+
+		if (defined($params{$ukey})) {
+			$self->{$ukey} = $c->{$key};
+		}
+		else{
+			push(@bad_keys,$key);
+		}
+	}
+
+	# make sure we weren't passed any invalid keys
+	foreach (@bad_keys) {
+		print STDERR "UNKNOWN CONFIG DIRECTIVE TO Voodoo::Table: $_\n";
+	}
+
+	unless (defined($self->{'PKEY_REGEXP'})) {
+		if ($self->{'PKEY_TYPE'} eq "varchar") {
+			$self->{'PKEY_REGEXP'} = '^[\w\s-]+$';
+		}
+		else {
+			$self->{'PKEY_REGEXP'} = '^\d+$';
+		}
+	}
+
 	bless $self, $class;
-
-	$self->set_configuration(shift);
-	$self->{'success'} = 0;
-
 	return $self;
-}
-
-sub set_configuration {
-	my $self = shift;
-	my $c    = shift;
-
-	my %COLUMN_TYPES = (
-		"varchar" => { 
-			'length' => 1,   # required
-			'valid'  => 0,   # optionsl
-		},
-		'unsigned_int' => {
-			'max' => 1,     
-		},
-		'signed_int' => {
-			'max' => 1,
-			'min' => 1,
-		},
-		"signed_decimal" => {
-			'left'  => 1,
-			'right' => 1,
-		},
-		"unsigned_decimal" => {
-			'left'  => 1,
-			'right' => 1,
-		},
-		'date'     => {},
-		'time'     => {},
-		'datetime' => {},
-		'text'     => {},
-		'bit'      => {}
-	);
-
-	my @errors;
-
-	$self->{'table'} = $c->{'table'}       || push(@errors,"missing table name");
-	$self->{'pkey'}  = $c->{'primary_key'} || push(@errors,"missing primary key");
-	$self->{'pkey_regexp'} = ($c->{'primary_key_regexp'})?$c->{'primary_key_regexp'}:'^\d+$';
-	$self->{'pkey_user_supplied'} = ($c->{'primary_key_user_supplied'})?1:0;
-	while (my ($name,$conf) = each %{$c->{'columns'}}) {
-		unless (defined($conf->{'type'})) {
-			push(@errors,"missing 'type' for column $name");
-			next;
-		}
-
-		unless (defined($COLUMN_TYPES{$conf->{'type'}})) {
-			push(@errors,"don't know how to handle colum type $conf->{'type'} $name");
-			next;
-		}
-		
-		if ($name eq $self->{'pkey'}) {
-			# I'm thinking there's some other stuff I have to do here...
-			# but I don't quite remember what :)
-			# primary key definately CAN'T be listed in the columns...it makes 'add' very unhappy
-			#
-			# oh yeah, now I remember, need the column difinition to know type, regexp, etc, etc.
-			# it has to be pulled out and used seperatly.
-			next;
-		}
-
-		push(@{$self->{'columns'}},$name);
-
-		my %my_conf;
-		$my_conf{'name'} = $name;
-		while (my ($k,$v) = each %{$COLUMN_TYPES{$conf->{'type'}}}) {
-			$my_conf{$k} = $conf->{$k};
-			if ($v == 1 && !defined($my_conf{$k})) {
-				push(@errors,"$k is a required param for column type $conf->{'type'}");
-			}
-			delete($conf->{$k});
-		}
-
-		# grab the switches
-		foreach ("required","unique") {
-			if ($conf->{$_}) {
-				push(@{$self->{$_}},$name);
-			}
-			delete $conf->{$_};
-		}
-
-		if (defined($conf->{'references'})) {
-			my %v;
-			$v{'fkey'}     = $name;
-			$v{'table'}    = $conf->{'references'}->{'table'};
-			$v{'pkey'}     = $conf->{'references'}->{'primary_key'};
-			$v{'columns'}  = $conf->{'references'}->{'columns'};
-			$v{'slabel'}   = $conf->{'references'}->{'select_label'};
-			$v{'sdefault'} = $conf->{'references'}->{'select_default'};
-			$v{'sextra'}   = $conf->{'references'}->{'select_extra'};
-
-			push(@errors,"no table in reference for $name")                 unless $v{'table'}  =~ /\w+/;
-			push(@errors,"no primary key in reference for $name")           unless $v{'pkey'}   =~ /\w+/;
-			push(@errors,"no label for select list in reference for $name") unless $v{'slabel'} =~ /\w+/;
-			
-			if (defined($v{'columns'})) {
-				if (ref($v{'columns'})) {
-					if (ref($v{'columns'}) ne "ARRAY") {
-						push(@errors,"references => column must either be a scalar or arrayref for $name");
-					}
-				}
-				else {
-					$v{'columns'} = [ $v{'columns'} ];
-				}
-			}
-			else {
-				push(@errors,"references => columns must be defined for $name");
-			}
-
-			push(@{$self->{'references'}},\%v);
-			delete $conf->{'references'};
-		}
-
-		push(@{$self->{$conf->{'type'}."s"}},\%my_conf);
-		delete $conf->{'type'};
-
-		foreach (keys %{$conf}) {
-			push(@errors,"unknown option: $_ in column $name");
-		}
-	}
-
-	$self->{'default_sort'} = $c->{'list_options'}->{'default_sort'};
-	while (my ($k,$v) = each %{$c->{'list_options'}->{'sort'}}) {
-		$self->{'list_sort'}->{$k} = (ref($v) eq "ARRAY")? join(", ",@{$v}) : $v;
-	}
-
-	foreach (@{$c->{'list_options'}->{'search'}}) {
-		push(@{$self->{'list_search_items'}},[$_->[1],$_->[0]]);
-		$self->{'list_search'}->{$_->[1]} = 1;
-	}
-
-	$self->{'errors'} = \@errors;
-	if (@errors) {
-		$self->{'config_invalid'} = 1;
-
-		print STDERR "Errors in Voodoo::Table configuration for $self->{'table'}\n";
-		print STDERR join("\n",@errors,"\n");
-		return;
-	}
-}
-
-
-#
-# performs a database insertion
-#
-sub add {
-	my $self = shift;
-	my $p = shift;
-
-	$self->{'success'} = 0;
-
-	my $dbh    = $p->{'dbh'};
-	my $params = $p->{'params'};
-
-	my $errors = {};
-	if ($params->{'cm'} eq "add") {
-		# we're going to attempt the addition
-		my $values;
-
-		# call each of the insert_callbacks
-		foreach (@{$self->{'insert_callbacks'}}) {
-			my $callback_errors = $_->($dbh,$params);
-			@{$errors}{keys %{$callback_errors}} = values %{$callback_errors};
-		}
-
-		my $e;
-
-		# do all the normal parameter checking
-		($values,$e) = $self->_process_params($params);
-
-		if (defined($e)) {
-			# copy the errors from the process_params
-			$errors = { %{$errors}, %{$e} };
-		}
-
-		# check to see if the user supplied primary key (optional) is unique
-		if ($self->{'pkey_user_supplied'}) {
-			if ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
-				my $res = $dbh->selectall_arrayref("
-					SELECT 
-						1 
-					FROM 
-						$self->{'table'} 
-					WHERE 
-						$self->{'pkey'} = ?",
-					undef,
-					$params->{$self->{'pkey'}} ) || $self->db_error();
-
-				if ($res->[0]->[0] == 1) {
-					$errors->{'DUP_'.$self->{'pkey'}} = 1;
-				}
-			}
-			else {
-				$errors->{'BAD_'.$self->{'pkey'}} = 1;
-			}
-		}
-
-		# check each unique column constraint
-		foreach (@{$self->{'unique'}}) {
-			my $res = $dbh->selectall_arrayref("
-				SELECT 
-					1 
-				FROM 
-					$self->{'table'}
-				WHERE 
-					$_ = ?",
-				undef,
-				$values->{$_}) || $self->db_error();
-			if ($res->[0]->[0] == 1) {
-				$errors->{"DUP_$_"} = 1;
-			}
-		}
-
-		if (scalar keys %{$errors}) {
-			$errors->{'HAS_ERRORS'} = 1;
-
-			# copy values back into form
-			foreach (keys(%{$values})) { 
-				$errors->{$_} = $values->{$_};
-			}
-		}
-		else {
-			# copy clean dates,times into params for insertion
-			foreach (@{$self->{'dates'}},@{$self->{'times'}}) {
-				$values->{$_->{'name'}} = $values->{$_->{'name'}."_CLEAN"};
-			}
-
-			my $c = join(",",          @{$self->{'columns'}});		# the column names
-			my $q = join(",",map {"?"} @{$self->{'columns'}});		# the ? mark placeholders
-
-			my @v = map { $values->{$_} } @{$self->{'columns'}};	# and the values
-
-			if ($self->{'pkey_user_supplied'}) {
-				$c .= ",".$self->{'pkey'};
-				$q .= ",?";
-
-				push(@v,$params->{$self->{'pkey'}});
-			}
-
-
-			my $insert_statement = "INSERT INTO $self->{'table'} ($c) VALUES ($q)";
-
-			$dbh->do($insert_statement,
-			          undef,
-					 @v
-			         ) || $self->db_error();
-
-			$self->{'success'} = 1;
-
-			return $self->tardis($p->{'session'});
-		}
-	}
-
-	# populate drop downs (also maintaining previous state).
-	foreach (@{$self->{'references'}}) {
-		my $query = "SELECT
-		                 $_->{'pkey'},
-		                 $_->{'slabel'}
-		             FROM 
-		                $_->{'table'}
-		                $_->{'sextra'}";
-
-		my $res = $dbh->selectall_arrayref($query) || $self->db_error();
-
-		$errors->{$_->{'fkey'}} = $self->prep_select($res,$errors->{$_->{'fkey'}} || $_->{'sdefault'});
-	}
-
-	# If we get here the user is just loading the page 
-	# for the first time or had errors.
-	return $errors;
-}
-
-#
-# performs a database update
-#
-sub edit {
-	my $self = shift;
-	my $p    = shift;
-	my $additional_constraint = shift;
-
-	$self->{'success'} = 0;
-
-	my $dbh     = $p->{'dbh'};
-	my $session = $p->{'session'};
-	my $params  = $p->{'params'};
-
-	# make sure our additional constraint won't break the sql
-	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
-	if (length($additional_constraint)) {
-		$additional_constraint = "AND $additional_constraint";
-	}
-
-	unless ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
-		return $self->display_error("Invalid ID");
-	}
-
-	# insure that the record exists
-	my $res = $dbh->selectall_arrayref("
-		SELECT
-			1
-		FROM 
-			$self->{'table'}
-		WHERE 
-			$self->{'pkey'} = ?
-		$additional_constraint",
-		undef,
-		$params->{$self->{'pkey'}}) || $self->db_error();
-
-	unless ($res->[0]->[0] == 1) {
-		return $self->display_error("No record with that ID found");
-	}
-
-	my $errors = {};
-	if ($params->{'cm'} eq "update") {
-		my $values;
-
-		# call each of the insert_callbacks
-		foreach (@{$self->{'update_callbacks'}}) {
-			# call back should return a list of error strings
-			my $callback_errors = $_->($dbh,$params);
-			@{$errors}{keys %{$callback_errors}} = values %{$callback_errors};
-		}
-
-		my $e;
-		# run the standard error checks
-		($values,$e) = $self->_process_params($params);
-
-		# copy the errors from the process_params
-		$errors = { %{$errors}, %{$e} };
-
-		# check all the unique columns
-		foreach (@{$self->{'unique'}}) {
-			my $res = $dbh->selectall_arrayref("
-				SELECT 
-					1
-				FROM 
-					$self->{'table'}
-				WHERE 
-					$_ = ? AND 
-					$self->{'pkey'} != ?",
-				undef,
-				$values->{$_},
-				$params->{$self->{'pkey'}}) || $self->db_error();
-			if ($res->[0]->[0] == 1) {
-				$errors->{"DUP_$_"} = 1;
-			}
-		}
-
-		if (scalar keys %{$errors}) {
-			$errors->{'has_errors'} = 1;
-
-			# copy values into template
-			$errors->{$self->{'pkey'}} = $params->{$self->{'pkey'}};
-			foreach (keys(%{$values})) { 
-				$errors->{$_} = $values->{$_};
-			}
-		}
-		else {
-			# copy clean dates,times into params for insertion
-			foreach (@{$self->{'dates'}},@{$self->{'times'}}) {
-				$values->{$_->{'name'}} = $values->{$_->{'name'}."_CLEAN"};
-			}
-
-			my $update_statement = "
-				UPDATE 
-					$self->{'table'} 
-				SET ".
-					join("=?,",@{$self->{'columns'}})."=?
-				WHERE 
-					$self->{'pkey'} = ?
-				$additional_constraint";
-
-			# $self->debug($update_statement);
-			# $self->debug((map {$values->{$_}} @{$self->{'columns'}}),$params->{$self->{'pkey'}});
-
-			$dbh->do($update_statement,
-			          undef,
-			          (map { $values->{$_} } @{$self->{'columns'}}),
-			          $params->{$self->{'pkey'}}) || $self->db_error();
-
-			$self->{'success'} = 1;
-
-			return $self->tardis($p->{'session'});
-		}
-	}
-	else {
-		# find the record to be updated
-		my $select_statement = "
-			SELECT ".
-				join(",",@{$self->{'columns'}}). "
-			FROM 
-				$self->{'table'} 
-			WHERE 
-				$self->{'pkey'} = ? 
-				$additional_constraint";
-
-		# $self->debug($select_statement);
-
-		my $res = $dbh->selectall_arrayref($select_statement,undef,$params->{$self->{'pkey'}}) || $self->db_error();
-
-		if (defined($res) && defined($res->[0])) {
-			# copy values into template
-			$errors->{$self->{'pkey'}} = $params->{$self->{'pkey'}};
-			
-			for (my $i=0; $i <= $#{$self->{'columns'}}; $i++) {
-				$errors->{$self->{'columns'}->[$i]} = $res->[0]->[$i];
-			}
-		}
-
-		# pretty up dates
-		foreach (@{$self->{'dates'}}) {
-			$errors->{$_->{'name'}} = $self->sql_to_date($errors->{$_->{'name'}});
-		}
-
-		# pretty up times
-		foreach (@{$self->{'times'}}) {
-			$errors->{$_->{'name'}} = $self->sql_to_time($errors->{$_->{'name'}});
-		}
-	}
-
-	# populate drop downs (also maintaining previous state).
-	foreach (@{$self->{'references'}}) {
-		my $query = "SELECT
-						$_->{'pkey'},
-						$_->{'slabel'}
-		             FROM 
-						$_->{'table'}
-						$_->{'sextra'}";
-
-		my $res = $dbh->selectall_arrayref($query) || $self->db_error();
-
-		$errors->{$_->{'fkey'}} = $self->prep_select($res,$errors->{$_->{'fkey'}} || $_->{'sdefault'});
-	}
-
-	# If we get here the user is just loading the page 
-	# for the first time or had errors.
-	return $errors;
-}
-
-
-#
-# performs a delete from a table
-#
-sub delete {
-	my $self = shift;
-	my $p    = shift;
-
-	$self->{'success'} = 0;
-
-	# additional constraint to the where clause.
-	my $additional_constraint = shift;
-
-	my $dbh    = $p->{'dbh'};
-	my $params = $p->{'params'};
-
-	unless ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
-		return $self->display_error("Invalid ID");
-	}
-
-	# make sure our additional constraint won't break the sql
-	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
-	if (length($additional_constraint)) {
-		$additional_constraint = "AND $additional_constraint";
-	}
-
-	# record exists?
-	my $res = $dbh->selectall_arrayref("
-		SELECT
-			1 
-		FROM
-			$self->{'table'}
-		WHERE
-			$self->{'pkey'} = ?
-		$additional_constraint",
-		undef,
-		$params->{$self->{'pkey'}}) || $self->db_error();
-
-	unless ($res->[0]->[0] == 1) {
-		return $self->display_error("No Record found with that ID");
-	}
-		
-	if ($params->{'confirm'} eq "Yes") {
-		# fry it
-		$dbh->do("
-			DELETE FROM 
-				$self->{'table'}
-			WHERE 
-				$self->{'pkey'} = ?
-			$additional_constraint",
-			undef,
-			$params->{$self->{'pkey'}}) || $self->db_error();
-
-			$self->{'success'} = 1;
-
-		return $self->tardis($p->{'session'});
-	}
-	elsif ($params->{'confirm'} eq "No") {
-		# don't fry it
-		return $self->tardis($p->{'session'});
-	}
-	else {
-		# ask if they want to fry it.
-		return { $self->{'pkey'} => $params->{$self->{'pkey'}} };
-	}
-}
-
-#
-# performs a database select
-#
-sub view {
-	my $self = shift;
-	my $p    = shift;
-	my $additional_constraint = shift;
-
-	$self->{'success'} = 0;
-
-	my $dbh    = $p->{'dbh'};
-	my $params = $p->{'params'};
-
-	unless ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
-		return $self->display_error("Invalid ID");
-	}
-
-	# make sure our additional constraint won't break the sql
-	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
-	if (length($additional_constraint)) {
-		$additional_constraint = "AND $additional_constraint";
-	}
-
-	my @list;
-	foreach ($self->{'pkey'}, @{$self->{'columns'}}) {
-		push(@list,"$self->{'table'}.$_");
-	}
-
-	# figure out tables to join against
-	my @joins;
-	foreach my $join (@{$self->{'references'}}) {
-		push(@joins,"LEFT JOIN $join->{'table'} ON $self->{'table'}.$join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
-		foreach (@{$join->{'columns'}}) {
-			push(@list,"$join->{'table'}.$_");
-		}
-	}
-
-	my $select_statement = "
-		SELECT " .
-			join(",\n",@list). "
-		FROM 
-			$self->{'table'} ".
-		join("\n",@joins). "
-		WHERE 
-			$self->{'table'}.$self->{'pkey'} = ?
-			$additional_constraint";
-
-	# $self->debug($select_statement);
-	my $res = $dbh->selectall_arrayref($select_statement,undef,$params->{$self->{'pkey'}}) || $self->db_error();
-
-	my %v;
-	if (defined($res) && defined($res->[0])) {
-		# copy values into template
-		$v{$self->{'pkey'}} = $params->{$self->{'pkey'}};
-		
-		for (my $i=0; $i <= @list; $i++) {
-			my $key = $list[$i];
-
-			$key =~ s/$self->{'table'}\.//;    # take of the table name in front
-
-			$v{$key} = $res->[0]->[$i];
-		}
-	}
-	else {
-		return $self->display_error("Record not found");
-	}
-
-	# pretty up dates
-	foreach (@{$self->{'dates'}}) {
-		$v{$_->{'name'}} = $self->sql_to_date($v{$_->{'name'}});
-	}
-
-	# pretty up times
-	foreach (@{$self->{'times'}}) {
-		$v{$_->{'name'}} = $self->sql_to_time($v{$_->{'name'}});
-	}
-
-	$self->{'success'} = 1;
-
-	return \%v;
-}
-
-sub list {
-	my $self = shift;
-	my $p    = shift;
-	my $additional_constraint = shift;
-
-	$self->{'success'} = 0;
-
-	my $dbh    = $p->{'dbh'};
-	my $params = $p->{'params'};
-
-	my $pattern = $params->{'pattern'};
-	my $limit   = $params->{'limit'};
-
-	my %limit_types = (
-		'begins'   => 'begins with',
-		'contains' => 'contains',
-		'ends'     => 'ends with'
-	);
-
-	my $limit_type = defined($limit_types{$params->{'limit_type'}})?$params->{'limit_type'}:'begins';
-
-	my $sort      = $params->{'sort'}      || $self->{'default_sort'};
-	my $last_sort = $params->{'last_sort'} || $self->{'default_sort'};
-	my $desc      = $params->{'desc'};
-	
-	my $count   = $params->{'count'}   || "40";
-	my $page    = $params->{'page'}    || 1;
-	my $showall = $params->{'showall'} || 0;
-
-	# figure out tables to join against
-	my @list;
-	foreach ($self->{'pkey'}, @{$self->{'columns'}}) {
-		push(@list,"$self->{'table'}.$_");
-	}
-
-	# figure out tables to join against
-	my @joins;
-	foreach my $join (@{$self->{'references'}}) {
-		push(@joins,"LEFT JOIN $join->{'table'} ON $self->{'table'}.$join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
-		foreach (@{$join->{'columns'}}) {
-			push(@list,"$join->{'table'}.$_");
-		}
-	}
-
-	my $select_stmt = "
-		SELECT SQL_CALC_FOUND_ROWS " .
-			join(",\n",@list). "
-		FROM 
-			$self->{'table'} ".
-		join("\n",@joins);
-
-	# make sure our additional constraint won't break the sql
-	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
-	if (defined($self->{'list_search'}->{$limit}) && $self->safe_text($pattern)) {
-		# we need to narrow the set
-		# 7-18-2001 added lower to make case insensitive for Postgres
-
-		my $pat;
-		if    ($limit_type eq "begins")   { $pat =     $pattern.'%'; }
-		elsif ($limit_type eq "contains") { $pat = '%'.$pattern.'%'; }
-		else {                              $pat = '%'.$pattern    ; }
-
-		$select_stmt .= " WHERE $limit LIKE LOWER('$pat') ";
-
-		if (length($additional_constraint)) {
-			$select_stmt .= "AND $additional_constraint";
-		}
-	}
-	elsif (length($additional_constraint)) {
-		$select_stmt .= " WHERE $additional_constraint";
-	}
-
-	my $n_desc = $desc;
-	if (defined($self->{'list_sort'}->{$sort})) {
-		my $q = $self->{'list_sort'}->{$sort};
-
-		# if we're sorting on the same key as before, then we have the chance to go descending
-		if ($sort eq $last_sort) { 
-			if ($desc == 1) {
-				$q =~ s/,/ DESC, /g;
-				$q .= " DESC";
-				$n_desc = 0; # say that we are ascending the next time.
-			}
-			else {
-				$n_desc = 1; # say that we are descending the next time.
-			}
-		}
-		else {
-			$n_desc = 1; # we just sorted ascending, so now we need to say to sort descending
-			$desc = 0;
-		}
-
-		$select_stmt .= " ORDER BY $q";
-	}
-
-	unless ($showall) {
-		$select_stmt .= " LIMIT $count OFFSET ". $count * ($page -1);
-	}
-
-	$self->debug($select_stmt);
-	my $page_set = $dbh->selectall_arrayref($select_stmt) || $self->db_error();
-
-	my %output;
-
-	################################################################################
-	# prep all the template vars to go back on the form (pagination, sorting, searching)
-	################################################################################
-
-	# (p)aginate (c)ontrol parameters
-	my $pc_params = {
-		'count' => $count,
-		'desc' => $desc,
-		'last_sort' => $sort,
-		'limit' => $limit,
-		'limit_type' => $limit_type,
-		'pattern' => $pattern
-	};
-	$output{'SORT_PARAMS'} = $self->mkurlparams($pc_params,{'desc' => $n_desc});
-
-	$pc_params->{'sort'} = $sort;
-	$output{'MODE_PARAMS'} = $self->mkurlparams($pc_params);
-
-	$output{'LIMIT'}   = $self->prep_select($self->{'list_search_items'},$limit);
-	$output{'PATTERN'} = $pattern;
-
-	my $rc = $dbh->selectall_arrayref("SELECT FOUND_ROWS()");
-	my $res_count = $rc->[0]->[0];
-
-	$output{'NUM_MATCHES'} = $res_count;
-
-	if ($res_count > $count) {
-		$output{'HAS_MORE'} = 1;
-
-		if ($showall) {
-			$output{'SHOW_MODE'} = 1;
-			$output{'MODE_PARAMS'} .= "&showall=0";
-		}
-		else {
-			$output{'MODE_PARAMS'} .= "&showall=1";
-
-			# setup the page list
-			my $numpages = ($res_count / $count);
-
-			if ($numpages > 1) {
-				# setup sliding window of page numbers
-				my $start = 0;
-				my $window = 10;
-				my $end   = $window;
-				if ($page >= $window) {
-					$start = $page - ($window / 2) - 1;
-					$end   = $page + ($window / 2);
-				}
-
-				if ($end > $numpages) {
-					$end = $numpages;
-				}
-
-				$output{'PAGES'} = [];
-				for (my $x = $start; $x < $end; $x++) {
-					# Put the page info into the array
-					push(@{$output{'PAGES'}}, {'NOT_ME'     => (($x + 1) == $page)?0:1,
-	                                           'PAGE'       => ($x + 1),
-					                           'NOT_LAST'   => 1,
-					                           'URL_PARAMS' => $self->mkurlparams($pc_params, { 'page' => ($x+1) })
-					                          });
-				}
-
-				# prevent access of index -1 if the page number requested is beyond the range.
-				if ($#{$output{'PAGES'}} >= 0) {
-					# set the last page to last
-					$output{'PAGES'}->[$#{$output{'PAGES'}}]->{'NOT_LAST'} = 0;
-				}
-
-				# setup the 'more link'
-				if ($end != $numpages) {
-					$output{'MORE_URL_PARAMS'} = $self->mkurlparams($pc_params,{ 'page' => ($end + 1) });
-				}
-
-				# setup the preivous link
-				if ($page > 1) {
-					$output{'HAS_PREVIOUS'} = 1;
-					$output{'PREVIOUS_URL_PARAMS'} = $self->mkurlparams($pc_params, { 'page' => ($page - 1) });
-				}
-
-				# setup the next link
-				if ($page * $count < $res_count) {
-					$output{'HAS_NEXT'} = 1;
-					$output{'NEXT_URL_PARAMS'} = $self->mkurlparams($pc_params,{ 'page' => ($page + 1) });
-				}
-			}
-		}
-	}
-
-	################################################################################
-	# prep data for the template
-	################################################################################
-	my %dates;
-	foreach (@{$self->{'dates'}}) {
-		$dates{$_->{'name'}} = 1;
-	}
-
-	my %times;
-	foreach (@{$self->{'times'}}) {
-		$times{$_->{'name'}} = 1;
-	}
-
-	foreach (@{$page_set}) {
-		my %v;
-		for (my $i=0; $i <= @list; $i++) {
-			my $key = $list[$i];
-
-			$key =~ s/$self->{'table'}\.//; # take of the table name in front
-			# we either end up with the column name from the primay table, 
-			# or the joined table name + column
-
-			$v{$key} = $_->[$i];
-
-			if (defined($dates{$key})) {
-				$v{$key} = $self->sql_to_date($v{$key});
-			}
-			elsif (defined($times{$key})) {
-				$v{$key} = $self->sql_to_time($v{$key});
-			}
-		}
-
-		$v{'ALL_URL_PARAMS'} = $self->mkurlparams($pc_params,{'page' => $page});
-
-		push(@{$output{'DATA'}},\%v);
-	}
-
-	$self->{'success'} = 1;
-
-	return \%output;
-}
-
-#
-# toggles the column specified by the second parameter
-#
-sub toggle {
-	my $self   = shift;
-	my $p      = shift;
-	my $column = shift;
-
-	my $dbh    = $p->{'dbh'};
-	my $params = $p->{'params'};
-
-	$self->{'success'} = 0;
-
-	unless ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
-		return $self->display_error("Invalid ID");
-	}
-
-	unless ($column =~ /^\w+$/) {
-		return $self->display_error("Invalid toggle column");
-	}
-
-	$dbh->do("
-		UPDATE
-			$self->{'table'}
-		SET 
-			$column = ($column+1)%2
-		WHERE 
-			$self->{'pkey'} = ?",
-		undef,
-		$params->{$self->{'pkey'}}) || $self->db_error();
-
-	$self->{'success'} = 1;
-	return $self->tardis($p->{'session'});
-}
-
-sub success {
-	my $self = shift;
-
-	return $self->{'success'};
 }
 
 #
@@ -911,6 +104,438 @@ sub add_update_callback {
 }
 
 #
+# performs a database insertion
+#
+sub add {
+	my $self = shift;
+	my $p = shift;
+
+	my $conn      = $p->{'dbconn'};
+	my $params    = $p->{'parameters'};
+
+	my $errors = {};
+	if ($params->{'cm'} eq "add") {
+		# we're going to attempt the addition
+		my $values;
+
+		# call each of the insert_callbacks
+		foreach (@{$self->{'insert_callbacks'}}) {
+			# call back should return a list of error strings
+			foreach (&{$_}($conn,$params)) {
+				if (length($_)) {
+					$errors->{$_} = 1;
+				}
+			}
+		}
+
+		my $e;
+
+		# do all the normal parameter checking
+		($values,$e) = $self->_process_params($params);
+
+		if (defined($e)) {
+			# copy the errors from the process_params
+			$errors = { %{$errors}, %{$e} };
+		}
+
+		# check to see if the user supplied primary key (optional) is unique
+		if ($self->{'PKEY_USER_SUPPLIED'}) {
+			my $sth = $conn->prepare("select 1 from $self->{'TABLE'} WHERE $self->{'PKEY'} = ?") || $self->db_error();
+			$sth->execute($values->{$self->{'PKEY'}}) || $self->db_error();
+			my $res = $sth->fetchrow_arrayref;
+			if ($res->[0] == 1) {
+				$errors->{'DUP_'.$self->{'PKEY'}} = 1;
+			}
+			$sth->finish;
+		}
+
+		# check each unique column constraint
+		foreach (@{$self->{'UNIQUE'}}) {
+			my $sth = $conn->prepare("select 1 from $self->{'TABLE'} WHERE $_ = ?") || $self->db_error();
+			$sth->execute($values->{$_}) || $self->db_error();
+			my $res = $sth->fetchrow_arrayref;
+			if ($res->[0] == 1) {
+				$errors->{"DUP_$_"} = 1;
+			}
+			$sth->finish;
+		}
+
+		if (scalar keys %{$errors}) {
+			$errors->{'HAS_ERRORS'} = 1;
+
+			# copy values back into form
+			foreach (keys(%{$values})) { 
+				$errors->{$_} = $values->{$_};
+			}
+		}
+		else {
+			# copy clean dates,times into parameters for insertion
+			foreach (@{$self->{'DATES'}},@{$self->{'TIMES'}}) {
+				$values->{$_->{'name'}} = $values->{$_->{'name'}."_CLEAN"};
+			}
+
+			my $insert_statement = "INSERT INTO $self->{'TABLE'} (".join(",",@{$self->{'PARAM_LIST'}}).") VALUES (".join(",",map {"?"} @{$self->{'PARAM_LIST'}}).")";
+
+			$self->debug($insert_statement);
+
+			my $sth =  $conn->prepare($insert_statement) || $self->db_error();
+
+			$sth->execute(map { $values->{$_} } @{$self->{'PARAM_LIST'}}) || $self->db_error();
+
+			$sth->finish();
+
+			return 1;
+		}
+	}
+
+	# populate drop downs (also maintaining previous state).
+	foreach (@{$self->{'SELECTIONS'}}) {
+		my $query = "SELECT
+		                 $_->{'key'},
+		                 $_->{'label'}
+		             FROM 
+		                $_->{'refs'}
+		                $_->{'extra'}";
+
+		my $res = $conn->selectall_arrayref($query) || $self->db_error();
+
+		$errors->{$_->{'name'}} = $self->select_prep(['id','name'],
+		                                             $res,
+		                                             ["id",$errors->{$_->{'name'}} || $_->{'default'}]);
+	}
+
+	# If we get here the user is just loading the page 
+	# for the first time or had errors.
+	return $errors;
+}
+
+#
+# performs a delete from a table
+#
+sub delete {
+	my $self = shift;
+	my $p    = shift;
+
+	# additional constraint to the where clause.
+	my $additional_constraint = shift;
+
+	my $conn      = $p->{'dbconn'};
+	my $params    = $p->{'parameters'};
+
+	unless ($params->{$self->{'PKEY'}} =~ /$self->{'PKEY_REGEXP'}/) {
+		return $self->display_error("Invalid ID", "/index");
+	}
+
+	# make sure our additional constraint won't break the sql
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	if (length($additional_constraint)) {
+		$additional_constraint = "AND $additional_constraint";
+	}
+
+	# record exists?
+	my $res = $conn->selectall_arrayref("SELECT 1 
+	                                     FROM
+	                                            $self->{'TABLE'}
+	                                     WHERE
+	                                            $self->{'PKEY'} = '$params->{$self->{'PKEY'}}'
+												$additional_constraint
+	                                     ") || $self->db_error();
+
+	unless (defined($res->[0]->[0])) {
+		return $self->display_error("No Record found with that ID", "index");
+	}
+		
+	if ($params->{'confirm'} eq "Yes") {
+		# fry it
+		$conn->do("delete from $self->{'TABLE'} where $self->{'PKEY'} = '$params->{$self->{'PKEY'}}' $additional_constraint") || $self->db_error();
+		return 1;
+	}
+	elsif ($params->{'confirm'} eq "No") {
+		# don't fry it
+		return 1;
+	}
+	else {
+		# ask if they want to fry it.
+		return { $self->{'PKEY'} => $params->{$self->{'PKEY'}} };
+	}
+}
+
+#
+# sets the 'active' field to 0
+#
+sub disable {
+	my $self = shift;
+	my $p    = shift;
+	my $additional_constraint = shift;
+
+	my $params = $p->{'parameters'};
+	my $conn   = $p->{'dbconn'};
+
+	# make sure our additional constraint won't break the sql
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	if (length($additional_constraint)) {
+		$additional_constraint = "AND $additional_constraint";
+	}
+
+	unless ($params->{$self->{'PKEY'}} =~ /$self->{'PKEY_REGEXP'}/) {
+		return $self->display_error("Invalid ID", "index");
+	}
+
+	$conn->do("update $self->{'TABLE'} set active=0 where $self->{'PKEY'} = '$params->{$self->{'PKEY'}}' $additional_constraint") || $self->db_error();
+
+	return 1;
+}
+
+#
+# sets the 'active' field to 1
+#
+sub enable {
+	my $self = shift;
+	my $p    = shift;
+	my $additional_constraint = shift;
+
+	my $params = $p->{'parameters'};
+	my $conn   = $p->{'dbconn'};
+
+	# make sure our additional constraint won't break the sql
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	if (length($additional_constraint)) {
+		$additional_constraint = "AND $additional_constraint";
+	}
+
+	unless ($params->{$self->{'PKEY'}} =~ /$self->{'PKEY_REGEXP'}/) {
+		return $self->display_error("Invalid ID", "index");
+	}
+
+	$conn->do("update $self->{'TABLE'} set active=1 where $self->{'PKEY'} = '$params->{$self->{'PKEY'}}' $additional_constraint") || $self->db_error();
+
+	return 1;
+}
+
+#
+# performs a database update
+#
+sub edit {
+	my $self = shift;
+	my $p    = shift;
+	my $additional_constraint = shift;
+
+	my $conn      = $p->{'dbconn'};
+	my $session   = $p->{'session'};
+	my $params    = $p->{'parameters'};
+
+	# make sure our additional constraint won't break the sql
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	if (length($additional_constraint)) {
+		$additional_constraint = "AND $additional_constraint";
+	}
+
+	unless ($params->{$self->{'PKEY'}} =~ /$self->{'PKEY_REGEXP'}/) {
+		return $self->display_error("Invalid ID", "index");
+	}
+
+	# insure that the record exists
+	my $res = $conn->selectall_arrayref("SELECT 1 from $self->{'TABLE'} WHERE $self->{'PKEY'} = '$params->{$self->{'PKEY'}}' $additional_constraint") || $self->db_error();
+	unless ($res->[0]->[0] == 1) {
+		return $self->display_error("No record with that ID found", "index");
+	}
+
+	my $errors = {};
+	if ($params->{'cm'} eq "update") {
+		my $values;
+
+		# call each of the insert_callbacks
+		foreach (@{$self->{'update_callbacks'}}) {
+			# call back should return a list of error strings
+			foreach (&{$_}($conn,$params)) {
+				if (length($_)) {
+					$errors->{$_} = 1;
+				}
+			}
+		}
+
+		my $e;
+		# run the standard error checks
+		($values,$e) = $self->_process_params($params);
+
+		# copy the errors from the process_params
+		$errors = { %{$errors}, %{$e} };
+
+		# check all the unique columns
+		foreach (@{$self->{'UNIQUE'}}) {
+			my $sth = $conn->prepare("select 1 from $self->{'TABLE'} WHERE $_ = ? AND $self->{'PKEY'} != '$params->{$self->{'PKEY'}}'") || $self->db_error();
+			$sth->execute($values->{$_}) || $self->db_error();
+			my $res = $sth->fetchrow_arrayref;
+			if ($res->[0] == 1) {
+				$errors->{"DUP_$_"} = 1;
+			}
+			$sth->finish;
+		}
+
+		if (scalar keys %{$errors}) {
+			$errors->{'HAS_ERRORS'} = 1;
+
+			# copy values into template
+			$errors->{$self->{'PKEY'}} = $params->{$self->{'PKEY'}};
+			foreach (keys(%{$values})) { 
+				$errors->{$_} = $values->{$_};
+			}
+		}
+		else {
+			# copy clean dates,times into parameters for insertion
+			foreach (@{$self->{'DATES'}},@{$self->{'TIMES'}}) {
+				$values->{$_->{'name'}} = $values->{$_->{'name'}."_CLEAN"};
+			}
+
+			my $update_statement = "UPDATE $self->{'TABLE'} SET ".
+			                        join("=?,",@{$self->{'PARAM_LIST'}}).
+									"=? WHERE $self->{'PKEY'} = '$params->{$self->{'PKEY'}}' $additional_constraint";
+
+			$self->debug($update_statement);
+
+			my $sth =  $conn->prepare($update_statement) || $self->db_error();
+
+			$sth->execute(map { $values->{$_} } @{$self->{'PARAM_LIST'}}) || $self->db_error();
+
+			$sth->finish();
+
+			return 1;
+		}
+	}
+	else {
+		# find the record to be updated
+		my $select_statement = "SELECT ".
+		                       join(",",@{$self->{'PARAM_LIST'}}).
+							   " FROM $self->{'TABLE'} 
+							   WHERE $self->{'PKEY'} = '$params->{$self->{'PKEY'}}' $additional_constraint";
+
+		$self->debug($select_statement);
+
+		my $res = $conn->selectall_arrayref($select_statement) || $self->db_error();
+
+		if (defined($res) && defined($res->[0]->[0])) {
+			# copy values into template
+			$errors->{$self->{'PKEY'}} = $params->{$self->{'PKEY'}};
+			
+			for (my $i=0; $i <= $#{$self->{'PARAM_LIST'}}; $i++) {
+				$errors->{$self->{'PARAM_LIST'}->[$i]} = $res->[0]->[$i];
+			}
+		}
+
+		# pretty up dates
+		foreach (@{$self->{'DATES'}}) {
+			$errors->{$_->{'name'}} = $self->sql_to_date($errors->{$_->{'name'}});
+		}
+
+		# pretty up times
+		foreach (@{$self->{'TIMES'}}) {
+			$errors->{$_->{'name'}} = $self->sql_to_time($errors->{$_->{'name'}});
+		}
+	}
+
+	# populate drop downs (also maintaining previous state).
+	foreach (@{$self->{'SELECTIONS'}}) {
+		my $query = "SELECT
+						$_->{'key'},
+						$_->{'label'}
+					FROM 
+						$_->{'refs'}
+						$_->{'extra'}";
+
+		my $res = $conn->selectall_arrayref($query) || $self->db_error();
+
+		$errors->{$_->{'name'}} = $self->select_prep(['id','name'],
+		                                             $res,
+		                                             ["id",$errors->{$_->{'name'}} || $_->{'default'}]);
+	}
+
+	# If we get here the user is just loading the page 
+	# for the first time or had errors.
+	return $errors;
+}
+
+#
+# performs a database select
+#
+sub view {
+	my $self = shift;
+	my $p    = shift;
+	my $additional_constraint = shift;
+
+	my $conn      = $p->{'dbconn'};
+	my $params    = $p->{'parameters'};
+
+	unless ($params->{$self->{'PKEY'}} =~ /$self->{'PKEY_REGEXP'}/) {
+		return $self->display_error("Invalid ID", "index");
+	}
+
+	# make sure our additional constraint won't break the sql
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	if (length($additional_constraint)) {
+		$additional_constraint = "AND $additional_constraint";
+	}
+
+	# figure out tables to join against
+	my @list;
+	my @joins;
+	foreach(@{$self->{'PARAM_LIST'}}) {
+		my $column = $_;
+		my $is_join = 0;
+		foreach (@{$self->{'SELECTIONS'}}) {
+			if ($_->{'name'} eq $column) {
+				push(@joins,"LEFT JOIN $_->{'refs'} ON $self->{'TABLE'}.$column = $_->{'refs'}.$_->{'key'}");
+				push(@list,"$_->{'refs'}.$_->{'label'}");
+				$is_join = 1;
+				last;
+			}
+		}
+		unless($is_join) {
+			push(@list,"$self->{'TABLE'}.$column");
+		}
+	}
+
+	my $select_statement = "SELECT " .
+	                        join(",\n",@list).
+							" FROM $self->{'TABLE'} ".
+	                        join("\n",@joins).
+							" WHERE $self->{'TABLE'}.$self->{'PKEY'} = '$params->{$self->{'PKEY'}}' $additional_constraint";
+
+	$self->debug($select_statement);
+	my $res = $conn->selectall_arrayref($select_statement) || $self->db_error();
+
+	my %v;
+	if (defined($res) && defined($res->[0]->[0])) {
+		# copy values into template
+		$v{$self->{'PKEY'}} = $params->{$self->{'PKEY'}};
+		
+		for (my $i=0; $i <= @list; $i++) {
+			my $key = $list[$i];
+
+			$key =~ s/$self->{'TABLE'}\.//;    # take of the table name in front
+			$key =~ s/\..*//;               # remove everything after the dot
+			# we either end up with the column name from the primay table, or the name of the joined table
+
+			$v{$key} = $res->[0]->[$i];
+		}
+	}
+	else {
+		return $self->display_error("Record not found", "/index");
+	}
+
+	# pretty up dates
+	foreach (@{$self->{'DATES'}}) {
+		$v{$_->{'name'}} = $self->sql_to_date($v{$_->{'name'}});
+	}
+
+	# pretty up times
+	foreach (@{$self->{'TIMES'}}) {
+		$v{$_->{'name'}} = $self->sql_to_time($v{$_->{'name'}});
+	}
+
+	return \%v;
+}
+
+#
 # standard data checks for add and edit
 #
 sub _process_params {
@@ -923,7 +548,7 @@ sub _process_params {
 	##############
 	# copy params out
 	##############
-	foreach (@{$self->{'columns'}}) {
+	foreach (@{$self->{'PARAM_LIST'}}) {
 		$params->{$_} =~ s/^\s*//go;
 		$params->{$_} =~ s/\s*$//go;
 
@@ -933,7 +558,7 @@ sub _process_params {
 	##############
 	# check required
 	##############
-	foreach (@{$self->{'required'}}) {
+	foreach (@{$self->{'REQUIRED_LIST'}}) {
 		if ($v{$_} eq "") {
 			$errors{'MISSING_'.$_} = 1;
 		}
@@ -942,7 +567,7 @@ sub _process_params {
 	##############
 	# varchar
 	##############
-	foreach(@{$self->{'varchars'}}) {
+	foreach(@{$self->{'VARCHARS'}}) {
 		if ($_->{'length'} > 0 && length($v{$_->{'name'}}) > $_->{'length'}) {
 			$errors{'BIG_'.$_->{'name'}} = 1;
 		}
@@ -984,7 +609,7 @@ sub _process_params {
 	##############
 	# + decimal
 	##############
-	foreach (@{$self->{'unsigned_decimals'}}) {
+	foreach (@{$self->{'UNSIGNED_DECIMALS'}}) {
 		if ($v{$_->{'name'}} =~ /^(\d*)(?:\.(\d+))?$/) {
 			my $l = $2 || 0;
 			my $r = $3 || 0;
@@ -1004,7 +629,7 @@ sub _process_params {
 	##############
 	# +/- decimal
 	##############
-	foreach (@{$self->{'signed_decimals'}}) {
+	foreach (@{$self->{'SIGNED_DECIMALS'}}) {
 		if ($v{$_->{'name'}} =~ /^(\+|-)?(\d*)(?:\.(\d+))?$/) {
 			my $l = $2 || 0;
 			my $r = $3 || 0;
@@ -1024,7 +649,7 @@ sub _process_params {
 	##############
 	# + int
 	##############
-	foreach (@{$self->{'unsigned_ints'}}) {
+	foreach (@{$self->{'UNSIGNED_INTEGERS'}}) {
 		if ($v{$_->{'name'}} eq "") {
 			$v{$_->{'name'}} = undef;
 		}
@@ -1039,7 +664,7 @@ sub _process_params {
 	##############
 	# +/- int
 	##############
-	foreach (@{$self->{'signed_ints'}}) {
+	foreach (@{$self->{'SIGNED_INTEGERS'}}) {
 		if ($v{$_->{'name'}} eq "") {
 			$v{$_->{'name'}} = undef;
 		}
@@ -1057,13 +682,14 @@ sub _process_params {
 	##############
 	# Dates
 	##############
-	foreach (@{$self->{'dates'}}) {
+	foreach (@{$self->{'DATES'}}) {
 		if ($v{$_->{'name'}} eq "") {
 			$v{$_->{'name'}."_CLEAN"} = undef;
 		}
 		else {
-			if ($self->validate_date($v{$_->{'name'}})) {
-				$v{$_->{'name'}."_CLEAN"} = $self->date_to_sql($v{$_->{'name'}});
+			my $temp = $self->date_to_sql($v{$_->{'name'}});
+			if ($temp) {
+				$v{$_->{'name'}."_CLEAN"} = $temp;
 			}
 			else {
 				$errors{"BAD_".$_->{'name'}} = 1;
@@ -1074,7 +700,7 @@ sub _process_params {
 	##############
 	# Times
 	##############
-	foreach (@{$self->{'times'}}) {
+	foreach (@{$self->{'TIMES'}}) {
 		if ($v{$_->{'name'}} eq "") {
 			$v{$_->{'name'}."_CLEAN"} = undef;
 		}
@@ -1092,97 +718,296 @@ sub _process_params {
 	return (\%v,\%errors);
 }
 
+sub list {
+	my $self = shift;
+	my $p    = shift;
+	my $additional_constraint = shift;
+
+	my $conn      = $p->{'dbconn'};
+	my $params    = $p->{'parameters'};
+
+	my $pattern = $params->{'pattern'};
+	my $limit   = $params->{'limit'};
+
+	# if the sort order wasn't given, and we have a limit column use it. otherwise default to the first param:
+	my $sort      = $params->{'sort'}       || $limit || $self->{'LIST_COLS'}->[0];
+	my $last_sort = $params->{'last_sort'}  || $limit || $self->{'LIST_COLS'}->[0];
+	my $desc      = $params->{'desc'};
+	
+	my $count   = $params->{'count'}   || "20";
+	my $page    = $params->{'page'}    || 1;
+	my $showall = $params->{'showall'} || 0;
+
+	# figure out tables to join against
+	my @list = $self->{'TABLE'}.".".$self->{'PKEY'};
+	my @joins;
+	foreach(@{$self->{'LIST_COLS'}}) {
+		my $column = $_;
+		my $is_join = 0;
+		foreach (@{$self->{'SELECTIONS'}},@{$self->{'LEFT_JOINS'}}) {
+			if ($_->{'name'} eq $column) {
+				push(@joins,"LEFT JOIN $_->{'refs'} ON $self->{'TABLE'}.$column = $_->{'refs'}.$_->{'key'}");
+				push(@list,"$_->{'refs'}.$_->{'label'}");
+				$is_join = 1;
+				last;
+			}
+		}
+		unless($is_join) {
+			push(@list,"$self->{'TABLE'}.$column");
+		}
+	}
+
+	my $select_stmt = "SELECT " .
+	                   join(",\n",@list).
+	                   " FROM $self->{'TABLE'} ".
+	                   join("\n",@joins) ;
+
+	# make sure our additional constraint won't break the sql
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	if (defined($self->{'SEARCH_COLS'}->{$limit}) && $pattern =~ /^[\w -]+$/) {
+		# we need to narrow the set
+		# 7-18-2001 added lower to make case insensitive for Postgres
+		$select_stmt .= " WHERE lower(". $self->{'SEARCH_COLS'}->{$limit} .") like lower('$pattern%') ";
+
+		if (length($additional_constraint)) {
+			$select_stmt .= "AND $additional_constraint";
+		}
+	}
+	elsif (length($additional_constraint)) {
+		$select_stmt .= " WHERE $additional_constraint";
+	}
+
+	my $n_desc = $desc;
+	if (defined($self->{'SORT_COLS'}->{$sort})) {
+		my $q = $self->{'SORT_COLS'}->{$sort};
+
+		# if we're sorting on the same key as before, then we have the chance to go descending
+		if ($sort eq $last_sort) { 
+			if ($desc == 1) {
+				$q =~ s/,/ DESC, /g;
+				$q .= " DESC";
+				$n_desc = 0; # say that we are ascending the next time.
+			}
+			else {
+				$n_desc = 1; # say that we are descending the next time.
+			}
+		}
+		else {
+			$n_desc = 1; # we just sorted ascending, so now we need to say to sort descending
+			$desc = 0;
+		}
+
+		$select_stmt .= " ORDER BY $q";
+	}
+
+	$self->debug($select_stmt);
+	my $res = $conn->selectall_arrayref($select_stmt) || $self->db_error();
+	$self->debug($#{$res});
+
+	my %output;
+	################################################################################
+	# prep all the template vars to go back on the form (pagination, sorting, searching)
+	################################################################################
+	$output{'MODE_PARAMS'} = $self->mkurlparams({'limit' => $limit,
+	                                      'pattern' => $pattern,
+	                                      'sort' => $sort,
+	                                      'desc' => $desc,
+	                                      'last_sort' => $sort});
+
+	$output{'SORT_PARAMS'} = $self->mkurlparams({'limit' => $limit,
+	                                      'pattern' => $pattern,
+	                                      'showall' => $showall,
+	                                      'desc' => $n_desc,
+	                                      'last_sort' => $sort});
+
+
+	my $search_xref = [ map { my $n = $_ ;
+	                          $n =~ s/_/ /g;
+	                          $n =~ s/\b(.)/\U$1\E/g;
+							  [$_, $n]
+	                        } sort keys %{$self->{'SEARCH_COLS'}} ];
+
+	$output{'LIMIT'}   = $self->select_prep(['id','name'],$search_xref,['id',$limit]),
+	$output{'PATTERN'} = $pattern;
+
+	my $res_count = $#{$res} + 1;
+
+	$output{'NUM_MATCHES'} = $res_count;
+
+	my @page_set;
+	if ($res_count > $count) {
+		$output{'HAS_MORE'} = 1;
+
+		if ($showall) {
+			@page_set = @{$res};
+
+			$output{'SHOW_MODE'} = 1;
+			$output{'MODE_PARAMS'} .= "&showall=0";
+		}
+		else {
+			$output{'MODE_PARAMS'} .= "&showall=1";
+
+			# if there are more results than this page will fit cut the results
+			if (($res_count - (($page - 1) * $count)) > $count) {
+				@page_set = @{$res}[(($page - 1) * $count) ... (($page * $count) - 1)];
+			}
+			else {
+				@page_set= @{$res}[(($page - 1) * $count) ... ($res_count-1)];
+			}
+
+			# setup the page list
+			my $numpages = ($res_count / $count);
+
+			if ($numpages > 1) {
+				# setup sliding window of page numbers
+				my $start = 0;
+				my $window = 10;
+				my $end   = $window;
+				if ($page >= $window) {
+					$start = $page - ($window / 2) - 1;
+					$end   = $page + ($window / 2);
+				}
+
+				if ($end > $numpages) {
+					$end = $numpages;
+				}
+
+				$output{'PAGES'} = [];
+				for (my $x = $start; $x < $end; $x++) {
+					# Put the page info into the array
+					push(@{$output{'PAGES'}}, {'NOT_ME'     => (($x + 1) == $page)?0:1,
+	                                           'PAGE'       => ($x + 1),
+					                           'NOT_LAST'   => 1,
+					                           'URL_PARAMS' => $self->mkurlparams({'limit' => $limit,
+					                                                        'pattern' => $pattern,
+					                                                        'count' => $count,
+					                                                        'sort' => $sort,
+					                                                        'last_sort' => $sort,
+					                                                        'desc' => $desc,
+					                                                        'page' => ($x + 1)
+					                                                       })
+					                          });
+				}
+
+				# prevent access of index -1 if the page number requested is beyond the range.
+				if ($#{$output{'PAGES'}} >= 0) {
+					# set the last page to last
+					$output{'PAGES'}->[$#{$output{'PAGES'}}]->{'NOT_LAST'} = 0;
+				}
+
+				# setup the 'more link'
+				if ($end != $numpages) {
+					$output{'MORE_URL_PARAMS'} = $self->mkurlparams({'limit' => $limit,
+					                                          'pattern' => $pattern,
+					                                          'count' => $count,
+					                                          'sort' => $sort,
+					                                          'last_sort' => $sort,
+					                                          'desc' => $desc,
+					                                          'page' => ($end + 1)
+					                                          });
+				}
+
+				# setup the preivous link
+				if ($page > 1) {
+					$output{'HAS_PREVIOUS'} = 1;
+					$output{'PREVIOUS_URL_PARAMS'} = $self->mkurlparams({'limit' => $limit,
+					                                              'pattern' => $pattern,
+															      'count' => $count,
+															      'sort' => $sort,
+					                                              'last_sort' => $sort,
+															      'desc' => $desc,
+															      'page' => ($page - 1)
+															     });
+			}
+
+				# setup the next link
+				if ($page * $count < $res_count) {
+					$output{'HAS_NEXT'} = 1;
+					$output{'NEXT_URL_PARAMS'} = $self->mkurlparams({'limit' => $limit,
+					                                          'pattern' => $pattern,
+															  'count' => $count,
+															  'sort' => $sort,
+					                                          'last_sort' => $sort,
+															  'desc' => $desc,
+															  'page' => ($page + 1)
+															  });
+				}
+			}
+		}
+	}
+	else {
+		@page_set = @{$res};
+	}
+
+
+	################################################################################
+	# prep data for the template
+	################################################################################
+	my %dates;
+	foreach (@{$self->{'DATES'}}) {
+		$dates{$_->{'name'}} = 1;
+	}
+
+	my %times;
+	foreach (@{$self->{'TIMES'}}) {
+		$times{$_->{'name'}} = 1;
+	}
+
+	foreach (@page_set) {
+		my %v;
+		for (my $i=0; $i <= @list; $i++) {
+			my $key = $list[$i];
+
+			$key =~ s/$self->{'TABLE'}\.//; # take of the table name in front
+			$key =~ s/\..*//;               # remove everything after the dot
+			# we either end up with the column name from the primay table, or the name of the joined table
+
+			$v{$key} = $_->[$i];
+
+			if (defined($dates{$key})) {
+				$v{$key} = $self->sql_to_date($v{$key});
+			}
+			elsif (defined($times{$key})) {
+				$v{$key} = $self->sql_to_time($v{$key});
+			}
+		}
+
+		$v{'ALL_URL_PARAMS'} = $self->mkurlparams({'limit' => $limit,
+		                                    'pattern' => $pattern,
+		                                    'count' => $count,
+		                                    'sort' => $sort,
+		                                    'showall' => $showall,
+		                                    'last_sort' => $sort,
+		                                    'desc' => $desc,
+		                                    'page' => $page
+		                                   });
+
+		push(@{$output{'DATA'}},\%v);
+	}
+
+	return \%output;
+}
 
 1;
 
 =pod ################################################################################
-NO ONE SHOULD BE USING THIS MODULE AT THE MOMENT.
-IT'S IN THE PROCESS OF BEING REWRITTEN.  IF YOU GOT IT,
-THEN I CVS COMMITED WHEN I SHOULDN'T HAVE.
-
- FIXME
- FIXME  Add the TONS of necessary documentation
- FIXME
-
- example config (so I know what my syntax is (going to be))
-
- {
-	table => 'table name',
-	primary_key => 'column name' OR [ 'column', 'column2' ],
-	primary_key_user_supplied => 0 | 1 (defaults to 0),
-	primary_key_regexp => regular_expression (defaults to ^\d+$)
-	columns => {
-		name1 => {
-			type => varchar, 
-			length => +int or -1 for unlimited
-			valid => 'email' |'url'| $code_ref
-
-			--- Common to all data types ---
-			regexp => regexp it must match.
-			unique => 0|1 if (the column must be unique)
-			required => 0|1
-			references => {
-				table       => 'name'
-				primary_key => 'column'
-				columns => 'column name' OR [ 'column1', 'column2', 'column3' ]
-				select_label => column or sql concat(foo,bar,baz)
-				select_default => primary_key value for default selected
-				select_extra => 'order by foo or where stuff order by foo, etc.'
-			}
-		},
-		name2 => {
-			type => unsigned_int
-			max  => maximum value
-		},
-		name3 => {
-			type => signed_int
-			max => maximum value
-			min => minimum value
-		},
-		name4 => {
-			type => (un)signed_decimal
-			left => number of digits to left of decimal
-			right => number of digits to right of decimal
-		},
-		name5 => {
-			type => date,
-			min => minimum date (optional) -- magic value: 'now' date must be >= today's date 
-			max => maximum date (optional) -- magic value: 'now' date must be <= today's date
-		},
-		name6 => {
-			type => time
-		},
-		name7 => {
-			type => bit
-		},
-		name8 => {
-			type => password (proposed magic type handling passwords, 
-			                  would assume varchar(32) not null as the column type
-			                  using crypt::passwdMD5
-							 )
-		}
-	},
-	list_options => {
-		default_sort => 'sort_name'
-		sort => {
-			'sort_name'  => [ column, column2, referenced_table.column, referenced_table.column2 ]
-			'sort_name2' => [ column3, column4, referenced_table.column2 ]
-		},
-		search => [
-			['select list label','column'],
-			['select list label2','referenced_table.column']
-		]
-	}
-}
 
 =head1 CVS Log
 
-$Log: Beta.pm,v $
-Revision 1.2  2003/01/03 22:15:19  maverick
-minor bug fixes & enhancements
+$Log: Table.pm,v $
+Revision 1.5  2001/11/21 03:19:09  maverick
+testing cvs
 
-Revision 1.1  2002/02/26 06:45:41  maverick
-Initial check in for the LongOverDueTableModuleRewriteBeta :)
+Revision 1.4  2001/08/15 18:35:48  maverick
+*now* I've removed all the references to Voodoo::Common (I think, I hope)
 
+Revision 1.3  2001/08/15 18:33:50  maverick
+removed references to Voodoo::Common
+
+Revision 1.2  2001/08/15 18:26:28  maverick
+Now offically named Table::Voodoo
+
+Revision 1.1  2001/08/15 15:02:12  maverick
+First big checking after making this it's own project
 
 =cut ################################################################################

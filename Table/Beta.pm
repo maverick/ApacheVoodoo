@@ -2,7 +2,7 @@
 
 =head1 Voodoo::Table
 
-$Id: Beta.pm,v 1.2 2003/01/03 22:15:19 maverick Exp $
+$Id$
 
 =head1 Initial Coding: Maverick
 
@@ -68,7 +68,7 @@ THEN I CVS COMMITED WHEN I SHOULDN'T HAVE.
 		name8 => {
 			type => password (proposed magic type handling passwords, 
 			                  would assume varchar(32) not null as the column type
-			                  using crypt::passwdMD5
+			                  using Crypt::passwdMD5
 							 )
 		}
 	},

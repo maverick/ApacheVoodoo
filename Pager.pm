@@ -14,7 +14,7 @@ any scenario where data must be paginated.
 
 	my $pager = Voodoo::Pager->new('count'   => 40,
 	                               'window'  => 10,
-								   'limit'   => 500,
+	                               'limit'   => 500,
 	                               'persist' => [ ]);
 
 	$pager->set_configuration('count'   => 40,
