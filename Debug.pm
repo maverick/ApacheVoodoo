@@ -145,7 +145,7 @@ sub report {
 	
 			my $i=0;
 			my $match = 1;
-			my ($x,$x,@stack) = split(/~/,$stack);
+			my ($x,$y,@stack) = split(/~/,$stack);
 			foreach (@stack) {
 				unless ($match && $_ eq $last[$i]) {
 					$match=1;

@@ -159,4 +159,4 @@ sub get_skeleton {
 	return shift->{'skeleton'};
 }
 
-"M";
+1;
