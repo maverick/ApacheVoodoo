@@ -1,12 +1,14 @@
-=pod ################################################################################
+#####################################################################################
 
 =head1 Voodoo::Theme
 
-$Id: Theme.pm,v 1.1 2003/01/03 22:12:25 maverick Exp $
+$Id$
 
 =head1 Initial Coding: Maverick
 
 This implements a post_include module that handles all the theme processing.
+
+( And is going to be removed since you can do this sort of thing in CSS much better)
 
 =cut ################################################################################
 
@@ -158,14 +160,3 @@ sub get_skeleton {
 }
 
 "M";
-
-=pod ################################################################################
-
-=head1 CVS Log
-
- $Log: Theme.pm,v $
- Revision 1.1  2003/01/03 22:12:25  maverick
- Theme handler
-
-
-=cut ################################################################################

@@ -1,8 +1,8 @@
-=pod ################################################################################
+#####################################################################################
 
 =head1 Voodoo::ServerConfig
 
-$Id: ServerConfig.pm,v 1.9 2003/01/03 19:22:15 maverick Exp $
+$Id$
 
 =head1 Initial Coding: Maverick
 
@@ -268,19 +268,3 @@ sub debug {
 }
 
 1;
-
-=pod ################################################################################
-
-=head1 CVS Log
-
- $Log: ServerConfig.pm,v $
- Revision 1.9  2003/01/03 19:22:15  maverick
- Handler now uses method interface.
- Zombie preinclude in the path of display_error no longer creates a redirect loop.
-
- Revision 1.8  2002/01/18 03:39:20  maverick
- bugs go squish
-
-
-=cut ################################################################################
-

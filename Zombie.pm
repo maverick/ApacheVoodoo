@@ -1,4 +1,4 @@
-=pod ################################################################################
+#####################################################################################
 
 =head1 NAME
 
@@ -57,30 +57,3 @@ sub AUTOLOAD {
 }
 
 1;
-
-=pod ################################################################################
-
-=head1 CVS Log
-
- $Log: Zombie.pm,v $
- Revision 1.3  2003/01/03 19:23:53  maverick
- Now uses AUTOLOAD to trap any method call that would have been executed on the
- dead module...as opposed to just defining the standard set of 'typical' methods.
-
- Revision 1.2  2001/12/27 05:01:16  maverick
- Dynamic loading scheme reworked.  Seems to be working correctly now
-
- Addition of 'site_root' template var that will always point to the top level
- URL for a given application regardless if it's a virtual host or alias.
-
- changed <pre_include> to <includes> and added post_include to the template_conf section
-
- Changed database parameter layout
-
- Revision 1.1  2001/12/09 00:00:38  maverick
- Added a devel mode where modules are dynamically loaded on the fly if the are changed.
- Added the Zombie module that replaces a dead module (one with a compilation error).
-
-
-=cut ################################################################################
-

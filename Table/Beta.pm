@@ -1,89 +1,18 @@
-=pod ################################################################################
+#####################################################################################
 
-=head1 Voodoo::Table
+=head1 NAME
+
+Voodoo::Table - framework to handle common database operations
+
+=head1 VERSION
 
 $Id$
 
-=head1 Initial Coding: Maverick
-
-NO ONE SHOULD BE USING THIS MODULE AT THE MOMENT.
-IT'S IN THE PROCESS OF BEING REWRITTEN.  IF YOU GOT IT,
-THEN I CVS COMMITED WHEN I SHOULDN'T HAVE.
+=head1 SYNOPSIS
 
  FIXME
  FIXME  Add the TONS of necessary documentation
  FIXME
-
- example config (so I know what my syntax is (going to be))
-
- {
-	table => 'table name',
-	primary_key => 'column name' OR [ 'column', 'column2' ],
-	primary_key_user_supplied => 0 | 1 (defaults to 0),
-	primary_key_regexp => regular_expression (defaults to ^\d+$)
-	columns => {
-		name1 => {
-			type => varchar, 
-			length => +int or -1 for unlimited
-			valid => 'email' |'url'| $code_ref
-
-			--- Common to all data types ---
-			regexp => regexp it must match.
-			unique => 0|1 if (the column must be unique)
-			required => 0|1
-			references => {
-				table       => 'name'
-				primary_key => 'column'
-				columns => 'column name' OR [ 'column1', 'column2', 'column3' ]
-				select_label => column or sql concat(foo,bar,baz)
-				select_default => primary_key value for default selected
-				select_extra => 'order by foo or where stuff order by foo, etc.'
-			}
-		},
-		name2 => {
-			type => unsigned_int
-			max  => maximum value
-		},
-		name3 => {
-			type => signed_int
-			max => maximum value
-			min => minimum value
-		},
-		name4 => {
-			type => (un)signed_decimal
-			left => number of digits to left of decimal
-			right => number of digits to right of decimal
-		},
-		name5 => {
-			type => date,
-			min => minimum date (optional) -- magic value: 'now' date must be >= today's date 
-			max => maximum date (optional) -- magic value: 'now' date must be <= today's date
-		},
-		name6 => {
-			type => time
-		},
-		name7 => {
-			type => bit
-		},
-		name8 => {
-			type => password (proposed magic type handling passwords, 
-			                  would assume varchar(32) not null as the column type
-			                  using Crypt::passwdMD5
-							 )
-		}
-	},
-	list_options => {
-		default_sort => 'sort_name'
-		sort => {
-			'sort_name'  => [ column, column2, referenced_table.column, referenced_table.column2 ]
-			'sort_name2' => [ column3, column4, referenced_table.column2 ]
-		},
-		search => [
-			['select list label','column'],
-			['select list label2','referenced_table.column']
-		]
-	}
-}
 
 =cut ################################################################################
 
@@ -108,7 +37,7 @@ sub new {
 
 	$self->{'pager'} = Voodoo::Pager->new('count'   => 40,
 	                                      'window'  => 10,
-										  'persist' => [ 
+	                                      'persist' => [ 
 	                                          'pattern',
 	                                          'limit',
 	                                          'sort',
@@ -1136,16 +1065,77 @@ sub prep_select {
 
 1;
 
-=pod ################################################################################
+#####################################################################################
 
-=head1 CVS Log
+=head1 EXAMPLE CONFIGURATION
 
-$Log: Beta.pm,v $
-Revision 1.2  2003/01/03 22:15:19  maverick
-minor bug fixes & enhancements
+ {
+	table => 'table name',
+	primary_key => 'column name' OR [ 'column', 'column2' ],
+	primary_key_user_supplied => 0 | 1 (defaults to 0),
+	primary_key_regexp => regular_expression (defaults to ^\d+$)
+	columns => {
+		name1 => {
+			type => varchar, 
+			length => +int or -1 for unlimited
+			valid => 'email' |'url'| $code_ref
 
-Revision 1.1  2002/02/26 06:45:41  maverick
-Initial check in for the LongOverDueTableModuleRewriteBeta :)
-
+			--- Common to all data types ---
+			regexp => regexp it must match.
+			unique => 0|1 if (the column must be unique)
+			required => 0|1
+			references => {
+				table       => 'name'
+				primary_key => 'column'
+				columns => 'column name' OR [ 'column1', 'column2', 'column3' ]
+				select_label => column or sql concat(foo,bar,baz)
+				select_default => primary_key value for default selected
+				select_extra => 'order by foo or where stuff order by foo, etc.'
+			}
+		},
+		name2 => {
+			type => unsigned_int
+			max  => maximum value
+		},
+		name3 => {
+			type => signed_int
+			max => maximum value
+			min => minimum value
+		},
+		name4 => {
+			type => (un)signed_decimal
+			left => number of digits to left of decimal
+			right => number of digits to right of decimal
+		},
+		name5 => {
+			type => date,
+			min => minimum date (optional) -- magic value: 'now' date must be >= today's date 
+			max => maximum date (optional) -- magic value: 'now' date must be <= today's date
+		},
+		name6 => {
+			type => time
+		},
+		name7 => {
+			type => bit
+		},
+		name8 => {
+			type => password (proposed magic type handling passwords, 
+			                  would assume varchar(32) not null as the column type
+			                  using Crypt::passwdMD5
+							 )
+		}
+	},
+	list_options => {
+		default_sort => 'sort_name'
+		sort => {
+			'sort_name'  => [ column, column2, referenced_table.column, referenced_table.column2 ]
+			'sort_name2' => [ column3, column4, referenced_table.column2 ]
+		},
+		search => [
+			['select list label','column'],
+			['select list label2','referenced_table.column']
+		]
+	}
+}
 
 =cut ################################################################################

@@ -1,4 +1,4 @@
-=pod ################################################################################
+####################################################################################
 
 =head1 NAME
 
@@ -660,34 +660,3 @@ sub last_insert_id {
 }
 
 1;
-
-=pod ################################################################################
-
-=head1 CVS Log
-
-$Log: Base.pm,v $
-Revision 1.7  2003/01/03 22:15:19  maverick
-minor bug fixes & enhancements
-
-Revision 1.6  2002/01/13 06:17:10  maverick
--- included the functionality of authz_base
-
-Revision 1.5  2001/12/27 05:01:16  maverick
-Dynamic loading scheme reworked.  Seems to be working correctly now
-
-Addition of 'site_root' template var that will always point to the top level
-URL for a given application regardless if it's a virtual host or alias.
-
-changed <pre_include> to <includes> and added post_include to the template_conf section
-
-Changed database parameter layout
-
-Revision 1.4  2001/12/10 04:20:18  maverick
-Added new debug block section that displays a trace of all the output produced
-by $self->debug each module
-
-Revision 1.3  2001/11/21 03:28:53  maverick
-*** empty log message ***
-
-
-=cut ################################################################################

@@ -1,4 +1,4 @@
-=pod ################################################################################
+#####################################################################################
 
 =head1 Voodoo::Table
 
@@ -989,25 +989,3 @@ sub list {
 }
 
 1;
-
-=pod ################################################################################
-
-=head1 CVS Log
-
-$Log: Table.pm,v $
-Revision 1.5  2001/11/21 03:19:09  maverick
-testing cvs
-
-Revision 1.4  2001/08/15 18:35:48  maverick
-*now* I've removed all the references to Voodoo::Common (I think, I hope)
-
-Revision 1.3  2001/08/15 18:33:50  maverick
-removed references to Voodoo::Common
-
-Revision 1.2  2001/08/15 18:26:28  maverick
-Now offically named Table::Voodoo
-
-Revision 1.1  2001/08/15 15:02:12  maverick
-First big checking after making this it's own project
-
-=cut ################################################################################

@@ -1,3 +1,4 @@
+# $Id$
 package Voodoo::Loader::Static;
 use strict;
 use base("Voodoo::Loader");
