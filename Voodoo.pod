@@ -87,7 +87,7 @@ Fixes, bug reports, ideas and suggestions have been contributed by:
 
 =item Paul Tinsley
 
-=item Jeff Anderson (jeffa on perlmonks.org)
+=item Jeff Anderson L<http://www.perlmonks.org/index.pl?node=jeffa>
 
 =item Kevin Smith
 
@@ -95,7 +95,7 @@ Fixes, bug reports, ideas and suggestions have been contributed by:
 
 =item Eduardo Arino de la Rubia
 
-=item Doug Gruber 
+=item Doug Gruber L<http://search.cpan.org/~dougthug/>
 
 =back
 

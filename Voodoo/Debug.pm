@@ -91,7 +91,7 @@ sub debug {
 	my $header;
 	my $stack;
 	while (my $method = (caller($i+1))[3]) {
-		if ($method =~ /^Voodoo/) {
+		if ($method =~ /^Apache\:\:Voodoo/) {
 			$i++;
 			next;
 		}

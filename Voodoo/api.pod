@@ -42,7 +42,7 @@ Prints user debugging messages to the error_log file and to the 'Debug' section 
 template block. (See L<Apache::Voodoo::Debug> for more details).  Messages can be turn on or off 
 globally using the DEBUG option of the Voodoo configuration file.
 
-If the first parameter to debug is a reference, then the structure is printed using Data::Dumper.
+If any of the parameters to debug a references, they printed using Data::Dumper.
 
  usage:
      return $self->debug('The value of foo is:',$foo);
