@@ -20,3 +20,7 @@ WriteMakefile(
 		AUTHOR         => 'Maverick Edwards <maverick@smurfbane.org>') : ()
 	),
 );
+
+################################################################################
+# Copyright (c) 2005 Steven Edwards.  All rights reserved.
+################################################################################

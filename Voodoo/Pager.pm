@@ -241,6 +241,8 @@ be used by the caller to determine how to properly cut the result set.
         # other stuff this method does
     }
 
+=pod ################################################################################
+
 =head1 EXAMPLE HTML::Template
 
     <tmpl_loop PAGES>
@@ -275,6 +277,18 @@ be used by the caller to determine how to properly cut the result set.
     </tmpl_if>
 
     Page <tmpl_var PAGE_NUMBER> of <tmpl_var NUMBER_PAGES>
+
+=head1 AUTHOR
+
+Maverick, /\/\averick@smurfbaneDOTorg
+
+=head1 COPYRIGHT
+
+Copyright (c) 2005 Steven Edwards.  All rights reserved.
+
+You may use and distribute Voodoo under the terms described in the LICENSE file include
+in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
+of the Artistic License :)
 
 =cut ################################################################################
 

@@ -101,11 +101,10 @@ Fixes, bug reports, ideas and suggestions have been contributed by:
 
 =head1 AUTHOR
 
-Maverick Edwards, /\/\averick@smurfbaneDOTorg
+Maverick, /\/\averick@smurfbaneDOTorg
 
 =head1 COPYRIGHT
 
-Copyright (c) 2005 Maverick Edwards.  All rights reserved.
+Copyright (c) 2005 Steven Edwards.  All rights reserved.
 
-You may use and distribute Voodoo under described in the LICENSE file included with this package.
-The summary is it's a legalese version of the Artistic License :)
+You may use and distribute Voodoo under the terms described in the LICENSE file or L<Apache::Voodoo::license> included with this package.  The summary is it's a legalese version of the Artistic License :)

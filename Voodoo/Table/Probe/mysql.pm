@@ -271,30 +271,18 @@ sub debug {
 
 1;
 
-
 =pod ################################################################################
 
-=head1 CVS Log
+=head1 AUTHOR
 
-$Log: mysql.pm,v $
-Revision 1.4  2001/12/27 05:01:16  maverick
-Dynamic loading scheme reworked.  Seems to be working correctly now
+Maverick, /\/\averick@smurfbaneDOTorg
 
-Addition of 'site_root' template var that will always point to the top level
-URL for a given application regardless if it's a virtual host or alias.
+=head1 COPYRIGHT
 
-changed <pre_include> to <includes> and added post_include to the template_conf section
+Copyright (c) 2005 Steven Edwards.  All rights reserved.
 
-Changed database parameter layout
+You may use and distribute Voodoo under the terms described in the LICENSE file include in
+this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of 
+the Artistic License :)
 
-Revision 1.3  2001/11/21 03:28:53  maverick
-*** empty log message ***
-
-Revision 1.2  2001/09/08 17:23:18  maverick
-*** empty log message ***
-
-Revision 1.1  2001/08/15 17:58:40  maverick
-initial checking after making this part of the TLA project
-
-
-=pod ################################################################################
+=cut ################################################################################

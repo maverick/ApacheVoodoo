@@ -1,6 +1,0 @@
-Revision history for Perl extension t.pm.
-
-0.01  Mon Feb  7 22:07:12 2005
-	- original version; created by h2xs 1.23 with options
-		-AX -n t.pm
-

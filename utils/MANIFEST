@@ -3,6 +3,7 @@ lib/Apache/Voodoo/api.pod
 lib/Apache/Voodoo/Debug.pm
 lib/Apache/Voodoo/DisplayError.pm
 lib/Apache/Voodoo/Handler.pm
+lib/Apache/Voodoo/license.pod
 lib/Apache/Voodoo/Loader/Dynamic.pm
 lib/Apache/Voodoo/Loader.pm
 lib/Apache/Voodoo/Loader/Static.pm
