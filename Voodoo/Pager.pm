@@ -30,6 +30,7 @@ any scenario where data must be paginated.
 package Apache::Voodoo::Pager;
 
 use strict;
+use POSIX qw(ceil);
 use Data::Dumper;
 
 sub new {
@@ -94,7 +95,7 @@ sub paginate {
 			# setup the page list
 			my $numpages = ($res_count / $count);
 			$output{'PAGE_NUMBER'}  = $page;
-			$output{'NUMBER_PAGES'} = int($numpages);
+			$output{'NUMBER_PAGES'} = ceil($numpages);
 
 			if ($numpages > 1) {
 				# setup sliding window of page numbers
