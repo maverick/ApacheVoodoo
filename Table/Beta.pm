@@ -1046,22 +1046,6 @@ sub get_insert_id {
 	return $res->[0]->[0];
 }
 
-sub prep_select {
-	my $self   = shift;
-	my $list   = shift;
-	my $select = shift;
-
-	return [ 
-		map {
-				{
-					"ID"       => $_->[0],
-					"NAME"     => $_->[1],
-					"SELECTED" => ($_->[0] eq $select)?1:0
-				}
-		} @{$list}
-	];
-}
-
 
 1;
 
