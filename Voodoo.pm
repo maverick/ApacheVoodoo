@@ -24,7 +24,6 @@ package Apache::Voodoo;
 use strict;
 
 sub new {
-	print "I AM HERE\n";
 	my $class = shift;
 	my $self = {};
 
