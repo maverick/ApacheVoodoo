@@ -200,30 +200,6 @@ sub db_error {
 	die $errstr;
 }
 
-### old and busted (flexible, but clunky interface)
-sub select_prep {
-	my $self    = shift;
-	my $columns = shift;
-	my $result  = shift;
-	my $select  = shift;
-
-	$select->[0] = lc($select->[0]);
-	$select->[1] = lc($select->[1]);
-
-	my $a_ref = [];
-	foreach my $row (@{$result}) {
-		my $h_ref = {};
-		for (my $i=0; $i < @{$columns}; $i++) {
-			$h_ref->{$columns->[$i]} = $row->[$i];
-			if ($columns->[$i] eq $select->[0] && $row->[$i] eq $select->[1]) {
-				$h_ref->{'selected'} = "selected";
-			}
-		}
-		push(@{$a_ref},$h_ref);
-	}
-	return $a_ref;
-}
-
 #####################################################################################
 
 =item prep_select()
