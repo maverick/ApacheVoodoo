@@ -1,4 +1,4 @@
-#####################################################################################
+=pod #####################################################################################
 
 =head1 Apache::Voodoo::Theme
 
@@ -14,7 +14,7 @@ This implements a post_include module that handles all the theme processing.
 
 package Apache::Voodoo::Theme;
 
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 use strict;
 

@@ -11,7 +11,7 @@ Probes a MySQL database to get information about various tables.
 =cut ################################################################################
 package Apache::Voodoo::Table::Probe::mysql;
 
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 use DBI;
 

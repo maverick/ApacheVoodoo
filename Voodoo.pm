@@ -1,22 +1,17 @@
 ####################################################################################
-
-=head1 NAME
-
-Apache::Voodoo - Base class for all Voodoo page handling modules
-
-=head1 VERSION
-
-$Id$
-
-=head1 SYNOPSIS
-
-This is the object that your modules must inherit from in order to interact correctly
-with Voodoo.  It also provides a set of extremely useful methods.
-
-=cut ################################################################################
+#
+# Apache::Voodoo - Base class for all Voodoo page handling modules
+#
+#
+# $Id$
+# 
+# This is the object that your modules must inherit from in order to interact correctly
+# with Voodoo.  It also provides a set of extremely useful methods.
+#
+####################################################################################
 package Apache::Voodoo;
 
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 use strict;
 use Data::Dumper;
@@ -526,18 +521,18 @@ sub pretty_time {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include in
-this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of 
-the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+#
+# AUTHOR
+#
+# Maverick, /\/\averick@smurfbaneDOTorg
+#
+# COPYRIGHT
+#
+# Copyright (c) 2005 Steven Edwards.  All rights reserved.
+#
+# You may use and distribute Voodoo under the terms described in the
+# LICENSE file include in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of 
+# the Artistic License :)
+#
+################################################################################

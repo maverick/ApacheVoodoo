@@ -1,3 +1,5 @@
+=pod 
+
 =head1 NAME
 
 Apache::Voodoo::Table - framework to handle common database operations

@@ -1,4 +1,4 @@
-#####################################################################################
+=pod #####################################################################################
 
 =head1 Apache::Voodoo::ServerConfig
 
@@ -12,7 +12,7 @@ This handles all of the config file parsing and module loading.
 
 package Apache::Voodoo::ServerConfig;
 
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 use strict;
 use Config::General;

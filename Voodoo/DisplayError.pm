@@ -1,4 +1,4 @@
-#####################################################################################
+=pod #####################################################################################
 
 =head1 NAME
 
@@ -17,7 +17,7 @@ user interaction is through L<Apache::Voodoo>::display_error()
 
 package Apache::Voodoo::DisplayError;
 
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 use strict;
 use base ("Apache::Voodoo");
