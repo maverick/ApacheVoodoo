@@ -9,7 +9,7 @@ The first thing we need to do is modify Apache's configuration file to load Vood
 
 =head2 Example Configuration
 
-  # load these at server start (optional, slighty quicker startup time)
+  # load these at server start (optional, slightly quicker startup time)
   PerlModule Apache::DBI
   PerlModule Apache::Session
   PerlModule HTML::Template
@@ -40,15 +40,15 @@ and Virtual Hosts may also be used in the same manner.
 =item PerlModule Apache::Voodoo::Handler
 
 Loads Voodoo.  This line must be present somewhere inside the 'main' section of the
-apache configuration file...ie. not within a <directory> or <virtual> block.
+apache configuration file...IE. not within a <directory> or <virtual> block.
 
 =item PerlRestartHandler $Apache::Voodoo::Handler->restart
 
-Triggers the initilization of Voodoo on Apache start or restarts.  This let's us use 'graceful' restarts
+Triggers the initialization of Voodoo on Apache start or restarts.  This let's us use 'graceful' restarts
 with apache.  
 
-You need to have mod_perl compiled with support for the Restart Handler.  Some pre-compile versions of
-mod_perl do not include it.  If you get a error about PerlRestartHandler being and invalid directive, 
+You need to have mod_perl compiled with support for the Restart Handler.  Some pre-compiled versions of
+mod_perl do not include it.  If you get an error about PerlRestartHandler being and invalid directive, 
 that's the culprit.
 
 =item SetHandle perl-script
@@ -129,7 +129,7 @@ and 1 for production
 
 =item database
 
-This is a list of database connect info.  Datbases are connected to in the order listed. 
+This is a list of database connect info.  Databases are connected to in the order listed. 
 If the first connection fails the next in the list is used.  An error message is generated 
 in the Apache error log file on a failed connection, but no other action is taken.  
 There are good database monitoring packages out there :) .  The contents of each array element 
@@ -138,7 +138,7 @@ is passed directly to DBI->connect
 =item session_dir
 
 This is the directory that Apache::Session will use to store session information.  This directory must be present
-and writeable by whatever user Apache runs as.
+and writable by whatever user Apache runs as.
 
 =item debug
 
@@ -146,7 +146,7 @@ Enables or disables the debug() method from Apache::Voodoo. and its associated o
 
 =item halt_on_errors
 
-If set to 1, this causes the server to return a 503 (server temprary unavailable) message 
+If set to 1, this causes the server to return a 503 (server temporary unavailable) message 
 for the host if any modules fail to load.  Defaults to 0
 
 =item modules

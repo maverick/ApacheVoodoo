@@ -138,11 +138,11 @@ performs a database update
 
 performs a delete from a table
 
-=item list($p,$additional_where_clase_expression)
+=item list($p,$additional_where_clause_expression)
 
 list all or part of the rows in a table
 
-=item view($p,$additional_where_clase_expression)
+=item view($p,$additional_where_clause_expression)
 
 Displays a particular row from the table
 

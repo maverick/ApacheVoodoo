@@ -1,0 +1,44 @@
+Apache::Voodoo 1.10
+=================
+
+Apache Voodoo, or just Voodoo for short is a web based applicate framework
+for Apache 1.3 and mod_perl.  It's goal is to handle all the repetitious and 
+sometimes tricky/difficult mod_perl stuff for you.  By nature, it enforces
+a clean division of presentation (HTML), logic (your Perl code), and 
+Apache/mod_perl.
+
+Some features include:
+
+    * Abstraction of mod_perl and apache interaction away from the user's code
+    * Separation of presentation and logic via HTML::Template
+    * Dynamic reloading of modules upon change(bypass-able for production sites)
+    * Automatic session management
+    * Automatic database connection and persistence
+    * Powerful database abstraction system vi L<Apache::Voodoo::Table>
+    * Simple enough API that the learning curve is pretty shallow
+    * Integrated debugging tools
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+    Apache::DBI
+    Apache::Session
+    Config::General
+    Email::Valid
+    HTML::Template
+    IPC::Shareable
+    IPC::SharedCache
+    Time::HiRes
+
+COPYRIGHT AND LICENSE
+
+Copyright (C) 2005 by Maverick Edwards < /\/\averick@smurfbaneDOTorg >
+

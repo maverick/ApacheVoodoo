@@ -17,7 +17,10 @@ application's page handling modules.
 =cut ################################################################################
 package Apache::Voodoo::Handler;
 
+$VERSION = '1.10';
+
 use strict;
+use warnings;
 
 use Apache;
 use Apache::Constants qw(:response M_GET);

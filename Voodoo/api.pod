@@ -28,7 +28,7 @@ would normally do inside a new().  For example:
 
 =item db_error()
 
-Used to report catasrtophic database errors to the error_log file and to the web browser.
+Used to report catastrophic database errors to the error_log file and to the web browser.
 If DEBUG is turned on, then the details or the error will be displayed, otherwise a 500
 error is returned to Apache.  This method uses die() internally and thus DOES NOT RETURN.
 
@@ -42,14 +42,14 @@ Prints user debugging messages to the error_log file and to the 'Debug' section 
 template block. (See L<Apache::Voodoo::Debug> for more details).  Messages can be turn on or off 
 globally using the DEBUG option of the Voodoo configuration file.
 
-If the first paramater to debug is a reference, then the structure is printed using Data::Dumper.
+If the first parameter to debug is a reference, then the structure is printed using Data::Dumper.
 
  usage:
      return $self->debug('The value of foo is:',$foo);
 
 =item mark($message)
 
-Optionally addeds a Time::HiRes time stamp to the 'Generation Time' section of the DEBUG
+Optionally appends a Time::HiRes time stamp to the 'Generation Time' section of the DEBUG
 block.  Messages can be turn on or off globally using the DEBUG option of the configuration.
 
  usage:
@@ -108,11 +108,11 @@ has already visited.  For example the page that let's you view a record contains
 'edit' link for that record.  After the edit has finished, odds are you'd want to send
 the user back to that view page.  This can quickly lead to a lot of tedious parameter
 management for those return-to pages. Plus there may be more than one entry point for the
-current module only adding to the complexity.  Tardis provides a convient way search the
+current module only adding to the complexity.  Tardis provides a convenient way search the
 history for a set of URI's and redirect the user back to the first one it finds.
 
 The uri's must contain the full path, relative uri's don't work.  You do not need
-to specify the parameters for that page, in fact doing so would kinda defeate the point :)
+to specify the parameters for that page, in fact doing so would kinda defeat the point :)
 
 If no history items match, it redirects to the previously accessed uri.
 
@@ -207,7 +207,7 @@ Removes leading and trailing whitespace
  usage:
     $value = $self->trim("  <-- these spaces will be removed -->  ");
 
-=item raw_mode($content_type,$conents, [ \%optional_http_headers ] )
+=item raw_mode($content_type,$contents, [ \%optional_http_headers ] )
 
 This method is used to bypass the normal templating subsystem and allows the 'contents'
 to be streamed directly to the browser.  Useful for generating CSVs and binary data 
