@@ -34,7 +34,7 @@ sub new {
 	return $self;
 }
 
-=pod ################################################################################
+#####################################################################################
 
 =item init()
 
@@ -52,7 +52,7 @@ would normally do inside a new().  For example:
 sub init { }
 
 
-=pod ################################################################################
+#####################################################################################
 
 =item redirect()
 
@@ -68,7 +68,7 @@ sub redirect {
 }
 
 
-=pod ################################################################################
+#####################################################################################
 
 =item display_error()
 
@@ -83,7 +83,7 @@ sub display_error {
    	return [ "DISPLAY_ERROR", shift, shift ];
 }
 
-=pod ################################################################################
+#####################################################################################
 
 =item access_denied()
 
@@ -97,13 +97,12 @@ Apache 403 (Forbidden) is returned to the user.
     return $self->access_denied($url_for_access_denied_message);
 
 =cut ################################################################################
-
 sub access_denied {
 	shift;
 	return [ 'ACCESS_DENIED' , shift ];
 }
 
-=pod ################################################################################
+#####################################################################################
 
 =item raw_mode()
 
@@ -115,14 +114,13 @@ from within Voodoo.
      return $self->raw_mode($content_type,$contents,\%optional_http_headers);
 
 =cut ################################################################################
-
 sub raw_mode {
 	shift;
 	return [ 'RAW_MODE' , @_];
 }
 
 
-=pod ################################################################################
+#####################################################################################
 
 =item debug()
 
@@ -142,7 +140,7 @@ sub debug {
 	$Voodoo::Handler::debug->debug(@_) if $Voodoo::Handler::debug;
 }
 
-=pod ################################################################################
+#####################################################################################
 
 =item mark()
 
@@ -167,7 +165,7 @@ sub mark {
 	$Voodoo::Handler::debug->mark(@_) if $Voodoo::Handler::debug;
 }
 
-=pod ################################################################################
+#####################################################################################
 
 =item db_error()
 
@@ -226,7 +224,7 @@ sub select_prep {
 	return $a_ref;
 }
 
-=pod ################################################################################
+#####################################################################################
 
 =item prep_select()
 
@@ -238,10 +236,21 @@ data for you for those 95% cases.
     $return->{'my_list' = $self->prep_select(
         [
 	    [ $id_value,  $select_label  ], 
-            [ $id_value2, $select_label2 ]
+            [ $id_value2, $select_label2 ], ...
         ],
         $id_value_to_mark_selected
     );
+
+    or
+
+    $return->{'my_list' = $self->prep_select(
+        [
+	    [ $id_value,  $select_label  ], 
+            [ $id_value2, $select_label2 ], ...
+        ],
+        [ $selected_id1, $select_id2, ... ]
+    );
+
 
  corresponding HTML::template for select lists (lines broken up for clarity):
      <select name="my_list">
@@ -272,32 +281,32 @@ sub prep_select {
 	my $list   = shift;
 	my $select = shift;
 
+	unless (ref($select)) {
+		$select = [ $select ];
+	} 
+	my %selected = map { $_ => 1 } @{$select};
+
 	return [ 
 		map {
 			{
 				"ID"       => $_->[0],
 				"NAME"     => $_->[1],
-				"SELECTED" => ($_->[0] eq $select)?1:0
+				"SELECTED" => defined $selected{$_->[0]}
 			}
 		} @{$list}
 	];
 }
 
-sub select_multi_prep {
-	my ($self,$result,$selected) = @_;
-	
-	my %selected = map { $_ => 1 } @$selected;
-	my $a_ref    = [
-		map {{
-			id       => $_->[0],
-			name     => $_->[1],
-			selected => defined $selected{$_->[0]}
-		}} @$result 
-	];
+#####################################################################################
 
-	return $a_ref;
-}
+=item trim()
 
+Removes leading and trailing whitespace
+
+ usage:
+    $value = $self->trim($original);
+
+=cut ################################################################################
 sub trim {
 	my $self  = shift;
 	my $param = shift;
@@ -616,6 +625,22 @@ sub safe_text {
 	return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*]*$/;
 }
 
+#####################################################################################
+
+=item history()
+
+Voodoo keeps a running list of the last 10 urls visited in the current session.
+This method provides access to that list.  $index == 0 is the current page,
+$index == 1 is the page before this one.  Successive requests to the same page with 
+different parameters DOES NOT add a new entry to this history, rather it only updates
+the URI parameters for that entry in the history.  For example, if you click the  
+'next' link in paginated result set 10 times, the history doesn't contain 10 entries
+for each of those pages.
+
+ usage:
+    $url = $self->history($session_hash,$index);
+
+=cut ################################################################################
 sub history {
 	my $self = shift;
 	my $session = shift;
@@ -624,6 +649,41 @@ sub history {
 	return $session->{'history'}->[$index]->{'uri'}.'?'.$session->{'history'}->[$index]->{'params'};
 }
 
+#####################################################################################
+
+=item tardis()
+
+Often within a website there is the need to go back to a previous page that the user
+has already visited.  For example the page that let's you view a record contains an 
+'edit' link for that record.  After the edit has finished, odds are you'd want to send
+the user back to that view page.  This can quickly lead to a lot of tedious parameter
+management for those return-to pages. Plus there may be more than one entry point for the
+current module only adding to the complexity.  Tardis provides a convient way search the
+history for a set of URI's and redirect the user back to the first one it finds.
+
+ usage:
+    return $self->tardis($p,'/first/url/no_params','/second/url/no_params');
+
+ example:
+    /admin/view_user and /admin/list_user contain a link to the edit command.  Each
+    takes different parameters and the user could have been on either before clicking
+    the edit link.
+
+    Your edit method could look like this:
+
+    sub edit {
+        my $self = shift;
+        my $p = shift;
+  
+        # do some stuff
+
+        return $self->tardis($p,'/admin/view_user','/admin/list_user');
+    }
+
+    You no longer have to figure out which link they came from, and what parameters they
+    were using at the time.
+
+=cut ################################################################################
 sub tardis {
 	my $self = shift;
 	my $p = shift;
@@ -647,6 +707,16 @@ sub tardis {
 
 	return $self->redirect($self->history($p->{'session'},1));
 }
+
+#####################################################################################
+
+=item last_insert_id()
+
+Returns the value of the last auto_increment id in MySQL
+
+Eventually I'm going to subclass DBI for Voodoo and include this there :)
+
+=cut ################################################################################
 
 sub last_insert_id {
 	my $self = shift;
