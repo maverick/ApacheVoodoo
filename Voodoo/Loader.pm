@@ -41,7 +41,7 @@ sub load_module {
 
 		$module =~ s/^[^:]+:://;
 
-		require "Voodoo/Zombie.pm";
+		require "Apache/Voodoo/Zombie.pm";
 		$obj = Apache::Voodoo::Zombie->new();
 
 		$obj->module($module);

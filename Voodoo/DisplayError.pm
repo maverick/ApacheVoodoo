@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::display_error
+Apache::Voodoo::DisplayError
 
 =head1 VERSION
 
@@ -14,7 +14,8 @@ This module is internal to Voodoo. It's used to provide a generic error page.  E
 user interaction is through L<Apache::Voodoo>::display_error()
 
 =cut ################################################################################
-package Apache::Voodoo::display_error;
+
+package Apache::Voodoo::DisplayError;
 
 use strict;
 use base ("Apache::Voodoo");

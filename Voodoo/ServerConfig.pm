@@ -237,12 +237,12 @@ sub load_module {
 	my $module = shift;
 
 	if ($self->{'dynamic_loading'}) {
-		require "Voodoo/Loader/Dynamic.pm";
+		require "Apache/Voodoo/Loader/Dynamic.pm";
 
 		return Apache::Voodoo::Loader::Dynamic->new($self->{'base_package'}."::$module");
 	}
 	else {
-		require "Voodoo/Loader/Static.pm";
+		require "Apache/Voodoo/Loader/Static.pm";
 
 		my $obj = Apache::Voodoo::Loader::Static->new($self->{'base_package'}."::$module");
 		if (ref($obj) eq "Apache::Voodoo::Zombie") {

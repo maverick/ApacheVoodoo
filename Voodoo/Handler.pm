@@ -33,7 +33,7 @@ $Data::Dumper::Terse = 1;
 
 use Apache::Voodoo::ServerConfig;
 use Apache::Voodoo::Debug;
-use Apache::Voodoo::display_error;
+use Apache::Voodoo::DisplayError;
 
 ######################################
 # GLOBAL CONFIG VARIABLES            #
@@ -607,12 +607,12 @@ sub start_host {
 
 	# ick..this feels wrong...don't know of a cleaner way yet.
 	unless (defined($conf->{'handlers'}->{'display_error'})) {
-		$conf->{'handlers'}->{'display_error'} = Apache::Voodoo::display_error->new();
+		$conf->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
 	}
 
 	if ($conf->{'use_themes'} && !defined($self->{'theme_handler'})) {
 		# we're using themes and the theme handler hasn't been initialized yet
-		require "Voodoo/Theme.pm";
+		require "Apache/Voodoo/Theme.pm";
 		$self->{'theme_handler'} = Apache::Voodoo::Theme->new();
 	}
 }

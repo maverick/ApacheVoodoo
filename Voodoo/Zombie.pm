@@ -12,7 +12,7 @@ $Id$
 
 This module is used by Apache::Voodoo::ServerConfig as a facimily replacement for a dead module
 when halt_on_errors is 0 in the server configuration.  Any calls to this module
-displays and error message via Apache::Voodoo::display_error describing what blew up and
+displays and error message via L<Apache::Voodoo::DisplayError> describing what blew up and
 where.  This is a development tool...you shouldn't have any Zombies in your 
 production server :)
 
