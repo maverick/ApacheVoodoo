@@ -24,6 +24,7 @@ use warnings;
 
 use Apache;
 use Apache::Constants qw(:response M_GET);
+use Apache::Request;
 use Apache::Session::File;
 
 use Apache::DBI;	
@@ -159,7 +160,7 @@ sub handle($$) {
 	####################
 	# get paramaters 
 	####################
-	$run->{'input_params'} = $self->parse_params($r);
+	$run->{'input_params'} = $self->parse_params($r, $host);
 	$debug->mark("parameter parsing");
 
 	####################
@@ -204,29 +205,26 @@ sub handle($$) {
 }
 
 sub parse_params {
-	my $self = shift;
-	my $r    = shift;
+	my $self = shift();
+	my $r    = shift();
+	my $host = shift();
+
+	my $apr  = Apache::Request->new($r,
+	                                POST_MAX => $host->{'upload_size_max'});
+	if($apr->parse()) {
+		$self->display_host_error($r, "File upload has returned the following error:\n".$apr->notes('error-notes'));
+		return OK;
+	}
 
 	my %params;
-	my @p = $r->method eq 'POST' ? $r->content : $r->args;
+	foreach($apr->param) {
+		my @value = $apr->param($_);
+		$params{$_} = @value > 1 ? [@value] : $value[0];
+	}
 
-	# now we step through the list
-	for (my $i=0; $i <= $#p; $i += 2) {
-		if (defined($params{$p[$i]})) {
-			# this is a param we've seen before
-			if (ref($params{$p[$i]})) {
-				# this isn't the first duplicate, so we just push onto the existing array
-				push(@{$params{$p[$i]}},$p[$i+1]);
-			}
-			else {
-				# this is the first duplicate, make an array
-				$params{$p[$i]} = [ $params{$p[$i]}, $p[$i+1] ];
-			}
-		}
-		else {
-			# haven't seen this one before, or it's a singlular param
-			$params{$p[$i]} = $p[$i+1];
-		}
+	my @uploads = $apr->upload;
+	if(@uploads) {
+		$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
 	}
 
 	return \%params;

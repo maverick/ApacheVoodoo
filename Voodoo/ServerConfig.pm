@@ -66,6 +66,7 @@ sub load_config {
 	$self->{'base_package'} = $conf{'base_package'} || $self->{'id'};
 
 	$self->{'session_dir'}     = $conf{'session_dir'};
+	$self->{'upload_size_max'} = $conf{'upload_size_max'} || 5242880;
 	$self->{'session_timeout'} = $conf{'session_timeout'} || 0;
 	$self->{'cookie_name'}     = $conf{'cookie_name'}     || uc($self->{'id'}). "_SID";
 	$self->{'shared_cache'}    = $conf{'shared_cache'}    || 0;
