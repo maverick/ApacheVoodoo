@@ -17,6 +17,7 @@ lib/Apache/Voodoo/Template/debug.tmpl
 lib/Apache/Voodoo/Theme.pm
 lib/Apache/Voodoo/Valid_URL.pm
 lib/Apache/Voodoo/Zombie.pm
+LICENSE
 Makefile.PL
 MANIFEST
 MANIFEST.SKIP
