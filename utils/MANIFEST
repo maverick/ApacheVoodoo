@@ -1,4 +1,5 @@
-Changes
+lib/Apache/Voodoo.pod
+lib/Apache/Voodoo.pm
 lib/Apache/Voodoo/api.pod
 lib/Apache/Voodoo/Debug.pm
 lib/Apache/Voodoo/DisplayError.pm
@@ -8,8 +9,6 @@ lib/Apache/Voodoo/Loader/Dynamic.pm
 lib/Apache/Voodoo/Loader.pm
 lib/Apache/Voodoo/Loader/Static.pm
 lib/Apache/Voodoo/Pager.pm
-lib/Apache/Voodoo.pm
-lib/Apache/Voodoo.pod
 lib/Apache/Voodoo/ServerConfig.pm
 lib/Apache/Voodoo/basics.pod
 lib/Apache/Voodoo/Table.pm
@@ -18,6 +17,7 @@ lib/Apache/Voodoo/Template/debug.tmpl
 lib/Apache/Voodoo/Theme.pm
 lib/Apache/Voodoo/Valid_URL.pm
 lib/Apache/Voodoo/Zombie.pm
+Changes
 LICENSE
 Makefile.PL
 MANIFEST

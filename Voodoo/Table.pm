@@ -1,18 +1,18 @@
-=pod #####################################################################################
-
-=head1 NAME
-
-Apache::Voodoo::Table - framework to handle common database operations
-
-=head1 VERSION
-
-$Id$
-
-=cut ################################################################################
+#####################################################################################
+#
+#  NAME
+#
+# Apache::Voodoo::Table - framework to handle common database operations
+#
+#  VERSION
+# 
+# $Id$
+#
+####################################################################################
 
 package Apache::Voodoo::Table;
 
-$VERSION = '1.11';
+$VERSION = '1.12';
 
 use strict;
 
@@ -1008,18 +1008,18 @@ sub get_insert_id {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include
-in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
-of the Artistic License :)
-
-=cut ################################################################################
+#####################################################################################
+#
+# AUTHOR
+#
+# Maverick, /\/\averick@smurfbaneDOTorg
+#
+# COPYRIGHT
+#
+# Copyright (c) 2005 Steven Edwards.  All rights reserved.
+# 
+# You may use and distribute Voodoo under the terms described in the LICENSE file include
+# in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
+# of the Artistic License :)
+# 
+#####################################################################################

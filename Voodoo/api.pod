@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo API 
+Apache::Voodoo::api 
 
 =head1 Synopsis
 

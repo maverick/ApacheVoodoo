@@ -1,6 +1,6 @@
 package Apache::Voodoo::Valid_URL;
 
-$VERSION = '1.11';
+$VERSION = '1.12';
 
 use strict;
 

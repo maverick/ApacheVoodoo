@@ -8,10 +8,12 @@ $Id: mysql.pm,v 1.4 2001/12/27 05:01:16 maverick Exp $
 
 Probes a MySQL database to get information about various tables.
 
+This is old and crufty and not for public use
+
 =cut ################################################################################
 package Apache::Voodoo::Table::Probe::mysql;
 
-$VERSION = '1.11';
+$VERSION = '1.12';
 
 use DBI;
 

@@ -4,10 +4,6 @@
 
 Apache::Voodoo::Table - framework to handle common database operations
 
-=head1 VERSION
-
-$Id: Table.pm 1451 2005-02-07 19:02:05Z medwards $
-
 =head1 SYNOPSIS
 
  FIXME

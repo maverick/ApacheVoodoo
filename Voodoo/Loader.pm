@@ -13,7 +13,7 @@ and Loader::Dynamic
 
 package Apache::Voodoo::Loader;
 
-$VERSION = '1.11';
+$VERSION = '1.12';
 
 use strict;
 

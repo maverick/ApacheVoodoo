@@ -12,7 +12,7 @@ This handles all of the config file parsing and module loading.
 
 package Apache::Voodoo::ServerConfig;
 
-$VERSION = '1.11';
+$VERSION = '1.12';
 
 use strict;
 use Config::General;
