@@ -2,7 +2,7 @@
 
 =head1 Voodoo::Handler
 
-$Id: Handler.pm,v 1.17 2003/01/03 19:22:15 maverick Exp $
+$Id$
 
 =head1 Initial Coding: Maverick
  
@@ -567,16 +567,17 @@ sub generate_html {
 
 				$return = $obj->$method(
 					{
-						"dir_config"    => $r->dir_config,
 						"dbh"           => $host->{'dbh'},
 						"dbconn"        => $host->{'dbh'},		#DEPRECATED
+						"dir_config"    => $r->dir_config,
 						"document_root" => $host->{'template_dir'},
-						"themes"        => $host->{'themes'},
-						"session"       => $run->{'session'},
 						"params"        => $run->{'input_params'},
 						"parameters"    => $run->{'input_params'},	#DEPRECATED
+						"session"       => $run->{'session'},
 						"template_conf" => $run->{'template_conf'},
-						"uri"           => $run->{'uri'}
+						"themes"        => $host->{'themes'},
+						"uri"           => $run->{'uri'},
+						"user-agent"    => $r->header_in('User-Agent')
 					}
 				);
 			};
