@@ -14,8 +14,9 @@ This is the object that your modules must inherit from in order to interact corr
 with Voodoo.  It also provides a set of extremely useful methods.
 
 =cut ################################################################################
-
 package Apache::Voodoo;
+
+$VERSION = '1.10';
 
 use strict;
 use Data::Dumper;

@@ -12,6 +12,8 @@ $Id$
 
 package Apache::Voodoo::Table;
 
+$VERSION = '1.10';
+
 use strict;
 
 use base("Apache::Voodoo");

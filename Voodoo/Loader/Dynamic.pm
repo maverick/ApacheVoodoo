@@ -1,5 +1,8 @@
 # $Id$
 package Apache::Voodoo::Loader::Dynamic;
+
+$VERSION = '1.10';
+
 use strict;
 use base("Apache::Voodoo::Loader");
 use IPC::Shareable;

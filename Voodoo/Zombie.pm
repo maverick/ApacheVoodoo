@@ -19,6 +19,8 @@ production server :)
 =cut ################################################################################
 package Apache::Voodoo::Zombie;
 
+$VERSION = '1.10';
+
 use strict;
 
 use base("Apache::Voodoo");

@@ -12,6 +12,8 @@ This handles all of the config file parsing and module loading.
 
 package Apache::Voodoo::ServerConfig;
 
+$VERSION = '1.10';
+
 use strict;
 use Config::General;
 use Data::Dumper;

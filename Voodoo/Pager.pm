@@ -29,6 +29,8 @@ any scenario where data must be paginated.
 =cut ################################################################################
 package Apache::Voodoo::Pager;
 
+$VERSION = '1.10';
+
 use strict;
 use POSIX qw(ceil);
 use Data::Dumper;

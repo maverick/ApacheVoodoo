@@ -20,6 +20,8 @@ methods from L<Apache::Voodoo>
 =cut ###########################################################################
 package Apache::Voodoo::Debug;
 
+$VERSION = '1.10';
+
 use strict;
 use Time::HiRes;
 use HTML::Template;

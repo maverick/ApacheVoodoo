@@ -13,6 +13,8 @@ and Loader::Dynamic
 
 package Apache::Voodoo::Loader;
 
+$VERSION = '1.10';
+
 use strict;
 
 sub load_module {

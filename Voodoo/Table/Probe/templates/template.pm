@@ -10,6 +10,8 @@ $Id: template.pm,v 1.2 2001/09/08 17:30:26 maverick Exp $
 
 package %%PACKAGE%%::%%TABLE%%;
 
+$VERSION = '1.10';
+
 use base ("Apache::Voodoo");
 use strict;
 
