@@ -64,7 +64,9 @@ features include:
 
 =head1 BUGS
 
-None that I am aware of with one caveat:
+Does hastily written documentation count? :)
+
+ahem....none that I am aware of with one caveat:
 
 The built in debug template works in Micro$haft Inner.net Exploiter 6, but may not in other
 versions.  I didn't put much effort into making it work in IE; I don't use it and quiet frankly, 
