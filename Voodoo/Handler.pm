@@ -210,7 +210,7 @@ sub parse_params {
 	my %params;
 	my @p = $r->method eq 'POST' ? $r->content : $r->args;
 
-	# no we step through the list
+	# now we step through the list
 	for (my $i=0; $i <= $#p; $i += 2) {
 		if (defined($params{$p[$i]})) {
 			# this is a param we've seen before
