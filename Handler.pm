@@ -1,20 +1,28 @@
 =pod ################################################################################
 
-=head1 Voodoo::Handler
+=head1 NAME
+
+Voodoo::Handler - Main interface between mod_perl and Voodoo
+
+=head1 VERSION
 
 $Id$
 
-=head1 Initial Coding: Maverick
+=head1 SYNOPSIS
  
 This is the main generic presentation module that interfaces with apache, 
 handles session control, database connections, and interfaces with the 
-page handling modules.
+application's page handling modules.
 
-=head1 Apache Configuration
+=head1 APACHE CONFIGURATION
 
-Here is a reference configuration for httpd.conf
+There are a couple of setup steps to begin writing an app with Voodoo, the following sections
+describe those steps.  Some basic understanding of how mod_perl interacts with Apache would be
+helpful ;)
 
-  # load these at server start
+=head2 Example Configuration
+
+  # load these at server start (optional, slighty quicker startup time)
   PerlModule Apache::DBI
   PerlModule Apache::Session
   PerlModule HTML::Template
@@ -25,11 +33,10 @@ Here is a reference configuration for httpd.conf
   # hook in the restart function
   PerlRestartHandler $Voodoo::Handler->restart
 
- DocumentRoot /data/sites/ccm/htdocs
- <Directory /data/sites/ccm/htdocs>
+ <Directory /data/sites/test_app/html>
 	SetHandler perl-script
     PerlHandler $Voodoo::Handler->handle
-    PerlSetVar ID ccm
+    PerlSetVar ID test_app
 
     Options Indexes Includes FollowSymLinks
     AllowOverride None
@@ -41,19 +48,98 @@ Here is a reference configuration for httpd.conf
 The directory block may be repeated as many times as necessary.  Directory Aliases and Virtual Hosts may also
 be used in the same manner.
 
-=head1 Voodoo Configuration
-
 =over 4
 
-=item Config file name
+=item PerlModule Voodoo::Handler
+
+Loads Voodoo.  This line must be present somewhere inside the 'main' section of the
+apache configuration file...ie. not within a <directory> or <virtual> block.
+
+=item SetHandle perl-script
+
+Tells Apache that a mod_perl is going to be use for this directory or virtual host
+	
+=item PerlHandler $Voodoo::Handler->handle
+	
+Tells Apache what method to call to handle requests for this directory
+
+=item PerlSetVar ID name_of_your_app
+
+This let's Voodoo know what application is attached to this directory.  You can run any number of 
+Voodoo powered sites under a single instance of Apache.  This is also corresponds to the name of
+the configuration file, and base package name (unless overridden) of your application.  Names matching 
+/[a-z][\w-]*/i are valid.
+
+=back
+
+=head1 VOODOO CONFIGURATION FILE
+
+Voodoo uses the L<Config::General> module for it's configuration files.  See it's documentation for more
+information on it's syntax rules.
 
 Configuration files for each of the hosts that run under Voodoo are kept in <ServerRoot>/conf/voodoo.
-The name of the file is 'value of the ID param'.conf, in our example, it would be 'ccm.conf'.
+The name of the file is 'value of the ID param'.conf, in our example, it would be 'test_app.conf'.
 
-This is the identifier for this host. This is also used as the top level package name that Voodoo will use in 
+This is the identifier for this application. This is also used as the top level package name that Voodoo will use in 
 loading all other modules.  This can be overridden with the optional BASE_PACKAGE directive.
 
-See perlobj (perldoc perlobj) for more information on objects
+See perlobj L<perlobj> for more information on objects
+
+=head2 Example Configuration
+
+	cookie_name  = ITEST_APP_SID
+	session_timeout = 0
+	shared_cache    = 0
+	session_dir  = /usr/local/apache/sessions/test_app
+	debug = 1
+
+	<database>
+		connect  = "dbi:mysql:database=test_app;host=127.0.0.1;mysql_connect_timeout=2"
+		username = "test_user"
+		password = "test_password"
+	</database>
+	
+	<modules>
+		login
+		admin:	
+	</modules>
+
+	<includes>
+		date
+		main_menu
+	</includes>
+
+	<template_conf>
+
+		<default>
+			skeleton = skeleton.tmpl
+			pre_include = date
+			post_include = index_tree
+		</default>
+
+		<station/add_playlist>
+			skeleton = /blank.tmpl
+		</station/add_playlist>
+
+		<station/helper>
+			skeleton = /blank.tmpl
+		</station/cherker>
+
+		<station/checker>
+			skeleton = /blank.tmpl
+		</station/checker>
+
+		<station/playlist>
+			skeleton = /station/playlist_skeleton.tmpl
+		</station/playlist>
+
+		<station/prefill>
+			skeleton = /blank.tmpl
+		</station/prefill>
+
+	</template_conf>
+
+=over 4
 
 =item cookie_name
 
@@ -82,8 +168,7 @@ This is the directory that Apache::Session will use to store session information
 
 =item debug
 
-Enables or disables the  debug() method from Voodoo::Base. and if a Data::Dumper block
-of the  HTML::Tempalate and Apache::Session params are inserted into the html output.
+Enables or disables the debug() method from Voodoo::Base. and it's associated output on each page.  See L<Voodoo::Debug> for more information.
 
 =item halt_on_errors
 
@@ -98,7 +183,7 @@ Note that the modules names do not contain the base package name.
 =item includes
 
 This contains a list of modules that can be used on a per page basis to inject extra info 
-into the output.  For example, if you wish to have the current date and time appear on every page
+into the output.  For example, if you wish to have the current date and time appear on every page,
 create a module that returns that info, include it in this list and add it to the template_conf section
 accordingly.
 
@@ -133,92 +218,11 @@ content type for the output.  Defaults to text/html
 
 Any other params will be passed to the tempalte directly.
 
+=head1 PAGE MODULES
 
-=head2 Example Configuration
-
-	cookie_name  = CCM_SESSION_ID
-	session_timeout = 0
-	shared_cache    = 0
-	session_dir  = /usr/local/apache/sessions/ccm
-	debug = 1
-
-	<database>
-		connect  = "dbi:mysql:database=ccm;host=127.0.0.1;mysql_connect_timeout=2"
-		username = "ccm"
-		password = "ccm"
-	</database>
-	
-	<modules>
-		admin::admin
-		admin::arbitron_location
-		admin::arbitron_market
-		admin::chart_type
-		admin::change_admin_passwd
-		admin::change_station_passwd
-		admin::division
-		admin::news
-		admin::login
-		admin::station
-		admin::market_location
-		admin::song::artist
-		admin::song::artist_song
-		admin::song::change_record_label_passwd
-		admin::song::promoter
-		admin::song::promoter_song
-		admin::song::record_label
-		admin::song::song
-		admin::song::songwriter
-		admin::song::songwriter_song
-		admin::su
-		label::login
-		station::login
-		station::checker
-		station::helper
-		station::playlist
-		station::prefill
-		station::chart_archive
-	</modules>
-
-	<includes>
-		date
-		index_tree
-	</includes>
-
-	<template_conf>
-
-		<default>
-			skeleton = skeleton.tmpl
-			pre_include = date
-			post_include = index_tree
-		</default>
-
-		<station/add_playlist>
-			skeleton = /blank.tmpl
-		</station/add_playlist>
-
-		<station/helper>
-			skeleton = /blank.tmpl
-		</station/cherker>
-
-		<station/checker>
-			skeleton = /blank.tmpl
-		</station/checker>
-
-		<station/playlist>
-			skeleton = /station/playlist_skeleton.tmpl
-		</station/playlist>
-
-		<station/prefill>
-			skeleton = /blank.tmpl
-		</station/prefill>
-
-	</template_conf>
-
-=head1 Page modules
-
-Each page module must inherit from Voodoo::Base.  This modules provides
-the new() method to make the package a proper object, along with some other minor
-black magic, to make it known to Voodoo what methods this package provides.
+Each page module must inherit from Voodoo::Base.  This modules provides the new() method to make the package a proper object 
+under Voodoo, along with some other minor black magic.  Inheriting from this module provides access to some essential
+methods for interacting with Voodoo.  See L<Voodoo::Base>.
 
 =cut ################################################################################
 
