@@ -2,7 +2,44 @@
 
 Apache::Voodoo API 
 
-=head1 API
+=head1 Synopsis
+
+Each page module must inherit from Apache::Voodoo.  This module provides the new() method to 
+make the package a proper object under Voodoo, along with some other minor black magic.  
+Inheriting from this module provides access to some essential methods for interacting 
+with Voodoo.
+
+    package my_app::index;
+
+	use strict;
+	use base ("Apache::Voodoo");
+
+	sub handle {
+		my $self = shift;
+		my $p    = shift;
+
+		# hash reference of data suitable for passing to the 
+		# params() method in HTML::Tempate
+		return $hash_ref;
+	}
+
+    1;
+
+
+$p is a hash reference that contains plethora of things:
+
+    dbh           => DBI object already connected to the database as described in the Voodoo configuration file
+	dir_config    => Directory configuration directives from Apache (see the mod_perl docs for $r->dir_config)
+	document_root => /path/to/the/document/root/for/this/site
+	params        => key / value pairs of all the url POST or GET parameters
+	session       => Apache::Session object where you may store any client persistant data
+	template_conf => Contents of the matching template_conf section in the Voodoo configuration file
+	uri           => /the/current/url/minus/the/server.com/part/and/parameters
+	user-agent    => User-agent string as presented by the browser
+
+The call and return syntax is the same for any page modules and pre/post includes.
+
+=head1 METHODS INHERITED FROM Apache::Voodoo
 
 =over 4
 
@@ -19,8 +56,6 @@ would normally do inside a new().  For example:
     }
 
 =back
-
-=head1 METHODS
 
 =head2 Debugging
 

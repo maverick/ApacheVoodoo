@@ -1,9 +1,9 @@
-=head1 BASIC SETUP GUIDE
+=head1 SETUP
 
-There are a two  setup steps to begin writing a site with Voodoo.  The following sections
+There are a three setup steps to begin writing a site with Voodoo.  The following sections
 describe those steps.  Some basic understanding of Apache administration is necessary ;)
 
-=head1 Apache Configuration
+=head1 1) Apache Configuration
 
 The first thing we need to do is modify Apache's configuration file to load Voodoo, and to setup our site.
 
@@ -20,10 +20,10 @@ The first thing we need to do is modify Apache's configuration file to load Vood
   # hook in the restart function
   PerlRestartHandler $Apache::Voodoo::Handler->restart
 
- <Directory /data/sites/test_app/html>
+ <Directory /data/sites/my_app/html>
     SetHandler perl-script
     PerlHandler $Apache::Voodoo::Handler->handle
-    PerlSetVar ID test_app
+    PerlSetVar ID my_app
 
     Options Indexes Includes FollowSymLinks
     AllowOverride None
@@ -68,10 +68,10 @@ Names matching /[a-z][a-z0-9_-]*/i are valid.
 
 =back
 
-=head1 Voodoo Configuration File
+=head1 2) Voodoo Configuration File
 
 Each Voodoo site has it's own configuration file that is kept in <ServerRoot>/conf/voodoo.
-The name of the file is "value of the ID param".conf.  So, for our example above, it would be "test_app.conf".
+The name of the file is "value of the ID param".conf.  So, for our example above, it would be "my_app.conf".
 
 This is also used as the top level package name that Voodoo will use in loading all other modules.  
 This can be overridden with the optional BASE_PACKAGE directive.
@@ -81,14 +81,14 @@ information on its syntax rules.
 
 =head2 Example Configuration
 
-	cookie_name  = TEST_APP_SID
+	cookie_name  = my_app_SID
 	session_timeout = 0
 	shared_cache    = 0
-	session_dir  = /usr/local/apache/sessions/test_app
+	session_dir  = /usr/local/apache/sessions/my_app
 	debug = 1
 
 	<database>
-		connect  = "dbi:mysql:database=test_app;host=127.0.0.1;mysql_connect_timeout=2"
+		connect  = "dbi:mysql:database=my_app;host=127.0.0.1;mysql_connect_timeout=2"
 		username = "test_user"
 		password = "test_password"
 	</database>
@@ -156,6 +156,9 @@ This contains the list of page handling modules that will be loaded by Voodoo.
 Note that the modules names do not contain the base package name.  "my_app::index" becomes "index", this
 saves a bunch of typing, but more importantly prevents accidental cross-site module loading.
 
+These modules must reside somewhere within the @INC path, and of course follow Perl's conventions for directory
+and file names. <ServerRoot>/lib/perl would be a good choice as base directory for your modules.
+
 =item includes
 
 This contains a list of modules that can be used on a per page basis to inject extra info 
@@ -193,12 +196,82 @@ content type for the output.  Defaults to text/html
 Any other params will be passed to the template directly, and will be accessible to page handling modules
 via $p->{'template_conf'}
 
-=head1 PAGE MODULES
+=head1 3) Basic Templates
 
-Each page module must inherit from Apache::Voodoo.  This modules provides the new() method to 
-make the package a proper object under Voodoo, along with some other minor black magic.  
-Inheriting from this module provides access to some essential methods for interacting 
-with Voodoo.  See L<Apache::Voodoo>.
+In your html directory, create a file named 'skeleton.tmpl' (or whatever you specified in the 'skeleton' parameter above),
+and place (at least) this in it:
+
+	<html>
+	<TMPL_VAR _MAIN_BODY_>
+	<TMPL_VAR _DEBUG_>
+	</html>
+
+Here's the logic.  The vast majority of the time, every page on a site has the same basic look; the same header, the same footer, 
+the same menu, etc.  What changes page to page is the core content, the meat so to speak.  Why write the HTML for the 
+headers, etc over and over?  Why have to remember to include header and footer templates in every file?  Why have to go 
+back and edit ever file if you want to move the menu from the left to the right side?
+
+This method allows you to write all header/footer stuff once and have a single point of alteration for it.  
+The core content (your other template files), are simply inlined where _MAIN_BODY_ is in the skeleton.
+
+Let's say your index.tmpl file contains:
+
+	<h1>Hello, welcome to my site</h1>
+	Enjoy your stay.
+
+The resulting html as sent to the browswer would be:
+
+    
+	<html>
+	<h1>Hello, welcome to my site</h1>
+	Enjoy your stay.
+	<!-- Voodoo Debug info omitted for clarity-->
+	</html>
+
+Any HTML::Template directives in the skeleton can be controlled by the page modules.  You can think of it this way:
+The individual page template is inserted into the skeleton first and then normal HTML::Template processing is
+done on the entire thing.
+
+Only files that end in .tmpl are processed by Voodoo.  It ignores any other files and leaves them for Apache to
+handle natively.  The .tmpl is optional in the URLs,  http://yoursite.com/index.tmpl and http://yoursite.com/index are
+functionally identical.
+
+=head1 TEMPLATE TO PAGE MODULE MAPPING
+
+Voodoo matches templates to code according to two rules.
+
+=over 4
+
+=item 1) /my/url/path => base_package::my::url::path->handle
+
+If a module exists that matches the URL and it has a method named 'handle', it is called.
+If that fails then it looks for...
+
+=item 2) /my/url/foo_path => base_package::my::url::path->foo
+
+It removes the file name up to the first '_', looks for module matching that url containing
+a method named whatever was removed.
+
+=back
+
+If neither of these rules match, then template is just inserted into the skeleton as is.
+This allows you to create static content without having to make a module that basically does nothing.
+
+The interesting side effect of rule two is that you can't make methods that have a _ in them.
+They would never match the criteria of rule two.  This allows you to make methods that have no 
+way of accidentially being mapped to a URL...just add an underscore to them.
+
+=head2 Examples
+
+	my_app::index->handle        /index			
+	my_app::foo::bar->handle     /foo/bar		
+	my_app::foo::bar_baz->handle /foo/bar_baz    
+	my_app::foo::bar->qux        /foo/qux_bar	
+	my_app::foo::bar->_foo       # won't match any url, it contains an underscore
+
+=head1 MODULE API
+
+The details of how to write modules are covered in L<Apache::Voodoo::api>.
 
 =head1 AUTHOR
 

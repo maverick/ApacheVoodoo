@@ -32,7 +32,7 @@ features include:
 
 =over 4
 
-=item L<Apache::Voodoo::setup> - Basic Setup Guide
+=item L<Apache::Voodoo::basics> - Basics
 
 =item L<Apache::Voodoo::api> - API
 
