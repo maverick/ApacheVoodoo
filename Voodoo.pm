@@ -13,10 +13,6 @@ $Id$
 This is the object that your modules must inherit from in order to interact correctly
 with Voodoo.  It also provides a set of extremely useful methods.
 
-=head1 METHODS
-
-=over 4
-
 =cut ################################################################################
 
 package Apache::Voodoo;
@@ -35,112 +31,12 @@ sub new {
 	return $self;
 }
 
-#####################################################################################
-
-=item init()
-
-Since the new() method is reserved for some Voodoo specific black magic, you may 
-add the init method in your modules to do basically the same sorts of things that you
-would normally do inside a new().  For example:
-
- usage:
-    sub init {
-        my $self = shift;
-        $self->{'some_private_var'} = 'SOME VALUE';
-    }
-
-=cut ################################################################################
 sub init { }
 
+################################################################################
+# Debugging
+################################################################################
 
-#####################################################################################
-
-=item redirect($uri)
-
-Redirects the user to the given URI. These may be absolute or relative
-
- usage:
-	return $self->redirect('/some/uri');
-
-=cut ################################################################################
-sub redirect {
-	shift;
-   	return [ "REDIRECTED" , shift ];
-}
-
-
-#####################################################################################
-
-=item display_error($error,$uri)
-
-Redirects the user to a generic error message display page.
-
- usage:
-	return $self->display_error('stuff went bang!','/index');
-
-=cut ################################################################################
-sub display_error {
-	shift;
-   	return [ "DISPLAY_ERROR", shift, shift ];
-}
-
-#####################################################################################
-
-=item access_denied( [ $uri ] )
-
-This method is used to indicate to the Handler that the user is not allowed
-to access the URI requested.  If the optional parameter is not supplied the standard 
-Apache 403 (Forbidden) is returned to the user.
-
- usage:
-    return $self->access_denied;
-        or
-    return $self->access_denied($url_for_access_denied_message);
-
-=cut ################################################################################
-sub access_denied {
-	shift;
-	return [ 'ACCESS_DENIED' , shift ];
-}
-
-#####################################################################################
-
-=item raw_mode($content_type,$conents, [ \%optional_http_headers ] )
-
-This method is used to bypass the normal templating subsystem and allows the 'contents'
-to be streamed directly to the browser.  Useful for generating CSVs and binary data 
-from within Voodoo.
-
- usage:
-    return $self->raw_mode(
-        'text/csv',
-        $contents,
-        {
-            'Content-disposition' => "attachment;filename=SomeFile.csv"
-        }
-    );
-
-=cut ################################################################################
-sub raw_mode {
-	shift;
-	return [ 'RAW_MODE' , @_ ];
-}
-
-
-#####################################################################################
-
-=item debug($one_message, [ $two_message, ... ] )
-
-Prints user debugging messages to the error_log file and to the 'Debug' section of the DEBUG 
-template block. (See L<Apache::Voodoo::Debug> for more details).  Messages can be turn on or off 
-globally using the DEBUG option of the Voodoo configuration file.
-
-If the first paramater to debug is a reference, then the structure is printed using Data::Dumper.
-
- usage:
-     return $self->debug('The value of foo is:',$foo);
-
-=cut ################################################################################
 sub debug { 
 	my $self = shift;
 
@@ -159,43 +55,136 @@ sub debug {
 	}
 }
 
-#####################################################################################
-
-=item mark($message)
-
-Optionally addeds a Time::HiRes time stamp to the 'Generation Time' section of the DEBUG
-block.  Messages can be turn on or off globally using the DEBUG option of the configuration.
-
- usage:
-     $self->mark('descriptive message about this point in the code');
-
- example:
-
-     $self->mark('Start of big nasty loop');
-     foreach (@lots_of_stuff) {
-         # do stuff
-     }
-     $self->mark('End of big nasty loop');
-       
-=cut ################################################################################
 sub mark {
 	my $self = shift;
 
 	$Apache::Voodoo::Handler::debug->mark(@_);
 }
 
-#####################################################################################
+################################################################################
+# Redirection
+################################################################################
 
-=item db_error()
+sub redirect {
+	shift;
+   	return [ "REDIRECTED" , shift ];
+}
 
-Used to report catasrtophic database errors to the error_log file and to the web browser.
-If DEBUG is turned on, then the details or the error will be displayed, otherwise a 500
-error is returned to Apache.  This method uses die() internally and thus DOES NOT RETURN.
+sub display_error {
+	shift;
+   	return [ "DISPLAY_ERROR", shift, shift ];
+}
 
- usage:
-	$dbh->selectall_arrayref($query) || $self->db_error();
+sub access_denied {
+	shift;
+	return [ 'ACCESS_DENIED' , shift ];
+}
 
-=cut ################################################################################
+
+sub history {
+	my $self = shift;
+	my $session = shift;
+	my $index = shift || 1;
+
+	return $session->{'history'}->[$index]->{'uri'}.'?'.$session->{'history'}->[$index]->{'params'};
+}
+
+sub tardis {
+	my $self = shift;
+	my $p = shift;
+	my $uri = $p->{'uri'};
+	my $history = $p->{'session'}->{'history'};
+
+	my $i;
+	my $find_uri=1;
+	for ($i=0; $i <= $#{$history}; $i++) {
+		if ($find_uri && $p->{'uri'} eq $history->[$i]->{'uri'}) {
+			$find_uri = 0;
+		}
+		else {
+			foreach (@_) {
+				if ($_ eq $history->[$i]->{'uri'}) {
+					return $self->redirect($self->history($p->{'session'},$i));
+				}
+			}
+		}
+	}
+
+	return $self->redirect($self->history($p->{'session'},1));
+}
+
+################################################################################
+# Text Manipulation
+################################################################################
+
+sub mkurlparams {
+	my $self = shift;
+	my $h    = shift;
+	my $o    = shift || {};
+
+	my @return;
+	foreach my $key (keys %{$h}) {
+		next if exists($o->{$key});
+
+		if (ref($h->{$key})) {
+			push(@return, map { "$key=$_" } @{$h->{$key}} );
+		}
+		else {
+			push(@return,"$key=$h->{$key}") if length($h->{$key});
+		}
+	}
+
+	foreach my $key (keys %{$o}) {
+		if (ref($o->{$key})) {
+			push(@return, map { "$key=$_" } @{$o->{$key}} );
+		}
+		else {
+			push(@return,"$key=$o->{$key}") if length($o->{$key});
+		}
+	}
+
+	return join("&",@return);
+}
+
+sub prep_select {
+	my $self   = shift;
+	my $list   = shift;
+	my $select = shift;
+
+	unless (ref($select)) {
+		$select = [ $select ];
+	} 
+	my %selected = map { $_ => 1 } @{$select};
+
+	return [ 
+		map {
+			{
+				"ID"       => $_->[0],
+				"NAME"     => $_->[1],
+				"SELECTED" => defined $selected{$_->[0]}
+			}
+		} @{$list}
+	];
+}
+
+sub safe_text {
+	return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*]*$/;
+}
+
+sub trim {
+	my $self  = shift;
+	my $param = shift;
+
+	$param =~ s/^\s*//o;
+	$param =~ s/\s*$//o;
+
+	return $param;
+}
+
+################################################################################
+# Database Interaction
+################################################################################
+
 sub db_error {
 	my @caller = caller(1);
 
@@ -219,97 +208,179 @@ sub db_error {
 	die $errstr;
 }
 
-#####################################################################################
+sub date_to_sql {
+	my $self = shift;
+	my $date = shift;
 
-=item prep_select($array_of_arrays, [ $selected_value ] )
+	# Get rid of all spaces in the date
+	$date =~ s/\s//go;
 
-Ever notice how when you're making select lists or lists of radio buttons that you end up 
-doing 95% of them exactly the same way?  This method does the HTML::Template-ifying of the
-data for you for those 95% cases.
+	# Split the date up into month day year
+	my ($m,$d,$y) = split(/[\/-]/,$date,3);
 
- usage:
-    $return->{'my_list' = $self->prep_select(
-        [
-	    [ $id_value,  $select_label  ], 
-            [ $id_value2, $select_label2 ], ...
-        ],
-        $id_value_to_mark_selected
-    );
+	# assume two digit years belong in 2000
+	if ($y < 1000) { $y += 2000; }
 
-    or
-
-    $return->{'my_list' = $self->prep_select(
-        [
-	    [ $id_value,  $select_label  ], 
-            [ $id_value2, $select_label2 ], ...
-        ],
-        [ $selected_id1, $select_id2, ... ]
-    );
-
-
- corresponding HTML::template for select lists (lines broken up for clarity):
-     <select name="my_list">
-     <tmpl_loop my_list>
-         <option 
-             value="<tmpl_var ID>" 
-             <tmpl_if SELECTED>selected</tmpl_if>
-         >
-             <tmpl_var NAME>
-         </option>
-     </tmpl_loop>
-     </select>
-
- corresponding HTML::template for radio buttons:
-     <tmpl_loop my_list>
-         <input 
-             type="radio"
-             name="my_list"
-             value="<tmpl_var ID>"
-             <tmpl_if SELECTED>checked</tmpl_if>
-         >
-         <tmpl_var NAME>
-     </tmpl_loop>
-
-=cut ################################################################################
-sub prep_select {
-	my $self   = shift;
-	my $list   = shift;
-	my $select = shift;
-
-	unless (ref($select)) {
-		$select = [ $select ];
-	} 
-	my %selected = map { $_ => 1 } @{$select};
-
-	return [ 
-		map {
-			{
-				"ID"       => $_->[0],
-				"NAME"     => $_->[1],
-				"SELECTED" => defined $selected{$_->[0]}
-			}
-		} @{$list}
-	];
+	return sprintf("%04d-%02d-%02d",$y,$m,$d);
 }
 
-#####################################################################################
+sub last_insert_id {
+	my $self = shift;
+	my $dbh  = shift;
 
-=item trim($string)
+	my $res = $dbh->selectall_arrayref("SELECT LAST_INSERT_ID()") || $self->db_error();
+	
+	return $res->[0]->[0];
+}
 
-Removes leading and trailing whitespace
+# this sub is for use with the callback structure of Apache::Voodoo::Table.
+# $params is injected with a arrayref of column to translate
+#
+# since $params is a reference, the actual columns as seen by the db
+# are added to $params and they get back out that way.
+# all return values are just error messages (if any)
+sub month_year_to_sql {
+	my $self = shift;
+	my $conn = shift;
+	my $params = shift;
 
- usage:
-    $value = $self->trim("  <-- these spaces will be removed -->  ");
+	my @errors;
 
-=cut ################################################################################
-sub trim {
-	my $self  = shift;
-	my $param = shift;
+	foreach my $column (@{$params->{'MONTH_YEAR_COLUMNS'}}) {
 
-	$param =~ s/^\s*//o;
-	$param =~ s/\s*$//o;
+		# see if the present button was nailed
+		if (defined($params->{$column."_present"})) {
+			$params->{$column} = '1/1/1000';
+		}
+		else {
+			my $ok = 1;
+			if (!defined($params->{$column."_month"})) {
+				push(@errors,"MISSING_${column}_month");
+				$ok = 0;
+			}
+			elsif ($params->{$column."_month"} < 1 || $params->{$column."_month"} > 12) {
+				push(@errors,"BAD_${column}_month");
+				$ok = 0;
+			}
 
-	return $param;
+			if (!defined($params->{$column."_year"})) {
+				push(@errors,"MISSING_${column}_year");
+				$ok = 0;
+			}
+			elsif ($params->{$column."_year"} < 1000 || $params->{$column."_year"} > 9999) {
+				push(@errors,"BAD_${column}_year");
+				$ok = 0;
+			}
+
+			if ($ok == 1) {
+				$params->{$column} = $params->{$column."_month"} . "/01/" . $params->{$column."_year"};
+			}
+		}
+	}
+	return @errors;
+}
+
+sub pretty_mysql_timestamp {
+	my $self = shift;
+	my $time = shift;
+
+	# make an array out containing every two digits
+	my @p = ($time =~ /(\d\d)/go);
+
+	return $self->sql_to_date("$p[0]$p[1]-$p[2]-$p[3]")." ".$self->sql_to_time("$p[4]:$p[5]:$p[6]");
+}
+
+sub mysql_timestamp { 
+        my $self = shift; 
+        my $time = shift; 
+ 
+        my @p = localtime($time || time); 
+ 
+        $time =~ /^\d+\.(\d+)$/; 
+        return sprintf("%04d%02d%02d%02d%02d%02d",$p[5]+1900,$p[4]+1, $p[3],$p[3], $p[2], $p[1]);
+}
+
+sub sql_to_date {
+	my $self = shift;
+	my $date = shift;
+
+	if ($date eq "NULL" || $date eq "") {
+		return "";
+	}
+
+	$date =~ s/ .*//go;
+
+	my ($y,$m,$d) = split(/[\/-]/,$date,3);
+
+	return sprintf("%02d/%02d/%04d",$m,$d,$y);
+}
+
+sub sql_to_time {
+	my $self = shift;
+	my $time = shift;
+
+	if ($time eq "NULL" || $time eq "") {
+		return "";
+	}
+
+	$time =~ s/.* //o;
+
+	my ($h,$m,$s) = split(/:/,$time);
+
+	if ($h == 12) {	# noon
+		return sprintf("%2d:%02d PM",$h,$m);
+	}
+	if ($h == 0) {	# midnight
+		return sprintf("%2d:%02d AM",12,$m);
+	}
+	elsif ($h > 12) {
+		return sprintf("%2d:%02d PM",$h-12,$m);
+	}
+	else {
+		return sprintf("%2d:%02d AM",$h,$m);
+	}
+}
+
+sub time_to_sql {
+	my $self = shift;
+	my $time = shift;
+
+	$time =~ s/\s*//go;
+	$time =~ s/\.//go;
+
+	unless ($time =~ /^\d?\d:\d\d(am|pm)?$/io) {
+		return undef;
+	}
+
+	my $pm = 'NA';
+	if ($time =~ s/([ap])m$//igo) {
+		$pm = (lc($1) eq "p")?1:0;
+	}
+
+	my ($h,$m) = split(/:/,$time,2);
+
+	if ($m < 0 || $m > 60) { return undef; }
+
+	if ($h < 0 || $h > 23) { return undef; }
+
+	# 12 am is midnight and 12 pm is noon...I've always hated that.
+	if ($pm eq '1' && $h < 12) {
+		$h += 12;
+	}
+	elsif ($pm eq '0' && $h == 12) {
+		$h = 0;
+	}
+
+	return sprintf("%02d:%02d:00",$h,$m);
+}
+
+################################################################################
+# Misc
+################################################################################
+
+sub raw_mode {
+	shift;
+	return [ 'RAW_MODE' , @_ ];
 }
 
 # Function:  dates_in_order
@@ -420,95 +491,6 @@ sub validate_date {
 	return 1;
 }
 
-sub date_to_sql {
-	my $self = shift;
-	my $date = shift;
-
-	# Get rid of all spaces in the date
-	$date =~ s/\s//go;
-
-	# Split the date up into month day year
-	my ($m,$d,$y) = split(/[\/-]/,$date,3);
-
-	# assume two digit years belong in 2000
-	if ($y < 1000) { $y += 2000; }
-
-	return sprintf("%04d-%02d-%02d",$y,$m,$d);
-}
-
-sub sql_to_date {
-	my $self = shift;
-	my $date = shift;
-
-	if ($date eq "NULL" || $date eq "") {
-		return "";
-	}
-
-	$date =~ s/ .*//go;
-
-	my ($y,$m,$d) = split(/[\/-]/,$date,3);
-
-	return sprintf("%02d/%02d/%04d",$m,$d,$y);
-}
-
-sub sql_to_time {
-	my $self = shift;
-	my $time = shift;
-
-	if ($time eq "NULL" || $time eq "") {
-		return "";
-	}
-
-	$time =~ s/.* //o;
-
-	my ($h,$m,$s) = split(/:/,$time);
-
-	if ($h == 12) {	# noon
-		return sprintf("%2d:%02d PM",$h,$m);
-	}
-	if ($h == 0) {	# midnight
-		return sprintf("%2d:%02d AM",12,$m);
-	}
-	elsif ($h > 12) {
-		return sprintf("%2d:%02d PM",$h-12,$m);
-	}
-	else {
-		return sprintf("%2d:%02d AM",$h,$m);
-	}
-}
-
-sub time_to_sql {
-	my $self = shift;
-	my $time = shift;
-
-	$time =~ s/\s*//go;
-	$time =~ s/\.//go;
-
-	unless ($time =~ /^\d?\d:\d\d(am|pm)?$/io) {
-		return undef;
-	}
-
-	my $pm = 'NA';
-	if ($time =~ s/([ap])m$//igo) {
-		$pm = (lc($1) eq "p")?1:0;
-	}
-
-	my ($h,$m) = split(/:/,$time,2);
-
-	if ($m < 0 || $m > 60) { return undef; }
-
-	if ($h < 0 || $h > 23) { return undef; }
-
-	# 12 am is midnight and 12 pm is noon...I've always hated that.
-	if ($pm eq '1' && $h < 12) {
-		$h += 12;
-	}
-	elsif ($pm eq '0' && $h == 12) {
-		$h = 0;
-	}
-
-	return sprintf("%02d:%02d:00",$h,$m);
-}
 
 sub pretty_time {
 	my $self = shift;
@@ -520,211 +502,5 @@ sub pretty_time {
 	return sprintf("%02d/%02d/%04d %02d:%02d:%02d ",$p[4]+1, $p[3], $p[5]+1900, $p[3], $p[2], $p[1]) . $1;
 }
 
-sub mysql_timestamp { 
-        my $self = shift; 
-        my $time = shift; 
- 
-        my @p = localtime($time || time); 
- 
-        $time =~ /^\d+\.(\d+)$/; 
-        return sprintf("%04d%02d%02d%02d%02d%02d",$p[5]+1900,$p[4]+1, $p[3],$p[3], $p[2], $p[1]);
-}
-
-sub pretty_mysql_timestamp {
-	my $self = shift;
-	my $time = shift;
-
-	# make an array out containing every two digits
-	my @p = ($time =~ /(\d\d)/go);
-
-	return $self->sql_to_date("$p[0]$p[1]-$p[2]-$p[3]")." ".$self->sql_to_time("$p[4]:$p[5]:$p[6]");
-}
-
-# this sub is for use with the callback structure of Apache::Voodoo::Table.
-# $params is injected with a arrayref of column to translate
-#
-# since $params is a reference, the actual columns as seen by the db
-# are added to $params and they get back out that way.
-# all return values are just error messages (if any)
-sub month_year_to_sql {
-	my $self = shift;
-	my $conn = shift;
-	my $params = shift;
-
-	my @errors;
-
-	foreach my $column (@{$params->{'MONTH_YEAR_COLUMNS'}}) {
-
-		# see if the present button was nailed
-		if (defined($params->{$column."_present"})) {
-			$params->{$column} = '1/1/1000';
-		}
-		else {
-			my $ok = 1;
-			if (!defined($params->{$column."_month"})) {
-				push(@errors,"MISSING_${column}_month");
-				$ok = 0;
-			}
-			elsif ($params->{$column."_month"} < 1 || $params->{$column."_month"} > 12) {
-				push(@errors,"BAD_${column}_month");
-				$ok = 0;
-			}
-
-			if (!defined($params->{$column."_year"})) {
-				push(@errors,"MISSING_${column}_year");
-				$ok = 0;
-			}
-			elsif ($params->{$column."_year"} < 1000 || $params->{$column."_year"} > 9999) {
-				push(@errors,"BAD_${column}_year");
-				$ok = 0;
-			}
-
-			if ($ok == 1) {
-				$params->{$column} = $params->{$column."_month"} . "/01/" . $params->{$column."_year"};
-			}
-		}
-	}
-	return @errors;
-}
-
-sub mkurlparams {
-	my $self = shift;
-	my $h    = shift;
-	my $o    = shift || {};
-
-	my @return;
-	foreach my $key (keys %{$h}) {
-		next if exists($o->{$key});
-
-		if (ref($h->{$key})) {
-			push(@return, map { "$key=$_" } @{$h->{$key}} );
-		}
-		else {
-			push(@return,"$key=$h->{$key}") if length($h->{$key});
-		}
-	}
-
-	foreach my $key (keys %{$o}) {
-		if (ref($o->{$key})) {
-			push(@return, map { "$key=$_" } @{$o->{$key}} );
-		}
-		else {
-			push(@return,"$key=$o->{$key}") if length($o->{$key});
-		}
-	}
-
-	return join("&",@return);
-}
-
-sub safe_text {
-	return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*]*$/;
-}
-
-#####################################################################################
-
-=item history($voodo_session,$index)
-
-Voodoo keeps a running list of the last 10 urls visited in the current session.
-This method provides access to that list.  $index == 0 is the current page,
-$index == 1 is the page before this one.  Successive requests to the same page with 
-different parameters DOES NOT add a new entry to this history, rather it only updates
-the URI parameters for that entry in the history.  For example, if you click the  
-'next' link in paginated result set 10 times, the history doesn't contain 10 entries
-for each of those pages.
-
- usage:
-    $url = $self->history($p->{'session'},3);
-
-=cut ################################################################################
-sub history {
-	my $self = shift;
-	my $session = shift;
-	my $index = shift || 1;
-
-	return $session->{'history'}->[$index]->{'uri'}.'?'.$session->{'history'}->[$index]->{'params'};
-}
-
-#####################################################################################
-
-=item tardis($p, $uri1, [$uri2, ...] )
-
-Often within a website there is the need to go back to a previous page that the user
-has already visited.  For example the page that let's you view a record contains an 
-'edit' link for that record.  After the edit has finished, odds are you'd want to send
-the user back to that view page.  This can quickly lead to a lot of tedious parameter
-management for those return-to pages. Plus there may be more than one entry point for the
-current module only adding to the complexity.  Tardis provides a convient way search the
-history for a set of URI's and redirect the user back to the first one it finds.
-
-The uri's must contain the full path, relative uri's don't work.  You do not need
-to specify the parameters for that page, in fact doing so would kinda defeate the point :)
-
-If no history items match, it redirects to the previously accessed uri.
-
- usage:
-    return $self->tardis($p,'/first/url/no_params','/second/url/no_params');
-
- example:
-    /admin/view_user and /admin/list_user contain a link to the edit command.  Each
-    takes different parameters and the user could have been on either before clicking
-    the edit link.
-
-    Your edit method could look like this:
-
-    sub edit {
-        my $self = shift;
-        my $p = shift;
-  
-        # do some stuff
-
-        return $self->tardis($p,'/admin/view_user','/admin/list_user');
-    }
-
-    You no longer have to figure out which link they came from, and what parameters they
-    were using at the time.
-
-=cut ################################################################################
-sub tardis {
-	my $self = shift;
-	my $p = shift;
-	my $uri = $p->{'uri'};
-	my $history = $p->{'session'}->{'history'};
-
-	my $i;
-	my $find_uri=1;
-	for ($i=0; $i <= $#{$history}; $i++) {
-		if ($find_uri && $p->{'uri'} eq $history->[$i]->{'uri'}) {
-			$find_uri = 0;
-		}
-		else {
-			foreach (@_) {
-				if ($_ eq $history->[$i]->{'uri'}) {
-					return $self->redirect($self->history($p->{'session'},$i));
-				}
-			}
-		}
-	}
-
-	return $self->redirect($self->history($p->{'session'},1));
-}
-
-#####################################################################################
-
-=item last_insert_id()
-
-Returns the value of the last auto_increment id in MySQL
-
-Eventually I'm going to subclass DBI for Voodoo and include this there :)
-
-=cut ################################################################################
-
-sub last_insert_id {
-	my $self = shift;
-	my $dbh  = shift;
-
-	my $res = $dbh->selectall_arrayref("SELECT LAST_INSERT_ID()") || $self->db_error();
-	
-	return $res->[0]->[0];
-}
 
 1;

@@ -14,6 +14,81 @@ $Id$
  FIXME  Add the TONS of necessary documentation
  FIXME
 
+=head1 EXAMPLE CONFIGURATION
+
+ {
+	table => 'table name',
+	primary_key => 'column name' OR [ 'column', 'column2' ],
+	primary_key_user_supplied => 0 | 1 (defaults to 0),
+	primary_key_regexp => regular_expression (defaults to ^\d+$)
+	columns => {
+		name1 => {
+			type => varchar, 
+			length => +int or -1 for unlimited
+			valid => 'email' |'url'| $code_ref
+
+			--- Common to all data types ---
+			regexp => regexp it must match.
+			unique => 0|1 if (the column must be unique)
+			required => 0|1
+			references => {
+				table       => 'name'
+				primary_key => 'column'
+				columns => 'column name' OR [ 'column1', 'column2', 'column3' ]
+				select_label => column or sql concat(foo,bar,baz)
+				select_default => primary_key value for default selected
+				select_extra => 'order by foo or where stuff order by foo, etc.'
+			}
+		},
+		name2 => {
+			type => unsigned_int
+			max  => maximum value
+		},
+		name3 => {
+			type => signed_int
+			max => maximum value
+			min => minimum value
+		},
+		name4 => {
+			type => (un)signed_decimal
+			left => number of digits to left of decimal
+			right => number of digits to right of decimal
+		},
+		name5 => {
+			type => date,
+			min => minimum date (optional) -- magic value: 'now' date must be >= today's date 
+			max => maximum date (optional) -- magic value: 'now' date must be <= today's date
+		},
+		name6 => {
+			type => time
+		},
+		name7 => {
+			type => bit
+		},
+		name8 => {
+			type => password (proposed magic type handling passwords, 
+			                  would assume varchar(32) not null as the column type
+			                  using Crypt::passwdMD5
+							 )
+		}
+	},
+	list_options => {
+		default_sort => 'sort_name'
+		sort => {
+			'sort_name'  => [ column, column2, referenced_table.column, referenced_table.column2 ]
+			'sort_name2' => [ column3, column4, referenced_table.column2 ]
+		},
+		search => [
+			['select list label','column'],
+			['select list label2','referenced_table.column']
+		]
+	}
+}
+
+=head1 METHODS
+
+=over 4
+
 =cut ################################################################################
 
 package Apache::Voodoo::Table;
@@ -185,28 +260,39 @@ sub set_configuration {
 	}
 }
 
-#
-# Returns 1 if the the last operation was "successful"
-#   'add'    resulted in a new row
-#   'edit'   resulted in an update to a row
-#   'view'   returned a row
-#   'delete' 1 for 'no' on conformation; 2 for 'yes' and successful deletion
-#   'list'   returns 0 or more rows (no call errors)
-#   'toggle' flipped a row
-#
+=pod ###########################################################################
+
+=item success()
+
+ Returns 1 if the the last operation was "successful"
+   'add'    resulted in a new row
+   'edit'   resulted in an update to a row
+   'view'   returned a row
+   'delete' 1 for 'no' on conformation; 2 for 'yes' and successful deletion
+   'list'   returns 0 or more rows (no call errors)
+   'toggle' flipped a row
+
+=cut ###########################################################################
+
 sub success {
 	my $self = shift;
 
 	return $self->{'success'};
 }
 
-#
-# Returns details on the columns that we changed via edit.  Useful for producing a detailed audit log.
-#
-# Return structure looks like:
-#    [
-#        [ 'column name','old value','new value' ]
-#    ]
+
+=pod ###########################################################################
+
+=item edit_details()
+
+ Returns details on the columns that we changed via edit.  Useful for producing a detailed audit log.
+
+ Return structure looks like:
+    [
+        [ 'column name','old value','new value' ]
+    ]
+
+=cut ###########################################################################
 sub edit_details {
 	my $self = shift;
 
@@ -216,9 +302,13 @@ sub edit_details {
 	return $self->{'edit_details'} || [];
 }
 
-#
-# adds a data validation routine to the add function
-#
+=pod ###########################################################################
+
+=item add_insert_callback($subroutine_reference)
+
+ Adds a data validation routine to the add function
+
+=cut ###########################################################################
 sub add_insert_callback {
 	my $self    = shift;
 	my $sub_ref = shift;
@@ -226,9 +316,13 @@ sub add_insert_callback {
 	push(@{$self->{'insert_callbacks'}},$sub_ref);
 }
 
-#
-# adds a data validation routine to the edit function
-#
+=pod ###########################################################################
+
+=item add_update_callback($subroutine_reference)
+
+ Adds a data validation routine to the edit function
+
+=cut ###########################################################################
 sub add_update_callback {
 	my $self    = shift;
 	my $sub_ref = shift;
@@ -236,9 +330,13 @@ sub add_update_callback {
 	push(@{$self->{'update_callbacks'}},$sub_ref);
 }
 
-#
-# performs a database insertion
-#
+=pod ###########################################################################
+
+=item add($p)
+
+ performs a database insertion
+
+=cut ###########################################################################
 sub add {
 	my $self = shift;
 	my $p = shift;
@@ -366,9 +464,13 @@ sub add {
 	return $errors;
 }
 
-#
-# performs a database update
-#
+=pod ###########################################################################
+
+=item edit($p,$additional_where_clause_expression)
+
+ performs a database update
+
+=cut ###########################################################################
 sub edit {
 	my $self = shift;
 	my $p    = shift;
@@ -527,9 +629,14 @@ sub edit {
 	return $errors;
 }
 
-#
-# performs a delete from a table
-#
+
+=pod ###########################################################################
+
+=item delete($p)
+
+ performs a delete from a table
+
+=cut ###########################################################################
 sub delete {
 	my $self = shift;
 	my $p    = shift;
@@ -596,6 +703,13 @@ sub delete {
 	}
 }
 
+=pod ###########################################################################
+
+=item list($p,$additional_where_clase_expression)
+
+ list all or part of the rows in a table
+
+=cut ###########################################################################
 sub list {
 	my $self = shift;
 	my $p    = shift;
@@ -737,9 +851,13 @@ sub list {
 	return { %return, $self->{'pager'}->paginate($params,$res_count) };
 }
 
-#
-# performs a database select
-#
+=pod ###########################################################################
+
+=item view($p,$additional_where_clase_expression)
+
+ Displays a particular row from the table
+
+=cut ###########################################################################
 sub view {
 	my $self = shift;
 	my $p    = shift;
@@ -818,9 +936,13 @@ sub view {
 	return \%v;
 }
 
-#
-# toggles the column specified by the second parameter
-#
+=pod ###########################################################################
+
+=item toggle($p,$column_name)
+
+ Toggles the column specified by the second parameter
+
+=cut ###########################################################################
 sub toggle {
 	my $self = shift;
 	my $p    = shift;
@@ -1049,77 +1171,3 @@ sub get_insert_id {
 
 1;
 
-#####################################################################################
-
-=head1 EXAMPLE CONFIGURATION
-
- {
-	table => 'table name',
-	primary_key => 'column name' OR [ 'column', 'column2' ],
-	primary_key_user_supplied => 0 | 1 (defaults to 0),
-	primary_key_regexp => regular_expression (defaults to ^\d+$)
-	columns => {
-		name1 => {
-			type => varchar, 
-			length => +int or -1 for unlimited
-			valid => 'email' |'url'| $code_ref
-
-			--- Common to all data types ---
-			regexp => regexp it must match.
-			unique => 0|1 if (the column must be unique)
-			required => 0|1
-			references => {
-				table       => 'name'
-				primary_key => 'column'
-				columns => 'column name' OR [ 'column1', 'column2', 'column3' ]
-				select_label => column or sql concat(foo,bar,baz)
-				select_default => primary_key value for default selected
-				select_extra => 'order by foo or where stuff order by foo, etc.'
-			}
-		},
-		name2 => {
-			type => unsigned_int
-			max  => maximum value
-		},
-		name3 => {
-			type => signed_int
-			max => maximum value
-			min => minimum value
-		},
-		name4 => {
-			type => (un)signed_decimal
-			left => number of digits to left of decimal
-			right => number of digits to right of decimal
-		},
-		name5 => {
-			type => date,
-			min => minimum date (optional) -- magic value: 'now' date must be >= today's date 
-			max => maximum date (optional) -- magic value: 'now' date must be <= today's date
-		},
-		name6 => {
-			type => time
-		},
-		name7 => {
-			type => bit
-		},
-		name8 => {
-			type => password (proposed magic type handling passwords, 
-			                  would assume varchar(32) not null as the column type
-			                  using Crypt::passwdMD5
-							 )
-		}
-	},
-	list_options => {
-		default_sort => 'sort_name'
-		sort => {
-			'sort_name'  => [ column, column2, referenced_table.column, referenced_table.column2 ]
-			'sort_name2' => [ column3, column4, referenced_table.column2 ]
-		},
-		search => [
-			['select list label','column'],
-			['select list label2','referenced_table.column']
-		]
-	}
-}
-
-=cut ################################################################################

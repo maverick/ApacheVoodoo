@@ -1,0 +1,80 @@
+=head1 NAME
+
+Apache::Voodoo - A web application framework for Apache 1.3 and Mod_Perl 1
+
+=head1 SYNOPSIS
+
+Apache::Voodoo provides a fast, flexible and powerful framework for website development.  Some
+features include:
+
+=over 4
+
+=item * Abstraction of mod_perl and apache interaction away from the user's code
+
+=item * Separation of presentation and logic via HTML::Template
+
+=item * Automatic session management
+
+=item * Database persistance
+
+=item * Powerful database abstraction system vi L<Apache::Voodoo::Table>
+
+=back
+
+=head1 Documentation Index
+
+=item L<Apache::Voodoo::setup> - Basic Setup Guide
+
+=item L<Apache::Voodoo::api> - API
+
+=item L<Apache::Voodoo::Table> - Database Abstraction / Manipulation 
+
+=item L<Apache::Voodoo::Pager> - Generic HTML Pagination Controls
+
+=head1 TODO
+
+=over 4
+
+=item 1 Documentation
+
+=item 2 Abstract templating subsystem to allow choice between HTML::Template, Template Toolkit, etc.
+
+=item 3 Documentation
+
+=item 4 Update to run under Apache 2
+
+=item 5 Let's see...um...Documentation
+
+=head1 BUGS
+
+None that I am aware of.  Bug reports, fixes, and any other sort of feedback are most welcome:
+
+=head1 HISTORY
+
+This creature first came to life sometime between 2000 and 2001.  At the time, there was nothing available
+that really suited my needs at the time, so I basically wrote what I wanted :)  Voodoo has been in use and 
+refinement by myself and a small group of my collegues ever since.  It has always been my intent to release
+this thing into the wild, but I could never seem to find the time to clean up a few ugly parts and write
+all the much needed documentation.
+
+=head1 CREDITS
+
+Fixes, bug reports, ideas and suggestions have been contributed by:
+
+=over 4
+
+=item Paul Tinsley
+=item Jeff Anderson (jeffa on perlmonks.org)
+=item Kevin Smith
+=item Mike Semich
+=item Eduardo Arino de la Rubia
+
+=back
+
+=head1 AUTHOR
+
+Maverick Edwards, /\/\averick@smurfbaneDOTorg
+
+=head1 LICENSE
+
+
