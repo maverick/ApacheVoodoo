@@ -5,14 +5,15 @@ WriteMakefile(
 	NAME         => 'Apache::Voodoo',
 	VERSION_FROM => 'lib/Apache/Voodoo/Handler.pm',
 	PREREQ_PM    => {
-		Apache::DBI      => 0,
-		Apache::Session  => 0,
-		Config::General  => 0,
-		Email::Valid     => 0,
-		HTML::Template   => 0,
-		IPC::Shareable   => 0,
-		IPC::SharedCache => 0,
-		Time::HiRes      => 0
+		Apache::DBI      => 0.94,
+		Apache::Session  => 1.6,
+		Config::General  => 2.27,
+		Email::Valid     => 0.15,
+		HTML::Template   => 2.7,
+		IPC::Shareable   => 0.6,
+		IPC::SharedCache => 1.3,
+		Time::HiRes      => 1.65,
+		Apache::Request  => 1.33
 	},
 	(
 		$] >= 5.008 ?
