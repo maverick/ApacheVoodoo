@@ -30,9 +30,9 @@ $p is a hash reference that contains plethora of things:
 
 =over 4 
 
-=item dbh
+=item dbh          
 
- DBI object already connected to the database as described in the Voodoo configuration file.
+DBI object already connected to the database as described in the Voodoo configuration file.
 
 =item dir_config
 
