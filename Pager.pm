@@ -183,7 +183,11 @@ search parameters, sort options, etc, etc.
 
 =head1 METHODS 
 
-returns a hash suitable for passing to HTML::Template using the example template below.
+=over 4
+
+=item paginate()
+
+returns a hashref suitable for passing to L<HTML::Template> using the example template below.
 The entire set of url paramaters is required so that Voodoo::Pager can get access to it's own
 parameters as well as those listed in the persist => [] configuration parameter.
 
@@ -191,6 +195,8 @@ Voodoo::Pager uses two internal paramaters, 'page' and 'showall' to keep track o
 page is the page number of the currently displayed result set (1 origin indexed) and
 showall is set to 1 when the entire result set is being displayed at once.  These values can
 be used by the caller to determine how to properly cut the result set.
+
+=back
 
 =head1 EXAMPLE HTML::Template
 

@@ -721,7 +721,7 @@ the configuration file, and base package name (unless overridden) of your applic
 
 =head1 VOODOO CONFIGURATION FILE
 
-Voodoo uses the L<Config::General> module for its configuration files.  See its documentation for more
+Voodoo uses the L<Config/General> module for its configuration files.  See its documentation for more
 information on its syntax rules.
 
 Configuration files for each of the hosts that run under Voodoo are kept in <ServerRoot>/conf/voodoo.
@@ -730,7 +730,7 @@ The name of the file is 'value of the ID param'.conf, in our example, it would b
 This is the identifier for this application. This is also used as the top level package name that Voodoo will use in 
 loading all other modules.  This can be overridden with the optional BASE_PACKAGE directive.
 
-See perlobj L<perlobj> for more information on objects
+See L<perlobj> for more information on objects
 
 =head2 Example Configuration
 
