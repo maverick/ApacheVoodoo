@@ -21,4 +21,5 @@ Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 README
-t/all.t
+t/check_compilation.t
+t/check_mod_perl_hooks.t
