@@ -122,19 +122,39 @@ sub mkurlparams {
 	my $h    = shift;
 	my $o    = shift || {};
 
+	# keep track of what keys out of $o we've used in a non-destructive
+	# way to the original structure;
+	my %used;
+
 	my @return;
 	foreach my $key (keys %{$h}) {
 		next if exists($o->{$key});
 
-		if (ref($h->{$key})) {
-			push(@return, map { "$key=$_" } @{$h->{$key}} );
+		# if this key is in $o then we use it's values instead of those in $h
+		if (defined($o->{$key})) {
+			if (ref($o->{$key})) {
+				push(@return, map { "$key=$_" } @{$o->{$key}} );
+			}
+			else {
+				push(@return,"$key=$o->{$key}") if length($o->{$key});
+			}
+
+			$used{$key} = 1;
 		}
 		else {
-			push(@return,"$key=$h->{$key}") if length($h->{$key});
+			if (ref($h->{$key})) {
+				push(@return, map { "$key=$_" } @{$h->{$key}} );
+			}
+			else {
+				push(@return,"$key=$h->{$key}") if length($h->{$key});
+			}
 		}
 	}
 
+	# append the data in $o
 	foreach my $key (keys %{$o}) {
+		next if $used{$key}; # this one was used to override the value in $h, skip it
+
 		if (ref($o->{$key})) {
 			push(@return, map { "$key=$_" } @{$o->{$key}} );
 		}
