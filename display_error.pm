@@ -1,10 +1,17 @@
 =pod ################################################################################
 
-$Id: display_error.pm,v 1.4 2003/01/03 22:15:19 maverick Exp $
+=head1 NAME
 
-=head1 Initial Coding: Maverick
+Voodoo::display_error
 
-This module provides a generic error page
+=head1 VERSION
+
+$Id$
+
+=head1 SYNOPSIS
+
+This module is internal to Voodoo. It's used to provide a generic error page.  End
+user interaction is through L<Voodoo::Base>::display_error()
 
 =cut ################################################################################
 package Voodoo::display_error;

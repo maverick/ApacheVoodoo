@@ -1,10 +1,21 @@
 =pod ################################################################################
 
-=head1 Voodoo::Base
+=head1 NAME
 
-$Id: Base.pm,v 1.7 2003/01/03 22:15:19 maverick Exp $
+Voodoo::Base - Base class for all Voodoo::Page handling modules
 
-=head1 Initial Coding: Maverick
+=head1 VERSION
+
+$Id$
+
+=head1 SYNOPSIS
+
+This is the object that your modules must inherit from in order to interact correctly
+with Voodoo.  It also provides a set of extremely useful methods.
+
+=head1 METHODS
+
+=over 4
 
 =cut ################################################################################
 
@@ -25,9 +36,17 @@ sub new {
 
 =pod ################################################################################
 
-=head2 init
+=item init()
 
-This method may be overridden in child classes to perfom perl child initilization
+Since the new() method is reserved for some Voodoo specific black magic, you may 
+create method in your modules to do basically the same sorts of things that you
+would normally do inside a new().  For example:
+
+ usage:
+    sub init {
+        my $self = shift;
+        $self->{'some_private_var'} = 'SOME VALUE';
+    }
 
 =cut ################################################################################
 sub init { }
@@ -35,7 +54,7 @@ sub init { }
 
 =pod ################################################################################
 
-=head2 redirect
+=item redirect()
 
 Redirects the user to the given URI.
 
@@ -51,7 +70,7 @@ sub redirect {
 
 =pod ################################################################################
 
-=head2 display_error
+=item display_error()
 
 Redirects the user to a generic error message display page.
 
@@ -66,16 +85,16 @@ sub display_error {
 
 =pod ################################################################################
 
-=head2 access_denied
+=item access_denied()
+
+This method is used to indicate to the Handler that the user is not allowed
+to access the URI requested.  If the optional parameter is not supplied the standard 
+Apache 403 (Forbidden) is returned to the user.
 
  usage:
     return $self->access_denied;
         or
     return $self->access_denied($url_for_access_denied_message);
-
-This method is used to indicate to the Handler that the user is not allowed
-to access the URI requested.  If the optional parameter is not supplied the standard 
-Apache 403 (Forbidden) is returned to the user.
 
 =cut ################################################################################
 
@@ -84,14 +103,16 @@ sub access_denied {
 	return [ 'ACCESS_DENIED' , shift ];
 }
 
-=head2 raw_mode
+=pod ################################################################################
+
+=item raw_mode()
+
+This method is used to bypass the normal templating subsystem and allows the 'contents'
+to be streamed directly to the browser.  Useful for generating CSVs and binary data 
+from within Voodoo.
 
  usage:
-    return $self->raw_mode('content-type','contents',\%headers_out);
-
-This method is used to bypass the normal templating subsystem and allow the 'contents'
-to be streamed directly to the browser.  Useful for generating CSVs and binary data 
-from within Voodoo
+     return $self->raw_mode($content_type,$contents,\%optional_http_headers);
 
 =cut ################################################################################
 
@@ -103,15 +124,16 @@ sub raw_mode {
 
 =pod ################################################################################
 
-=head2 debug
+=item debug()
 
-Optionally prints user debugging messages to the error_log file and DEBUG template block. 
-Messages can be turn on or off globally using the DEBUG option of the configuration.
+Prints user debugging messages to the error_log file and to the 'Debug' section of the DEBUG 
+template block. (See L<Voodoo::Debug> for more details).  Messages can be turn on or off 
+globally using the DEBUG option of the Voodoo configuration file.
 
 If the first paramater to debug is a reference, then the structure is printed using Data::Dumper.
 
  usage:
-	return $self->debug($one_message,$two_message, ...);
+     return $self->debug($one_message,$two_message, ...);
 
 =cut ################################################################################
 sub debug { 
@@ -120,6 +142,25 @@ sub debug {
 	$Voodoo::Handler::debug->debug(@_) if $Voodoo::Handler::debug;
 }
 
+=pod ################################################################################
+
+=item mark()
+
+Optionally addeds a Time::HiRes time stamp to the 'Generation Time' section of the DEBUG
+block.  Messages can be turn on or off globally using the DEBUG option of the configuration.
+
+ usage:
+     $self->mark('descriptive message about this point in the code');
+
+ example:
+
+     $self->mark('Start of big nasty loop');
+     foreach (@lots_of_stuff) {
+         # do stuff
+     }
+     $self->mark('End of big nasty loop');
+       
+=cut ################################################################################
 sub mark {
 	my $self = shift;
 
@@ -128,10 +169,11 @@ sub mark {
 
 =pod ################################################################################
 
-=head2 db_error
+=item db_error()
 
-Used to report catasrtophic database errors to the error_log file.
-THIS METHOD DOES NOT RETURN
+Used to report catasrtophic database errors to the error_log file and to the web browser.
+If DEBUG is turned on, then the details or the error will be displayed, otherwise a 500
+error is returned to Apache.  This method uses die() internally and thus DOES NOT RETURN.
 
  usage:
 	$dbh->selectall_arrayref($query) || $self->db_error();
@@ -184,10 +226,47 @@ sub select_prep {
 	return $a_ref;
 }
 
-# new hotness (slighly inflexible, but streamlined interface)
-#
-# 95% of the time, select boxes are IDENTICAL. The other 5% you can code yerself
-#
+=pod ################################################################################
+
+=item prep_select()
+
+Ever notice how when you're making select lists or lists of radio buttons that you end up 
+doing 95% of them exactly the same way?  This method does the HTML::Template-ifying of the
+data for you for those 95% cases.
+
+ usage:
+    $return->{'my_list' = $self->prep_select(
+        [
+	    [ $id_value,  $select_label  ], 
+            [ $id_value2, $select_label2 ]
+        ],
+        $id_value_to_mark_selected
+    );
+
+ corresponding HTML::template for select lists (lines broken up for clarity):
+     <select name="my_list">
+     <tmpl_loop my_list>
+         <option 
+             value="<tmpl_var ID>" 
+             <tmpl_if SELECTED>selected</tmpl_if>
+         >
+             <tmpl_var NAME>
+         </option>
+     </tmpl_loop>
+     </select>
+
+ corresponding HTML::template for radio buttons:
+     <tmpl_loop my_list>
+         <input 
+             type="radio"
+             name="my_list"
+             value="<tmpl_var ID>"
+             <tmpl_if SELECTED>checked</tmpl_if>
+         >
+         <tmpl_var NAME>
+     </tmpl_loop>
+
+=cut ################################################################################
 sub prep_select {
 	my $self   = shift;
 	my $list   = shift;

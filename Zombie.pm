@@ -1,16 +1,20 @@
 =pod ################################################################################
 
-=head1 Voodoo::Zombie
+=head1 NAME
 
-$Id: Zombie.pm,v 1.3 2003/01/03 19:23:53 maverick Exp $
+Voodoo::Zombie - Internal module used by Voodoo when a end user module dies on load.
 
-=head1 Initial Coding: Maverick
+=head1 VERSION
 
-This module is used by the Server Config as a facimily replacement for a dead module
+$Id$
+
+=head1 SYNOPSIS
+
+This module is used by Voodoo::ServerConfig as a facimily replacement for a dead module
 when halt_on_errors is 0 in the server configuration.  Any calls to this module
-redirect to display error, with a message stating which module it's replacing and
-the error in that module.  This is a development tool...you shouldn't have any
-Zombies in your production server :)
+displays and error message via Voodoo::Base::display_error describing what blew up and
+where.  This is a development tool...you shouldn't have any Zombies in your 
+production server :)
 
 =cut ################################################################################
 package Voodoo::Zombie;

@@ -1,10 +1,21 @@
 =pod ###########################################################################
 
-=head1 Voodoo::Base
+=head1 NAME
+
+Voodoo::Base
+
+=head1 VERSION
 
 $Id$
 
-=head1 Initial Coding: Maverick
+=head1 SYNOPSIS
+
+This object is used by Voodoo internally to handling various types of debugging
+information and to produce and end user display of that information.  End users 
+never interact with this module directly, instead they use the debug() and mark()
+methods from L<Voodoo::Base>
+
+=head1 OUTPUT
 
 =cut ###########################################################################
 package Voodoo::Debug;

@@ -74,8 +74,8 @@ the configuration file, and base package name (unless overridden) of your applic
 
 =head1 VOODOO CONFIGURATION FILE
 
-Voodoo uses the L<Config::General> module for it's configuration files.  See it's documentation for more
-information on it's syntax rules.
+Voodoo uses the L<Config::General> module for its configuration files.  See its documentation for more
+information on its syntax rules.
 
 Configuration files for each of the hosts that run under Voodoo are kept in <ServerRoot>/conf/voodoo.
 The name of the file is 'value of the ID param'.conf, in our example, it would be 'test_app.conf'.
@@ -87,7 +87,7 @@ See perlobj L<perlobj> for more information on objects
 
 =head2 Example Configuration
 
-	cookie_name  = ITEST_APP_SID
+	cookie_name  = TEST_APP_SID
 	session_timeout = 0
 	shared_cache    = 0
 	session_dir  = /usr/local/apache/sessions/test_app
@@ -101,7 +101,7 @@ See perlobj L<perlobj> for more information on objects
 	
 	<modules>
 		login
-		admin:	
+		admin::login_history
 	</modules>
 
 	<includes>
@@ -110,41 +110,19 @@ See perlobj L<perlobj> for more information on objects
 	</includes>
 
 	<template_conf>
-
 		<default>
 			skeleton = skeleton.tmpl
 			pre_include = date
-			post_include = index_tree
+			post_include = main_menu
 		</default>
-
-		<station/add_playlist>
-			skeleton = /blank.tmpl
-		</station/add_playlist>
-
-		<station/helper>
-			skeleton = /blank.tmpl
-		</station/cherker>
-
-		<station/checker>
-			skeleton = /blank.tmpl
-		</station/checker>
-
-		<station/playlist>
-			skeleton = /station/playlist_skeleton.tmpl
-		</station/playlist>
-
-		<station/prefill>
-			skeleton = /blank.tmpl
-		</station/prefill>
-
 	</template_conf>
 
 =over 4
 
 =item cookie_name
 
-This is and optional parameter that sets the name of the cookie used by Voodoo for session identification.
-If it is not supplied the cookie name will be set to $ID."_SID"
+This is and optional parameter that sets the name of the cookie used by Voodoo 
+for session identification.  If it is not supplied the cookie name will be set to $ID."_SID"
 
 =item session_timeout
 
@@ -157,10 +135,11 @@ and 1 for production
 
 =item database
 
-This is a list of database connect info.  Datbases are connected to in the order listed. if the first connection fails
-the next in the list is used.  An error message is generated in the Apache error log file on a failed connection,
-but no other action is taken.  There are good database monitoring packages out there :) .  The contents of
-each array element is passed directly to DBI->connect
+This is a list of database connect info.  Datbases are connected to in the order listed. 
+If the first connection fails the next in the list is used.  An error message is generated 
+in the Apache error log file on a failed connection, but no other action is taken.  
+There are good database monitoring packages out there :) .  The contents of each array element 
+is passed directly to DBI->connect
 
 =item session_dir
 
@@ -168,7 +147,7 @@ This is the directory that Apache::Session will use to store session information
 
 =item debug
 
-Enables or disables the debug() method from Voodoo::Base. and it's associated output on each page.  See L<Voodoo::Debug> for more information.
+Enables or disables the debug() method from Voodoo::Base. and its associated output on each page.  See L<Voodoo::Debug> for more information.
 
 =item halt_on_errors
 
@@ -220,9 +199,10 @@ Any other params will be passed to the tempalte directly.
 
 =head1 PAGE MODULES
 
-Each page module must inherit from Voodoo::Base.  This modules provides the new() method to make the package a proper object 
-under Voodoo, along with some other minor black magic.  Inheriting from this module provides access to some essential
-methods for interacting with Voodoo.  See L<Voodoo::Base>.
+Each page module must inherit from Voodoo::Base.  This modules provides the new() method to 
+make the package a proper object under Voodoo, along with some other minor black magic.  
+Inheriting from this module provides access to some essential methods for interacting 
+with Voodoo.  See L<Voodoo::Base>.
 
 =cut ################################################################################
 
@@ -257,7 +237,7 @@ use Voodoo::display_error;
 # *barf*
 my %session;
 
-# Debugging object.  I don't like using an 'our' variable, but it's just too much
+# Debugging object.  I don't like using an 'our' variable, but it is just too much
 # of a pain to pass this thing around to everywhere it needs to go, So I just tell
 # myself that this is STDERR on god's own steroids so I can sleep at night.
 our $debug = Voodoo::Debug->new();
@@ -870,75 +850,3 @@ sub html_tidy {
 }
 
 1;
-
-=pod ################################################################################
-
-=head1 CVS Log
-
- $Log: Handler.pm,v $
- Revision 1.17  2003/01/03 19:22:15  maverick
- Handler now uses method interface.
- Zombie preinclude in the path of display_error no longer creates a redirect loop.
-
- Revision 1.16  2002/02/26 06:34:21  maverick
- Added an eval blcok to trap run-time errors from user code.  If debug is on,
- the the error message gets sent to the browser, otherwise a 500 error is returned
-
- Revision 1.15  2002/02/13 18:59:47  maverick
- -- fixed documentation to include correct <database> config block.
-    added example of 'post_include'
- -- fixed bug with coping <template_conf> directives into the template (oops)
- -- changed redirect status from 301 to 302 (perm -> temporary).  Mozilla is
-    smart enough to remember which pages have been permanently moved.
- -- changed display_error to use 'internal_redirect'.  That way you don't see the
-    error number and 'zombied' modules can be tried again by hitting the reload
-    button in the browser.
-
- Revision 1.14  2002/01/18 03:39:20  maverick
- bugs go squish
-
- Revision 1.13  2002/01/13 06:14:14  maverick
- Revision 1.12  2001/12/30 02:02:18  maverick
- -- The template_conf section is now a union of the default and page specific sections.
-    (with the page specific ones overridding)
- -- minor speed improvements
-
- Revision 1.11  2001/12/29 22:59:24  maverick
- -- loop context vars added back...disappeared somewhere.
-
- Revision 1.10  2001/12/27 05:01:16  maverick
- -- Dynamic loading scheme reworked.  Seems to be working correctly now
-
- Addition of 'site_root' template var that will always point to the top level
- -- URL for a given application regardless if it's a virtual host or alias.
- -- changed <pre_include> to <includes> and added post_include to the template_conf section
- -- Changed database parameter layout
-
- Revision 1.9  2001/12/10 04:20:18  maverick
- -- Added new debug block section that displays a trace of all the output produced
-    by $self->debug each module
-
- Revision 1.8  2001/12/09 00:00:38  maverick
- -- Added a devel mode where modules are dynamically loaded on the fly if the are changed.
- -- Added the Zombie module that replaces a dead module (one with a compilation error).
-
- Revision 1.5  2001/11/21 03:32:37  maverick
- -- New CVS checkin
-
- Revision 1.4  2001/11/19 00:08:15  maverick
- -- Completely reworked the module loading mechanism (see Voodoo::ServerConfig).
- -- 'apachectl restart' will now reload all the modules from scratch.
- -- failed compilation of a module does not prevent the server from starting,
-    The compilation error is displayed and the next module is loaded,
-    if a host has any errors, the configuration for it is ignored.
- 
- Revision 1.3  2001/09/25 20:17:39  maverick
- -- Handler can now be used with aliases and supports configurable content types
- 
- Revision 1.2  2001/09/08 17:23:18  maverick
- *** empty log message ***
- 
- Revision 1.1  2001/08/15 15:02:12  maverick
- First big checking after making this it's own project
-
-=cut ################################################################################
