@@ -180,7 +180,7 @@ sub handle($$) {
 			$debug_enabled = $run->{'session'}->{'DEBUG'};
 		}
 	}
-	$debug->{'enabled'} = $debug_enabled;
+	$debug->enable($debug_enabled);
 
 	####################
 	# Get configuation for this template or section

@@ -143,7 +143,7 @@ If the first paramater to debug is a reference, then the structure is printed us
 sub debug { 
 	my $self = shift;
 
-	$Apache::Voodoo::Handler::debug->debug(@_) if $Apache::Voodoo::Handler::debug;
+	$Apache::Voodoo::Handler::debug->debug(@_);
 }
 
 #####################################################################################
@@ -168,7 +168,7 @@ block.  Messages can be turn on or off globally using the DEBUG option of the co
 sub mark {
 	my $self = shift;
 
-	$Apache::Voodoo::Handler::debug->mark(@_) if $Apache::Voodoo::Handler::debug;
+	$Apache::Voodoo::Handler::debug->mark(@_);
 }
 
 #####################################################################################

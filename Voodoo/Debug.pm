@@ -60,8 +60,9 @@ sub reset {
 
 sub enable {
 	my $self = shift;
+        my $set  = shift;
 
-	$self->{'enabled'} = 1;
+	$self->{'enabled'} = (defined $set)?$set:1;
 }
 
 sub disable {
