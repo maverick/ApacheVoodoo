@@ -53,7 +53,9 @@ sub debug {
 sub mark {
 	my $self = shift;
 
-	$Apache::Voodoo::Handler::debug->mark(@_);
+	if (defined($Apache::Voodoo::Handler::debug)) {
+		$Apache::Voodoo::Handler::debug->mark(@_);
+	}
 }
 
 ################################################################################
