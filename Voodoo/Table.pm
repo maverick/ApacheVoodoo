@@ -21,7 +21,7 @@ use Data::Dumper;
 
 use Email::Valid;
 
-use Apache::Voodoo::Valid_URL;
+use Apache::Voodoo::ValidURL;
 use Apache::Voodoo::Pager;
 
 sub new {
@@ -870,7 +870,7 @@ sub _process_params {
 				}
 			}
 			elsif($_->{'valid'} eq "url") {
-				if (length($v{$_->{'name'}}) && Apache::Voodoo::Valid_URL::valid_url($v{$_->{'name'}}) == 0) {
+				if (length($v{$_->{'name'}}) && Apache::Voodoo::ValidURL::valid_url($v{$_->{'name'}}) == 0) {
 					$errors{'BAD_'.$_->{'name'}} = 1;
 				}
 			}

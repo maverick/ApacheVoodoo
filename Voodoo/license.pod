@@ -1,6 +1,8 @@
 =pod 
 
-=head1 LICENSE
+=head1 NAME
+
+Apache::Voodoo::license - License Terms for Voodoo
 
 =head1 Preamble:
 

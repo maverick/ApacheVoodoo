@@ -1,5 +1,9 @@
 =pod 
 
+=head1 NAME
+
+Apache::Voodoo::basics - The Basics of Voodoo setup and operation
+
 =head1 SETUP
 
 There are a three setup steps to begin writing a site with Voodoo.  The following sections
@@ -34,8 +38,8 @@ The first thing we need to do is modify Apache's configuration file to load Vood
     Allow from all
  </Directory>
 
-The directory block may be repeated as many times as necessary to setup multiple sites.  Directory Aliases 
-and Virtual Hosts may also be used in the same manner.
+The directory block may be repeated as many times as necessary to setup multiple sites.
+Directory Aliases and Virtual Hosts may also be used in the same manner.
 
 =over 4
 
@@ -46,12 +50,12 @@ apache configuration file...IE. not within a <directory> or <virtual> block.
 
 =item PerlRestartHandler $Apache::Voodoo::Handler->restart
 
-Triggers the initialization of Voodoo on Apache start or restarts.  This let's us use 'graceful' restarts
-with apache.  
+Triggers the initialization of Voodoo on Apache start or restarts.  This let's us use 'graceful'
+restarts with apache.  
 
-You need to have mod_perl compiled with support for the Restart Handler.  Some pre-compiled versions of
-mod_perl do not include it.  If you get an error about PerlRestartHandler being and invalid directive, 
-that's the culprit.
+You need to have mod_perl compiled with support for the Restart Handler.  Some pre-compiled
+versions of mod_perl do not include it.  If you get an error about PerlRestartHandler being
+and invalid directive, that's the culprit.
 
 =item SetHandle perl-script
 
@@ -63,8 +67,9 @@ Tells Apache what method to call to handle requests for this directory
 
 =item PerlSetVar ID name_of_your_app
 
-This let's Voodoo know what application is attached to this directory.  This also corresponds to the name of
-the Voodoo configuration file, and base package name (unless overridden) of your application.  
+This let's Voodoo know what application is attached to this directory.  This also corresponds
+to the name of the Voodoo configuration file, and base package name (unless overridden) of
+your application.  
 
 Names matching /[a-z][a-z0-9_-]*/i are valid.
 

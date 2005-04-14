@@ -92,6 +92,7 @@ sub paginate {
 		else {
 			if ($res_count < $self->{'limit'}) {
 				$output{'MODE_PARAMS'} .= "&showall=1";
+				$output{'SHOW_MODE'} = 1;
 			}
 
 			# setup the page list

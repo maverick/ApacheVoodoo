@@ -20,7 +20,6 @@ package Apache::Voodoo::Handler;
 $VERSION = '1.12';
 
 use strict;
-use warnings;
 
 use Apache;
 use Apache::Constants qw(:response M_GET);
