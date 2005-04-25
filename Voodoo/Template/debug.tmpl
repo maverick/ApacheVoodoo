@@ -1,12 +1,12 @@
 <!-- $Id$ -->
 <TMPL_IF NAME="DEBUG">
 <script>
-var __YourBrowserIsCrap__ = (navigator.userAgent.toLowerCase().indexOf("msie") != -1);
-function vd_toggle (obj) {
+var __YourBrowserIsBroken__ = (navigator.userAgent.toLowerCase().indexOf("msie") != -1);
+function vd_toggle (obj, toplevel) {
 	obj.parentNode.className = (obj.parentNode.className == "vdOpen") ? 'vdClosed' : 'vdOpen';
 	
 	// Prevents IE rendering stupidity with layers over select lists
-	if (__YourBrowserIsCrap__) {
+	if (__YourBrowserIsBroken__ && toplevel == 1) {
 
 		var selectState = (obj.parentNode.className == "vdOpen") ? 'hidden': 'visible';
 		var selects = document.getElementsByTagName("SELECT");
@@ -94,7 +94,7 @@ div.voodooDebug .vdDepth15 { margin-left: 26em; white-space: pre; }
 
 <div class=voodooDebug>
 	<div class="vdClosed">
-		<span onClick="vd_toggle(this);">Debug</span>
+		<span onClick="vd_toggle(this,1);">Debug</span>
 		<div class="vdContent">
 			<div class="vdClosed">
 				<span onClick="vd_toggle(this);">Generation Time</span>
