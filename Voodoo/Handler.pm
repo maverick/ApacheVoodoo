@@ -408,6 +408,9 @@ sub generate_html {
 						}
 						return $self->redirect($r,$return->[1]);
 					}
+					elsif (-e $host->{'template_dir'}."/access_denied.tmpl") {
+						return $self->redirect($r,$host->{'site_root'}."access_denied");
+					}
 					else {
 						return FORBIDDEN;
 					}
