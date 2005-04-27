@@ -2,13 +2,20 @@
 <TMPL_IF NAME="DEBUG">
 <script>
 var __YourBrowserIsBroken__ = (navigator.userAgent.toLowerCase().indexOf("msie") != -1);
-function vd_toggle (obj, toplevel) {
+function vd_toggle (obj, topLevel) {
 	obj.parentNode.className = (obj.parentNode.className == "vdOpen") ? 'vdClosed' : 'vdOpen';
 	
 	// Prevents IE rendering stupidity with layers over select lists
-	if (__YourBrowserIsBroken__ && toplevel == 1) {
+	if (__YourBrowserIsBroken__) {
 
-		var selectState = (obj.parentNode.className == "vdOpen") ? 'hidden': 'visible';
+		var selectState;
+                if (topLevel == 1) {
+			selectState = (obj.parentNode.className == "vdOpen") ? 'hidden': 'visible';
+		}
+		else {
+			selectState = 'hidden';
+		}
+
 		var selects = document.getElementsByTagName("SELECT");
 
 		for (var i = 0; i < selects.length; i++) {
