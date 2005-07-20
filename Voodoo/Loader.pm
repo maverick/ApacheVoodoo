@@ -16,6 +16,7 @@ package Apache::Voodoo::Loader;
 $VERSION = '1.12';
 
 use strict;
+use Apache;
 
 sub load_module {
 	my $self = shift;
@@ -38,7 +39,7 @@ sub load_module {
 		$obj = $module->new;
 	};
 	if ($@) {
-		print STDERR "Failed to load $module: $@\n";
+		Apache->server->log_error("Failed to load $module: $@");
 		my $error = $@;
 
 		$module =~ s/^[^:]+:://;

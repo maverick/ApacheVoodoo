@@ -54,9 +54,20 @@ my %session;
 # myself that this is STDERR on god's own steroids so I can sleep at night.
 our $debug = Apache::Voodoo::Debug->new();
 
-$Apache::Voodoo::Handler = bless {};
+$Apache::Voodoo::Handler = Apache::Voodoo::Handler->new();
 
-sub handle($$) {
+sub new {
+	my $class = shift;
+	my $self = {@_};
+	bless $self, $class;
+
+	$self->restart;
+
+	return $self;
+}
+
+
+sub handle ($$) {
 	my $self = shift;
 	my $r    = shift;
 
@@ -67,7 +78,7 @@ sub handle($$) {
 	}
 
 	unless (defined($self->{'hosts'}->{$id})) {
-		$r->log_error("host id '$id' unknown");
+		$r->log_error("host id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'hosts'}}));
 		return 503;
 	}
 
@@ -422,7 +433,7 @@ sub generate_html {
 					return OK;
 				}
 				else {
-					print STDERR "AIEEE!! $return->[0] is not a supported command\n";
+					$r->log_error("AIEEE!! $return->[0] is not a supported command");
 					$return = {};
 				}
 			}
@@ -544,80 +555,80 @@ sub display_host_error {
 	$r->rflush();
 }
 
-sub restart($$) { 
+sub restart { 
 	my $self = shift;
-	my $r    = shift;
-
-	print STDERR "Voodoo starting...\n";
 
 	# wipe / initialize host information
 	$self->{'hosts'} = {};
 
-	my $conf_dir = $r->server_root_relative("conf/voodoo");
-	opendir(DIR,$conf_dir) || die "Can't open configuration dir: $!";
+	my $s = Apache->server;
+	$s->log_error("Voodoo starting...");
+
+	my $conf_dir = Apache->server_root_relative("conf/voodoo");
+
+	unless(opendir(DIR,$conf_dir)) {
+		$s->log_error("Can't open configuration dir: $!");
+		return;
+	}
+
 	foreach (readdir(DIR)) {
 		next unless $_ =~ /[a-zA-Z]\w*\.conf$/;
 		next unless -f "$conf_dir/$_";
 		next unless -r "$conf_dir/$_";
 
-		print STDERR "starting host $_\n";
+		$s->log_error("starting host $_");
 
-		$self->start_host("$conf_dir/$_");
+		my $conf = Apache::Voodoo::ServerConfig->new("$conf_dir/$_");
+
+		# check to see if we can get a database connection
+		foreach (@{$conf->{'dbs'}}) {
+			$conf->{'dbh'} = DBI->connect(@{$_});
+			last if $conf->{'dbh'};
+			
+			$s->log_error("========================================================");
+			$s->log_error("DB CONNECT FAILED FOR ".$conf->{'id'});
+			$s->log_error("$DBI::errstr");
+			$s->log_error("========================================================");
+		}
+
+		# if the database connection was invalid (or there wasn't one, this would 'die'.  
+		# eval wrap is to trap and trow away this possible error ('cause we don't care)
+		eval {
+			$conf->{'dbh'}->disconnect;
+		};
+
+		$self->{'hosts'}->{$conf->{'id'}} = $conf;
+		
+		# notifiy of start errors
+		$self->{'hosts'}->{$conf->{'id'}}->{"DEAD"} = 0;
+
+		if ($conf->{'errors'}) {
+			$s->log_error($conf->{'id'}." has ".$conf->{'errors'}." errors");
+			if ($conf->{'halt_on_errors'}) {
+				$s->log_error(" (dropping this site)");
+
+				$self->{'hosts'}->{$conf->{'id'}}->{"DEAD"} = 1;
+
+				return;
+			}
+			else {
+				$s->log_error(" (loading anyway)");
+			}
+		}
+
+		# ick..this feels wrong...don't know of a cleaner way yet.
+		unless (defined($conf->{'handlers'}->{'display_error'})) {
+			$conf->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
+		}
+
+		if ($conf->{'use_themes'} && !defined($self->{'theme_handler'})) {
+			# we're using themes and the theme handler hasn't been initialized yet
+			require "Apache/Voodoo/Theme.pm";
+			$self->{'theme_handler'} = Apache::Voodoo::Theme->new();
+		}
 	}
 	closedir(DIR);
-}
 
-
-sub start_host {
-	my $self = shift;
-	my $conf = Apache::Voodoo::ServerConfig->new(shift);
-
-	# check to see if we can get a database connection
-	foreach (@{$conf->{'dbs'}}) {
-		$conf->{'dbh'} = DBI->connect(@{$_});
-		last if $conf->{'dbh'};
-		
-		print STDERR "========================================================\n";
-		print STDERR "DB CONNECT FAILED FOR ".$conf->{'id'}."\n";
-		print STDERR "$DBI::errstr\n";
-		print STDERR "========================================================\n";
-	}
-
-	# if the database connection was invalid (or there wasn't one, this would 'die'.  
-	# eval wrap is to trap and trow away this possible error ('cause we don't care)
-	eval {
-		$conf->{'dbh'}->disconnect;
-	};
-
-	$self->{'hosts'}->{$conf->{'id'}} = $conf;
-	
-	# notifiy of start errors
-	$self->{'hosts'}->{$conf->{'id'}}->{"DEAD"} = 0;
-
-	if ($conf->{'errors'}) {
-		print STDERR $conf->{'id'}." has ".$conf->{'errors'}." errors";
-		if ($conf->{'halt_on_errors'}) {
-			print STDERR " (dropping this site)\n";
-
-			$self->{'hosts'}->{$conf->{'id'}}->{"DEAD"} = 1;
-
-			return;
-		}
-		else {
-			print STDERR " (loading anyway)\n";
-		}
-	}
-
-	# ick..this feels wrong...don't know of a cleaner way yet.
-	unless (defined($conf->{'handlers'}->{'display_error'})) {
-		$conf->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
-	}
-
-	if ($conf->{'use_themes'} && !defined($self->{'theme_handler'})) {
-		# we're using themes and the theme handler hasn't been initialized yet
-		require "Apache/Voodoo/Theme.pm";
-		$self->{'theme_handler'} = Apache::Voodoo::Theme->new();
-	}
 }
 
 sub untie {

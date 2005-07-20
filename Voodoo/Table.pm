@@ -345,7 +345,7 @@ sub edit {
 	$self->{'success'} = 0;
 	$self->{'edit_details'} = [];
 
-	my $dbh      = $p->{'dbh'};
+	my $dbh       = $p->{'dbh'};
 	my $session   = $p->{'session'};
 	my $params    = $p->{'params'};
 
