@@ -29,17 +29,10 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 
+	$self->{'pager'} = Apache::Voodoo::Pager->new();
+
 	$self->set_configuration(shift);
 
-	$self->{'pager'} = Apache::Voodoo::Pager->new('count'   => 40,
-	                                              'window'  => 10,
-	                                              'persist' => [ 
-	                                                  'pattern',
-	                                                  'limit',
-	                                                  'sort',
-	                                                  'last_sort',
-	                                                  'desc'
-	                                              ]);
 	return $self;
 }
 
@@ -170,6 +163,20 @@ sub set_configuration {
 		push(@{$self->{'list_search_items'}},[$_->[1],$_->[0]]);
 		$self->{'list_search'}->{$_->[1]} = 1;
 	}
+
+	# setup the pagination options
+	$self->{'pager'}->set_configuration(
+		'count'   => 40,
+		'window'  => 10,
+		'persist' => [ 
+			'pattern',
+			'limit',
+			'sort',
+			'last_sort',
+			'desc',
+			@{$c->{'list_options'}->{'persist'} || []}
+		]
+	);
 
 	$self->{'errors'} = \@errors;
 	if (@errors) {
