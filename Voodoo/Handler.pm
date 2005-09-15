@@ -17,7 +17,7 @@ application's page handling modules.
 =cut ################################################################################
 package Apache::Voodoo::Handler;
 
-$VERSION = '1.12';
+$VERSION = '1.13';
 
 use strict;
 
@@ -61,7 +61,10 @@ sub new {
 	my $self = {@_};
 	bless $self, $class;
 
-	$self->restart;
+	if (exists $ENV{'MOD_PERL'}) {
+		# let's us do a compile check outside of mod_perl
+		$self->restart;
+	}
 
 	return $self;
 }
@@ -562,6 +565,7 @@ sub restart {
 	$self->{'hosts'} = {};
 
 	my $s = Apache->server;
+
 	$s->log_error("Voodoo starting...");
 
 	my $conf_dir = Apache->server_root_relative("conf/voodoo");
@@ -628,7 +632,6 @@ sub restart {
 		}
 	}
 	closedir(DIR);
-
 }
 
 sub untie {

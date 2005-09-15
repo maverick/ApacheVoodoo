@@ -14,7 +14,7 @@ This implements a post_include module that handles all the theme processing.
 
 package Apache::Voodoo::Theme;
 
-$VERSION = '1.12';
+$VERSION = '1.13';
 
 use strict;
 

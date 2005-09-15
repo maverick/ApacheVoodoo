@@ -19,7 +19,7 @@ production server :)
 =cut ################################################################################
 package Apache::Voodoo::Zombie;
 
-$VERSION = '1.12';
+$VERSION = '1.13';
 
 use strict;
 
