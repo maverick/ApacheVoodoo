@@ -16,7 +16,7 @@ FIXME: Add documentation
 
 =cut ####################################################################################
 
-use Apache::Voodoo::Paths;
+use Apache::Voodoo::Install;
 use File::Pid;
 use Getopt::Long;
 use Config::General;
@@ -25,8 +25,8 @@ use DBI;
 
 use strict;
 
-my $apache_dir = $Apache::Voodoo::Paths::PREFIX;
-my $conf_dir   = $Apache::Voodoo::Paths::SYSCONFDIR;
+my $apache_dir = get_prefix();
+my $conf_dir   = get_confdir();
 
 my $app_install_dir = $apache_dir."/test_sites";
 
@@ -173,22 +173,6 @@ print "ok\n";
 
 print "$apache_dir\n";
 print "$conf_dir\n";
-
-sub parse_version {
-	my $v = shift;
-
-	if ($v =~ /^SVN:\s*/) {
-		# Looks like a Subversion HeadURL
-		$v =~ s/SVN:\s*//;
-        $v =~ s!^.*svn://[^/]*/[^/]+/!!;
-        $v =~ s!^branch/!!;
-        $v =~ s!^release/!!;
-        $v =~ s/\/.*$//;
-	}
-
-	# If it doesn't look like one of the above, we'll just treat is as the actual version number.
-	return $v;
-}
 
 =pod ################################################################################
 
