@@ -1,0 +1,207 @@
+#!/usr/bin/perl -I /data/apache/lib/perl
+
+=pod ####################################################################################
+
+=head1 NAME
+
+voodoo-control - install / upgrade 
+
+=head1 VERSION
+
+$Id: Handler.pm 2597 2005-09-15 16:33:41Z medwards $
+
+=head1 SYNOPSIS
+
+FIXME: Add documentation
+
+=cut ####################################################################################
+
+use Apache::Voodoo::Paths;
+use File::Pid;
+use Getopt::Long;
+use Config::General;
+use ExtUtils::Install;
+use DBI;
+
+use strict;
+
+my $apache_dir = $Apache::Voodoo::Paths::PREFIX;
+my $conf_dir   = $Apache::Voodoo::Paths::SYSCONFDIR;
+
+my $app_install_dir = $apache_dir."/test_sites";
+
+# turn off buffered output
+$| = 1;
+
+my $pretend = 0;
+my ($distribution,$dbhost,$dbname,$dbuser,$dbpass,$dbroot);
+
+GetOptions(
+        'pretend|p' => \$pretend,
+		'installfile|f=s' => \$distribution,
+		'dbhost|h:s' => \$dbhost,
+		'dbname|n:s' => \$dbname,
+		'dbuser|u:s' => \$dbuser,
+		'dbpass|p:s' => \$dbpass,
+		'dbroot|r:s' => \$dbroot
+);
+
+################################################################################
+# make sure this file exists and that the name follows the correct format
+################################################################################
+unless (-e $distribution && -f $distribution) {
+	# no such file.
+	print "ERROR: No such file or directory\n";
+	exit;
+}
+
+my ($app_name,$app_version) = ($distribution =~ /(\w+)-([\w\.]+)\.tar\.gz$/);
+unless ($app_name && $app_version) {
+	print "ERROR: Distribution file names must follow the format: AppName-Version.tar.gz\n";
+	exit;
+}
+
+################################################################################
+# check user and lock for exclusive run
+################################################################################
+if (!$pretend && $<) {
+        print "\nSetup must be ran as root.\n\n";
+        exit;
+}
+
+if ($pretend) {
+	print "== Pretending to run ==\n";
+}
+
+print "Determined apache path to be: $apache_dir\n";
+
+my $pid = File::Pid->new();
+my $id = $pid->running;
+if ($id) {
+        print "ERROR: Already Running ($id)\n";
+        exit;
+}
+
+unless ($pid->write) {
+        die "ERROR: Couldn't write pid: $!";
+}
+
+################################################################################
+# unpack and verify the distribution
+################################################################################
+my $unpack_dir = "/tmp/av_unpack_$$";
+my $unpack_dir = "/tmp/av_unpack";
+
+if (-e $unpack_dir) {
+	print "ERROR: $unpack_dir already exists\n";
+	exit;
+}
+
+mkdir($unpack_dir,0700) || die "Can't create directory $unpack_dir: $!";
+chdir($unpack_dir) || die "Can't change to direcotyr $unpack_dir: $!";
+print "- Unpacking distribution to $unpack_dir\n";
+system("tar","xzf",$distribution) && die "Can't unpack $distribution: $!";
+
+unless (-e $unpack_dir."/etc/$app_name.conf") {
+	print "ERROR: distribution file doesn't contain a configuration file at: etc/$app_name.conf\n";
+	#system("rm","-rf",$unpack_dir);
+	exit;
+}
+
+my $new_config = Config::General->new("$unpack_dir/etc/$app_name.conf");
+my %new_cdata = $new_config->getall();
+
+my $new_version = parse_version($new_cdata{'version'});
+if ($new_version != $app_version) {
+	print "ERROR: Version from filename ($app_version) and version from config file ($new_version) don't agree.  aborting.\n";
+#	system("rm","-rf",$unpack_dir);
+	exit;
+}
+print "Determined app version to be: $app_version\n";
+
+# ok, there's a conf file that matches what the distribution name look like.
+my $install_path = $app_install_dir."/".$app_name;
+print "Determined installation path to be: $install_path\n";
+
+################################################################################
+# Looks like a go.  Let's see if we're upgrading an existing app.
+################################################################################
+my $old_version = 0;
+print "- Checking for existing installation: ";
+if (-e $install_path."/etc/$app_name.conf") {
+	print "Found one. We will be performing an upgrade\n";
+
+	my $old_config = Config::General->new($install_path."/etc/$app_name.conf");
+	my %old_cdata = $old_config->getall();
+
+	# save old (maybe customized?) config variables
+	foreach ('session_dir','devel_mode','shared_cache','debug','devel_mode','cookie_name') {
+		$new_cdata{$_} = $old_cdata{$_};
+	}
+
+	foreach ('connect','username','password') {
+		$new_cdata{'database'}->{$_} = $old_cdata{'database'}->{$_};
+	}
+
+	$old_version = parse_version($old_cdata{'version'});
+	print "Old Version determined to be: $old_version\n";
+}
+else {
+	print "not found. This will be a fresh install.\n";
+}
+
+# overwrite any dbhost info supplied on the command line
+if (defined($dbhost)) { $new_cdata{'database'}->{'connect'} =~ s/host=\w*/host=$dbhost/; }
+if (defined($dbname)) { $new_cdata{'database'}->{'connect'} =~ s/database=\w*/database=$dbname/; }
+if (defined($dbuser)) { $new_cdata{'database'}->{'username'} = $dbuser; }
+if (defined($dbuser)) { $new_cdata{'database'}->{'password'} = $dbpass; }
+
+$pretend || $new_config->save_file($unpack_dir."/etc/$app_name.conf");
+
+################################################################################
+# Make sure the supplied database info works.
+################################################################################
+print "- Attempting connection to database: ";
+my $dbh = DBI->connect(
+	$new_cdata{'database'}->{'connect'},
+	$new_cdata{'database'}->{'username'},
+	$new_cdata{'database'}->{'password'}) || die DBI->errstr;
+$dbh->disconnect;
+print "ok\n";
+
+# system("rm","-rf",$unpack_dir);
+
+print "$apache_dir\n";
+print "$conf_dir\n";
+
+sub parse_version {
+	my $v = shift;
+
+	if ($v =~ /^SVN:\s*/) {
+		# Looks like a Subversion HeadURL
+		$v =~ s/SVN:\s*//;
+        $v =~ s!^.*svn://[^/]*/[^/]+/!!;
+        $v =~ s!^branch/!!;
+        $v =~ s!^release/!!;
+        $v =~ s/\/.*$//;
+	}
+
+	# If it doesn't look like one of the above, we'll just treat is as the actual version number.
+	return $v;
+}
+
+=pod ################################################################################
+
+=head1 AUTHOR
+
+Maverick, /\/\averick@smurfbaneDOTorg
+
+=head1 COPYRIGHT
+
+Copyright (c) 2005 Steven Edwards.  All rights reserved.
+
+You may use and distribute Voodoo under the terms described in the LICENSE file include
+in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
+of the Artistic License :)
+
+=cut ################################################################################
