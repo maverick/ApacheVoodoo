@@ -1,0 +1,174 @@
+<!ENTITY % approval_status "(not_reviewed|approved|rejected)">
+<!ENTITY % boolean "(0|1)">
+
+<!ENTITY % course_levels  "(intro|basic|intermediate|advanced)">
+<!ENTITY % delivery_modes "(internet|selfstudy|nis study|live)">
+<!ENTITY % time_zones "(GMT|GMT (+|-)(1|2|3|4|5|6|7|8|9|10|11|12))">
+
+<!ENTITY % jurisdictions "(AICPA|AK|AL|AR|AZ|CA|CO|CT|DC|DE|FL|GA|GU|HI|IA|ID|IL|IN|KS|KY|LA|MA|MD|ME|MI|MN|MO|MS|MT|NC|ND|NE|NH|NJ|NM|NV|NY|OH|OK|OR|PA|PR|RI|SC|SD|TN|TX|UT|VA|VI|VT|WA|WI|WV|WY|WICPA|GAO|SECPS)">
+<!ENTITY % states        "(AK|AL|AR|AZ|CA|CO|CT|DC|DE|FL|GA|GU|HI|IA|ID|IL|IN|KS|KY|LA|MA|MD|ME|MI|MN|MO|MS|MT|NC|ND|NE|NH|NJ|NM|NV|NY|OH|OK|OR|PA|PR|RI|SC|SD|TN|TX|UT|VA|VI|VT|WA|WI|WV|WY)">
+
+<!ENTITY % programs        "(aipca|other|university|in_firm|self_study|instructed|tech_meeting|practice_review|publication|comm_meeting|firm_meeting|bld_meeting|ind_study)">
+<!ENTITY % course_programs "(aipca|other|university|in_firm|self_study)">
+
+<!ENTITY % subjectareas "(accounting|auditing|tax|adv|economics|finance|marketing|bus_law|stats|math|compsci|communic|production|hr|bus_mgmt|soc_env|spec_ind|admin_prac|b_ethics|personal_devel|govt_acct|govt_audit|r_ethics)">
+
+<!ELEMENT cpetracking (user*,provider*)>
+
+<!ELEMENT 
+	user (
+		usernumber?,email?,password?,first_name?,middle_name?,last_name?,ssn?,enabled?,
+		principle_jurisdiction?,dob?,hire_date?,retire_date?,term_date?,state_of_residence?,
+		groups?,license*,credit*
+	)
+>
+<!ATTLIST user username CDATA #REQUIRED>
+
+	<!ELEMENT groups (group*)>
+	<!ATTLIST groups overwrite (boolean) "0">
+		<!ELEMENT group (#PCDATA)>
+		<!ATTLIST group type CDATA #REQUIRED>
+
+	<!ELEMENT 
+		license (
+			license_date?,license_number?,license_expiration?,license_term?,exam_date?,user_reporting_date?,
+			reporting_group?,reporting_month?,reporting_year?,report_odd_even?,type?
+		)
+	>
+	<!ATTLIST license name (jurisdictions) #REQUIRED>
+	<!ELEMENT
+		credit (
+			title,course_number?,company?,description?,start_date,end_date,location?,status?,
+
+			live_classroom?,nis_study?,non_credit?,number_words?,participated?,postgraduate?,provider_name?,
+			provider_number?,publisher?,qas_approved?,registry_approved?,score_90?,sq_hours?,virtual_classroom?,
+
+			aicpa_ethics?,ak_board_ethics?,az_board_ethics?,business_ethics?,ca_board_ethics?,co_board_ethics?,
+			ethics_for_accountants?,fl_board_ethics?,hi_board_ethics?,la_board_ethics?,me_board_ethics?,ms_board_ethics?,
+			ms_regulations?,nc_board_ethics?,nj_board_ethics?,ny_emphasis?,oh_board_ethics?,or_board_ethics?,
+			public_accounting?,ri_board_ethics?,tx_board_ethics?,va_board_ethics?,vt_board_ethics?,
+			wa_board_ethics?,wy_board_ethics?,
+
+			subject+
+		)
+	>
+	<!ATTLIST credit program (programs) #REQUIRED>
+
+		<!ELEMENT subject (PCDATA)>
+		<!ATTLIST subject name (subjectareas) #REQUIRED>
+
+<!ELEMENT provider (address1?,address2?,city?,state?,zip?,phone?,fax?,url?,sponsor_number?,renewal_date?,approved?,course*)>
+<!ATTLIST provider name CDATA #REQUIRED>
+
+	<!ELEMENT course (title?,program?,description?,qas_approved?,registry_approved?,version*)>
+	<!ATTLIST course number CDATA #REQUIRED>
+
+		<!ELEMENT version (description?,objectives?,content?,prerequisites?,preparation?,admin_policies?,notes?,course_level?,url?,session*,subject*)>
+		<!ATTLIST version date CDATA #REQUIRED>
+
+			<!ELEMENT session (start_date?,end_date?,start_time?,end_time?,time_zone?,delivery_mode?,instructor?,facility?,city?,state?,cost?,attendance*)>
+			<!ATTLIST session number CDATA #REQUIRED>
+				<!ELEMENT attendance (date?,status?,subject*)><!ATTLIST attendance username (PCDATA) #REQUIRED>
+
+<!ELEMENT address1            (#PCDATA)>
+<!ELEMENT address2            (#PCDATA)>
+<!ELEMENT admin_policies      (#PCDATA)>
+<!ELEMENT city                (#PCDATA)>
+<!ELEMENT company             (#PCDATA)>
+<!ELEMENT content             (#PCDATA)>
+<!ELEMENT cost                (#PCDATA)>
+<!ELEMENT course_number	      (#PCDATA)>
+<!ELEMENT description	      (#PCDATA)>
+<!ELEMENT dob                 (#PCDATA)>
+<!ELEMENT email               (#PCDATA)>
+<!ELEMENT end_date            (#PCDATA)>
+<!ELEMENT end_time            (#PCDATA)>
+<!ELEMENT exam_date           (#PCDATA)>
+<!ELEMENT facility            (#PCDATA)>
+<!ELEMENT fax                 (#PCDATA)>
+<!ELEMENT first_name          (#PCDATA)>
+<!ELEMENT hire_date           (#PCDATA)>
+<!ELEMENT instructor          (#PCDATA)>
+<!ELEMENT last_name           (#PCDATA)>
+<!ELEMENT license_date        (#PCDATA)>
+<!ELEMENT license_expiration  (#PCDATA)>
+<!ELEMENT license_number      (#PCDATA)>
+<!ELEMENT license_term        (#PCDATA)>
+<!ELEMENT location            (#PCDATA)>
+<!ELEMENT middle_name         (#PCDATA)>
+<!ELEMENT notes               (#PCDATA)>
+<!ELEMENT number_words        (#PCDATA)>
+<!ELEMENT objectives          (#PCDATA)>
+<!ELEMENT phone               (#PCDATA)>
+<!ELEMENT preparation         (#PCDATA)>
+<!ELEMENT prerequisites       (#PCDATA)>
+<!ELEMENT provider_name       (#PCDATA)>
+<!ELEMENT provider_number     (#PCDATA)>
+<!ELEMENT publisher           (#PCDATA)>
+<!ELEMENT renewal_date        (#PCDATA)>
+<!ELEMENT reporting_group     (#PCDATA)>
+<!ELEMENT reporting_month     (#PCDATA)>
+<!ELEMENT reporting_year      (#PCDATA)>
+<!ELEMENT retire_date         (#PCDATA)>
+<!ELEMENT sponsor_number      (#PCDATA)>
+<!ELEMENT sq_hours            (#PCDATA)>
+<!ELEMENT ssn                 (#PCDATA)>
+<!ELEMENT start_date          (#PCDATA)>
+<!ELEMENT start_time          (#PCDATA)>
+<!ELEMENT term_date           (#PCDATA)>
+<!ELEMENT title               (#PCDATA)>
+<!ELEMENT url                 (#PCDATA)>
+<!ELEMENT user_reporting_date (#PCDATA)>
+<!ELEMENT usernumber          (#PCDATA)>
+<!ELEMENT zip                 (#PCDATA)>
+
+<!ELEMENT course_level           (EMPTY)><!ATTLIST course_level           value (course_levels)        #REQUIRED>
+<!ELEMENT delivery_mode          (EMPTY)><!ATTLIST delivery_mode          value (delivery_modes)       #REQUIRED>
+<!ELEMENT license_type           (EMPTY)><!ATTLIST license_type           value (original|recriprocal) #REQUIRED>
+<!ELEMENT principle_jurisdiction (EMPTY)><!ATTLIST principle_jurisdiction value (jurisdictions)        #REQUIRED>
+<!ELEMENT program                (EMPTY)><!ATTLIST program                value (course_programs)      #REQUIRED>
+<!ELEMENT report_odd_even        (EMPTY)><!ATTLIST report_odd_even        value (odd|even)             #REQUIRED>
+<!ELEMENT state                  (EMPTY)><!ATTLIST state                  value (states)               #REQUIRED>
+<!ELEMENT state_of_residence     (EMPTY)><!ATTLIST state_of_residence     value (states)               #REQUIRED>
+<!ELEMENT time_zone              (EMPTY)><!ATTLIST time_zone              value (time_zones)           #REQUIRED>
+
+<!ELEMENT status (EMPTY)><!ATTLIST status value (approval_status) "not_reviewed">
+
+<!ELEMENT approved (EMPTY)><!ATTLIST approved value (boolean) "1">
+<!ELEMENT enabled  (EMPTY)><!ATTLIST enabled  value (boolean) "1">
+
+<!ELEMENT aicpa_ethics           (EMPTY)><!ATTLIST aicpa_ethics           value (boolean) #REQUIRED>
+<!ELEMENT ak_board_ethics        (EMPTY)><!ATTLIST ak_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT az_board_ethics        (EMPTY)><!ATTLIST az_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT business_ethics        (EMPTY)><!ATTLIST business_ethics        value (boolean) #REQUIRED>
+<!ELEMENT ca_board_ethics        (EMPTY)><!ATTLIST ca_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT co_board_ethics        (EMPTY)><!ATTLIST co_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT ethics_for_accountants (EMPTY)><!ATTLIST ethics_for_accountants value (boolean) #REQUIRED>
+<!ELEMENT fl_board_ethics        (EMPTY)><!ATTLIST fl_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT hi_board_ethics        (EMPTY)><!ATTLIST hi_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT la_board_ethics        (EMPTY)><!ATTLIST la_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT live_classroom         (EMPTY)><!ATTLIST live_classroom         value (boolean) #REQUIRED>
+<!ELEMENT me_board_ethics        (EMPTY)><!ATTLIST me_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT ms_board_ethics        (EMPTY)><!ATTLIST ms_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT ms_regulations         (EMPTY)><!ATTLIST ms_regulations         value (boolean) #REQUIRED>
+<!ELEMENT nc_board_ethics        (EMPTY)><!ATTLIST nc_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT nis_study	             (EMPTY)><!ATTLIST nis_study	          value (boolean) #REQUIRED>
+<!ELEMENT nj_board_ethics        (EMPTY)><!ATTLIST nj_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT non_credit	         (EMPTY)><!ATTLIST non_credit	          value (boolean) #REQUIRED>
+<!ELEMENT ny_emphasis            (EMPTY)><!ATTLIST ny_emphasis            value (boolean) #REQUIRED>
+<!ELEMENT oh_board_ethics        (EMPTY)><!ATTLIST oh_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT or_board_ethics        (EMPTY)><!ATTLIST or_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT participated	         (EMPTY)><!ATTLIST participated	          value (boolean) #REQUIRED>
+<!ELEMENT postgraduate	         (EMPTY)><!ATTLIST postgraduate	          value (boolean) #REQUIRED>
+<!ELEMENT public_accounting      (EMPTY)><!ATTLIST public_accounting      value (boolean) #REQUIRED>
+<!ELEMENT qas_approved           (EMPTY)><!ATTLIST qas_approved           value (boolean) #REQUIRED>
+<!ELEMENT registry_approved      (EMPTY)><!ATTLIST registry_approved      value (boolean) #REQUIRED>
+<!ELEMENT ri_board_ethics        (EMPTY)><!ATTLIST ri_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT score_90               (EMPTY)><!ATTLIST score_90               value (boolean) #REQUIRED>
+<!ELEMENT tx_board_ethics        (EMPTY)><!ATTLIST tx_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT va_board_ethics        (EMPTY)><!ATTLIST va_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT virtual_classroom      (EMPTY)><!ATTLIST virtual_classroom      value (boolean) #REQUIRED>
+<!ELEMENT vt_board_ethics        (EMPTY)><!ATTLIST vt_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT wa_board_ethics        (EMPTY)><!ATTLIST wa_board_ethics        value (boolean) #REQUIRED>
+<!ELEMENT wy_board_ethics        (EMPTY)><!ATTLIST wy_board_ethics        value (boolean) #REQUIRED>
+
