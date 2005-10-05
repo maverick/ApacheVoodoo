@@ -25,6 +25,9 @@ use DBI;
 
 use strict;
 
+# FIXME scan httpd.conf to find this
+my $apache_user = 'apache';
+
 my $apache_dir = get_prefix();
 my $conf_dir   = get_confdir();
 
@@ -37,18 +40,31 @@ my $pretend = 0;
 my ($distribution,$dbhost,$dbname,$dbuser,$dbpass,$dbroot);
 
 GetOptions(
-        'pretend|p' => \$pretend,
-		'installfile|f=s' => \$distribution,
-		'dbhost|h:s' => \$dbhost,
-		'dbname|n:s' => \$dbname,
-		'dbuser|u:s' => \$dbuser,
-		'dbpass|p:s' => \$dbpass,
-		'dbroot|r:s' => \$dbroot
+        'pretend|pr'  => \$pretend,
+		'dbhost|h:s'  => \$dbhost,
+		'dbname|n:s'  => \$dbname,
+		'dbuser|u:s'  => \$dbuser,
+		'dbpass|pa:s' => \$dbpass,
+		'dbroot|r:s'  => \$dbroot,
+		'install|f=s' => \$distribution,
 );
 
 ################################################################################
 # make sure this file exists and that the name follows the correct format
 ################################################################################
+unless (defined($distribution)) {
+	print "\nAutomated install / upgrade for Apache::Voodoo based applications.\n\n";
+	print "Usage: voodoo-control [options] --install installfile\n";
+	print "    -P --pretend  Step through operations.  Don't actually do anything\n";
+	print "    -h --dbhost   Override database host name in config files\n";
+	print "    -n --dbname   Override database name in conf files\n";
+	print "    -u --dbuser   Override database username in conf files\n";
+	print "    -p --dbpass   Override database password in conf files\n";
+	print "    -r --dbroot   Database root password\n";
+	print "\n";
+	exit;
+}
+
 unless (-e $distribution && -f $distribution) {
 	# no such file.
 	print "ERROR: No such file or directory\n";
@@ -65,8 +81,8 @@ unless ($app_name && $app_version) {
 # check user and lock for exclusive run
 ################################################################################
 if (!$pretend && $<) {
-        print "\nSetup must be ran as root.\n\n";
-        exit;
+	print "\nSetup must be ran as root.\n\n";
+	exit;
 }
 
 if ($pretend) {
@@ -78,18 +94,21 @@ print "Determined apache path to be: $apache_dir\n";
 my $pid = File::Pid->new();
 my $id = $pid->running;
 if ($id) {
-        print "ERROR: Already Running ($id)\n";
-        exit;
+	print "ERROR: Already Running ($id)\n";
+	exit;
 }
 
 unless ($pid->write) {
-        die "ERROR: Couldn't write pid: $!";
+	die "ERROR: Couldn't write pid: $!";
 }
 
 ################################################################################
 # unpack and verify the distribution
 ################################################################################
-my $unpack_dir = "/tmp/av_unpack_$$";
+
+# my $unpack_dir = "/tmp/av_unpack_$$";
+
+system("rm -rf /tmp/av_unpack");
 my $unpack_dir = "/tmp/av_unpack";
 
 if (-e $unpack_dir) {
@@ -124,7 +143,7 @@ my $install_path = $app_install_dir."/".$app_name;
 print "Determined installation path to be: $install_path\n";
 
 ################################################################################
-# Looks like a go.  Let's see if we're upgrading an existing app.
+# Let's see if we're upgrading an existing app.
 ################################################################################
 my $old_version = 0;
 print "- Checking for existing installation: ";
@@ -169,10 +188,107 @@ my $dbh = DBI->connect(
 $dbh->disconnect;
 print "ok\n";
 
+################################################################################
+# See what updates we need to execute and verify that they are valid
+################################################################################
+print "- Looking for setup/update command xml files:\n";
+my @commands;
+
+if (-e "$unpack_dir/etc/pre-setup.xml") {
+	print "    pre-setup.xml\n";
+	push(@commands,"$unpack_dir/etc/pre-setup.xml");
+}
+
+if ($old_version) {
+	my @updates = sort_updates(find_updates($unpack_dir."/etc"));
+
+	# bleh.  I'm replicated a good chunk of the sort_updates routine.
+	# maybe they need to be combined somehow?
+	my $keep = 0;
+	my @oldv = split(/[\.-]/,$old_version);
+	my @newv = split(/[\.-]/,$app_version);
+	foreach my $file (@updates) {
+		my $v = $file;
+		$v =~ s/.*update-//;
+		$v =~ s/\.xml//;
+		my @v = split(/[\.-]/,$v);
+		
+		print "    $v";
+		if ($keep == 0) {
+			print " (skipped. already applied)";
+		}
+		elsif ($keep == 1) {
+			push(@commands,$file);
+		}
+		elsif ($keep == 2) {
+			print " (skipped. too new)";
+		}
+		print "\n";
+
+
+		if ($keep == 0 &&
+			$v[0] >= $oldv[0] &&
+            $v[1] >= $oldv[1] &&
+            $v[2] >= $oldv[2] &&
+            (!defined($v[3]) || $v[3] ge $oldv[3])) {
+
+			# we've skipped all the old ones
+			$keep = 1;
+        }
+
+        if ($v[0] >= $newv[0] &&
+			$v[1] >= $newv[1] &&
+			$v[2] >= $newv[2] &&
+			(!defined($newv[3]) || $v[3] ge $newv[3])) {
+
+			$keep = 2;
+		}
+
+	}
+}
+else {
+	if (-e "$unpack_dir/etc/setup.xml") {
+		print "    pre-setup.xml\n";
+		push(@commands,"$unpack_dir/etc/setup.xml");
+	}
+}
+
+if (-e "$unpack_dir/etc/post-setup.xml") {
+	print "    pre-setup.xml\n";
+	push(@commands,"$unpack_dir/etc/post-setup.xml");
+}
+
+print "- Parsing files:\n";
+
+################################################################################
+# Ok, here we go.  Install the files.
+################################################################################
+print "\n* Preparing to install.  Press ctrl-c to abort *\n";
+print "* Installing in ";
+foreach (5,4,3,2,1,0) {
+	print "$_, ";
+	sleep(1);
+}
+print "\n\n";
+
+# spaces are to blank over the previous line.
+print "- Installing files:                                \n";
+
+$pretend || ExtUtils::Install::install({$unpack_dir => $install_path});
+
+print "- Checking symlinks:\n";
+unless (-e "$conf_dir/voodoo") {
+	mkdir("$conf_dir/voodoo",0700) || die "Can't create $conf_dir/voodoo: $!";
+}
+
+setup_symlink("$install_path/etc/$app_name.conf","$conf_dir/voodoo/$app_name.conf",$pretend);
+setup_symlink("$install_path/code","$apache_dir/lib/perl/$app_name",$pretend);
+
+print "- Checking session directory:\n";
+make_writeable_dirs([$new_cdata{'session_dir'}],$apache_user,$pretend);
+
 # system("rm","-rf",$unpack_dir);
 
-print "$apache_dir\n";
-print "$conf_dir\n";
 
 =pod ################################################################################
 

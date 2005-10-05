@@ -18,6 +18,7 @@ lib/Apache/Voodoo/Template/debug.tmpl
 lib/Apache/Voodoo/Theme.pm
 lib/Apache/Voodoo/ValidURL.pm
 lib/Apache/Voodoo/Zombie.pm
+lib/Apache/Voodoo/voodoo.dtd
 Changes
 LICENSE
 Makefile.PL
