@@ -8,7 +8,7 @@ package Apache::Voodoo::ValidURL;
 # was the part I really needed.
 #
 
-$VERSION = '1.13';
+$VERSION = '1.14';
 
 use strict;
 

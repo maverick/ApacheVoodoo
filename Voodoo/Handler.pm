@@ -17,7 +17,7 @@ application's page handling modules.
 =cut ################################################################################
 package Apache::Voodoo::Handler;
 
-$VERSION = '1.13';
+$VERSION = '1.14';
 
 use strict;
 
