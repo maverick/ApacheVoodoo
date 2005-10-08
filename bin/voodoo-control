@@ -22,6 +22,7 @@ use Getopt::Long;
 use Config::General;
 use ExtUtils::Install;
 use DBI;
+use Data::Dumper;
 
 use strict;
 
@@ -185,22 +186,21 @@ my $dbh = DBI->connect(
 	$new_cdata{'database'}->{'connect'},
 	$new_cdata{'database'}->{'username'},
 	$new_cdata{'database'}->{'password'}) || die DBI->errstr;
-$dbh->disconnect;
 print "ok\n";
 
 ################################################################################
 # See what updates we need to execute and verify that they are valid
 ################################################################################
 print "- Looking for setup/update command xml files:\n";
-my @commands;
+my @comm_sets;
 
 if (-e "$unpack_dir/etc/pre-setup.xml") {
 	print "    pre-setup.xml\n";
-	push(@commands,"$unpack_dir/etc/pre-setup.xml");
+	push(@comm_sets,{file => "$unpack_dir/etc/pre-setup.xml"});
 }
 
 if ($old_version) {
-	my @updates = sort_updates(find_updates($unpack_dir."/etc"));
+	my @updates = sort_updates(find_updates($unpack_dir.'/etc/updates'));
 
 	# bleh.  I'm replicated a good chunk of the sort_updates routine.
 	# maybe they need to be combined somehow?
@@ -209,22 +209,30 @@ if ($old_version) {
 	my @newv = split(/[\.-]/,$app_version);
 	foreach my $file (@updates) {
 		my $v = $file;
-		$v =~ s/.*update-//;
+		$v =~ s/.*\///;
 		$v =~ s/\.xml//;
 		my @v = split(/[\.-]/,$v);
+
+        if ($v[0] >= $newv[0] &&
+			$v[1] >= $newv[1] &&
+			$v[2] >= $newv[2] &&
+			(!defined($newv[3]) || $v[3] ge $newv[3])) {
+
+			# this one is too new
+			$keep = 2;
+		}
 		
 		print "    $v";
 		if ($keep == 0) {
 			print " (skipped. already applied)";
 		}
 		elsif ($keep == 1) {
-			push(@commands,$file);
+			push(@comm_sets,{file => $file});
 		}
 		elsif ($keep == 2) {
 			print " (skipped. too new)";
 		}
 		print "\n";
-
 
 		if ($keep == 0 &&
 			$v[0] >= $oldv[0] &&
@@ -235,44 +243,46 @@ if ($old_version) {
 			# we've skipped all the old ones
 			$keep = 1;
         }
-
-        if ($v[0] >= $newv[0] &&
-			$v[1] >= $newv[1] &&
-			$v[2] >= $newv[2] &&
-			(!defined($newv[3]) || $v[3] ge $newv[3])) {
-
-			$keep = 2;
-		}
-
 	}
 }
 else {
 	if (-e "$unpack_dir/etc/setup.xml") {
-		print "    pre-setup.xml\n";
-		push(@commands,"$unpack_dir/etc/setup.xml");
+		print "    setup.xml\n";
+		push(@comm_sets,{file => "$unpack_dir/etc/setup.xml"});
 	}
 }
 
 if (-e "$unpack_dir/etc/post-setup.xml") {
-	print "    pre-setup.xml\n";
-	push(@commands,"$unpack_dir/etc/post-setup.xml");
+	print "    post-setup.xml\n";
+	push(@comm_sets,{file => "$unpack_dir/etc/post-setup.xml"});
 }
 
 print "- Parsing files:\n";
+
+for (my $i=0; $i <= $#comm_sets; $i++) {
+	my $data = parse_xml($comm_sets[$i]->{'file'});
+
+	if (!defined($data)) {
+		print "\n* Parse of $comm_sets[$i]->{'file'} failed. Aborting *\n";
+		exit;
+	}
+	print "    parsed $comm_sets[$i]->{'file'}\n";
+	$comm_sets[$i]->{'commands'} = $data;
+}
 
 ################################################################################
 # Ok, here we go.  Install the files.
 ################################################################################
 print "\n* Preparing to install.  Press ctrl-c to abort *\n";
 print "* Installing in ";
-foreach (5,4,3,2,1,0) {
-	print "$_, ";
-	sleep(1);
+foreach (5,4,3,2,1) {
+	print "$_";
+	print ", " if $_ > 1;
+	$pretend || sleep(1);
 }
 print "\n\n";
 
-# spaces are to blank over the previous line.
-print "- Installing files:                                \n";
+print "- Installing files:\n";
 
 $pretend || ExtUtils::Install::install({$unpack_dir => $install_path});
 
@@ -287,7 +297,50 @@ setup_symlink("$install_path/code","$apache_dir/lib/perl/$app_name",$pretend);
 print "- Checking session directory:\n";
 make_writeable_dirs([$new_cdata{'session_dir'}],$apache_user,$pretend);
 
-# system("rm","-rf",$unpack_dir);
+
+################################################################################
+# Now run the commands.
+################################################################################
+chdir($install_path);
+
+print "- Running setup/update commands:\n";
+foreach (@comm_sets) {
+	print "    $_->{'file'}:\n";
+
+	# drop first tags (they're always empty)
+	my (undef,@commands) = @{$_->{'commands'}->[1]};
+
+	for (my $i=0; $i < $#commands; $i+=2) {
+		my $type = $commands[$i];
+		my $data = $commands[$i+1]->[2];
+
+		$data =~ s/^\s*//;
+		$data =~ s/\s*$//;
+
+		if ($type eq "shell") {
+			print "        SHELL: ", $data, "\n";
+			(system($data) && die "Shell command failed: $!");
+		}
+		elsif ($type eq "sql") {
+			print "        SQL: ", $data, "\n";
+			$pretend || $dbh->do($data) || die "sql failed: DBI->errstr";
+		}
+		elsif ($type eq "mkdir") {
+			print "        MKDIR: ", $data, "\n";
+			make_writeable_dirs(["$install_path/$data"],$apache_user,$pretend);
+		}
+		elsif ($type eq "mkfile") {
+			print "        TOUCH/CHMOD: ", $data, "\n";
+		}
+		else {
+			print "\n* Unsupported command type ($type). Aborting *\n";
+			exit;
+		}
+	}
+}
+
+print "\n* Finished Successfully *\n";
+system("rm","-rf",$unpack_dir);
 
 
 =pod ################################################################################

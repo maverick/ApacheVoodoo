@@ -22,6 +22,8 @@ package Apache::Voodoo::Install;
 
 use strict;
 use Exporter;
+use XML::Checker::Parser;
+use File::Find;
 
 our @ISA = qw(Exporter);
 
@@ -32,6 +34,9 @@ our @EXPORT = qw(
 	setup_symlink
 	make_writeable_dirs
 	parse_version
+	find_updates
+	sort_updates
+	parse_xml
 );
 
 my $PREFIX     = "/data/apache";
@@ -99,7 +104,7 @@ sub make_writeable_dirs {
 			print "ok\n";
 		}
 		else {
-			$pretend || mkdir($dir,770) or die "Can't create attachments directory: $!";
+			$pretend || mkdir($dir,770) or die "Can't create directory $dir: $!";
 			print "created\n";
 		}
 		print "- Making sure the $dir directory is writable by apache: ";
@@ -122,6 +127,81 @@ sub parse_version {
       	}
 	# If it doesn't look like one of the above, we'll just treat is as the actual version number.
 	return $v;
+}
+
+sub find_updates {
+	my $path = shift;
+
+	my @updates;
+	find({
+			wanted => sub {
+				my $file = $_;
+				if ($file =~ /\d+\.\d+\.\d+(-[a-z\d]+)?\.xml$/) {
+					push(@updates,$file);
+				}
+			},
+			no_chdir => 1
+		},
+		$path
+	);
+
+	return @updates;
+}
+
+sub sort_updates {
+	# Swartzian transform
+	return map { 
+		$_->[0]
+	}
+	sort { 
+		$a->[1] <=> $b->[1] || 
+		$a->[2] <=> $b->[2] ||
+		$a->[3] <=> $b->[3] ||
+		defined($b->[4]) <=> defined($a->[4]) ||
+		$a->[4] cmp $b->[4]
+	}
+	map {
+		my $f = $_;
+		s/.*\///;
+		s/\.xml$//;
+		[ $f , split(/[\.-]/,$_) ]
+	}
+	@_;
+}
+
+sub parse_xml {
+	my $xmlfile = shift;
+
+	my $parser = new XML::Checker::Parser(
+        'Style' => 'Tree',
+        'SkipInsignifWS' => 1
+	);
+
+	my $dtdpath = $INC{'Apache/Voodoo/Install.pm'};
+	$dtdpath =~ s/Install\.pm$//;
+
+	$parser->set_sgml_search_path($dtdpath);
+
+	my $data;
+	eval {
+			# parser checker only dies on catastrophic errors.  Adding this handler
+			# makes it die on ALL errors.
+			local $XML::Checker::FAIL = \&failure_handler;
+			$data = $parser->parsefile($xmlfile);
+	};
+	if ($@) {
+			print $@;
+			return undef;
+	}
+	return $data;
+
+	sub failure_handler {
+		my $code = shift;
+
+		print "\n ** Parse of $xmlfile failed **\n";
+		die XML::Checker::error_string ($code, @_) if $code < 200;
+		XML::Checker::print_error ($code, @_);
+	}
 }
 
 1;
