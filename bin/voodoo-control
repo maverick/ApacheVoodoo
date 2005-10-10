@@ -23,6 +23,7 @@ use Config::General;
 use ExtUtils::Install;
 use DBI;
 use Data::Dumper;
+use CPAN;
 
 use strict;
 
@@ -181,11 +182,39 @@ $pretend || $new_config->save_file($unpack_dir."/etc/$app_name.conf");
 ################################################################################
 # Make sure the supplied database info works.
 ################################################################################
-print "- Attempting connection to database: ";
-my $dbh = DBI->connect(
+
+# pull these (back?) out to use below
+$dbhost = $new_cdata{'database'}->{'connect'};
+$dbname = $new_cdata{'database'}->{'connect'};
+$dbuser = $new_cdata{'database'}->{'username'};
+$dbpass = $new_cdata{'database'}->{'password'};
+
+$dbhost =~ s/.*\bhost=//;
+$dbhost =~ s/[^\w\.-]+.*$//;
+
+$dbname =~ s/.*\bdatabase=//;
+$dbname =~ s/[^\w\.-]+.*$//;
+
+my $dbh;
+if ($old_version) {
+	# If there is an old version (meaning we're doing an upgrade)
+	# we would expect to be able to connect to that database.
+	# Not so for a new installation...we expect that the setup.xml creates it
+	# and the user account as necessary.
+	print "- Attempting connection to database: ";
+	$dbh = DBI->connect(
+		$new_cdata{'database'}->{'connect'},
+		$new_cdata{'database'}->{'username'},
+		$new_cdata{'database'}->{'password'}) || die DBI->errstr;
+	$dbh->disconnect;
+	print "ok\n";
+}
+
+print "- Attempting connection to database as root: ";
+$dbh = DBI->connect(
 	$new_cdata{'database'}->{'connect'},
-	$new_cdata{'database'}->{'username'},
-	$new_cdata{'database'}->{'password'}) || die DBI->errstr;
+	'root',
+	$dbroot) || die DBI->errstr;
 print "ok\n";
 
 ################################################################################
@@ -317,9 +346,14 @@ foreach (@comm_sets) {
 		$data =~ s/^\s*//;
 		$data =~ s/\s*$//;
 
+		$data =~ s/\$DBHOST/$dbhost/g;
+		$data =~ s/\$DBNAME/$dbname/g;
+		$data =~ s/\$DBUSER/$dbuser/g;
+		$data =~ s/\$DBPASS/$dbpass/g;
+
 		if ($type eq "shell") {
 			print "        SHELL: ", $data, "\n";
-			(system($data) && die "Shell command failed: $!");
+			$pretend || (system($data) && die "Shell command failed: $!");
 		}
 		elsif ($type eq "sql") {
 			print "        SQL: ", $data, "\n";
@@ -331,6 +365,14 @@ foreach (@comm_sets) {
 		}
 		elsif ($type eq "mkfile") {
 			print "        TOUCH/CHMOD: ", $data, "\n";
+		    make_writeable_files(["$install_path/$data"],$apache_user,$pretend);
+		}
+		elsif ($type eq "install") {
+			print "        CPAN Install: ", $data, "\n";
+			unless ($pretend) {
+				my $obj = CPAN::Shell->expand('Module',$data);
+				$obj->install;
+			}
 		}
 		else {
 			print "\n* Unsupported command type ($type). Aborting *\n";

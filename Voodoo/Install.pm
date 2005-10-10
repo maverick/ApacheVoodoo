@@ -33,6 +33,7 @@ our @EXPORT = qw(
 	get_bindir
 	setup_symlink
 	make_writeable_dirs
+	make_writeable_files
 	parse_version
 	find_updates
 	sort_updates
@@ -110,6 +111,29 @@ sub make_writeable_dirs {
 		print "- Making sure the $dir directory is writable by apache: ";
 		$pretend || chown($uid,$gid,$dir) or die "Can't chown directory: $!";
 		$pretend || chmod(0770,$dir)      or die "Can't chmod directory: $!";
+		print "ok\n";
+	}
+}
+
+sub make_writeable_files {
+	my $files    = shift;
+	my $apache   = shift;
+	my $pretend  = shift;
+
+	my (undef,undef,$uid,$gid) = getpwnam($apache) or die "Can't find password entry for $apache";
+
+	foreach my $file (@{$files}) {
+		print "- Checking file $file: ";
+		if (-e $file) {
+			print "ok\n";
+		}
+		else {
+			$pretend || (system("touch $file") && die "Can't create file: $!");
+			print "created\n";
+		}
+		print "- Making sure the $file directory is writable by apache: ";
+		$pretend || chown($uid,$gid,$file) or die "Can't chown file: $!";
+		$pretend || chmod(0600,$file)      or die "Can't chmod file: $!";
 		print "ok\n";
 	}
 }
