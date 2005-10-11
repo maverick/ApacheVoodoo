@@ -23,9 +23,11 @@ use Config::General;
 use ExtUtils::Install;
 use DBI;
 use Data::Dumper;
+use CPAN::Config;
 use CPAN;
 
 use strict;
+
 
 # FIXME scan httpd.conf to find this
 my $apache_user = 'apache';
@@ -33,7 +35,10 @@ my $apache_user = 'apache';
 my $apache_dir = get_prefix();
 my $conf_dir   = get_confdir();
 
-my $app_install_dir = $apache_dir."/test_sites";
+my $app_install_dir = $apache_dir."/sites";
+
+# make CPAN download dependancies
+$CPAN::Config->{'prerequisites_policy'} = 'follow';
 
 # turn off buffered output
 $| = 1;
@@ -43,12 +48,12 @@ my ($distribution,$dbhost,$dbname,$dbuser,$dbpass,$dbroot);
 
 GetOptions(
         'pretend|pr'  => \$pretend,
-		'dbhost|h:s'  => \$dbhost,
-		'dbname|n:s'  => \$dbname,
-		'dbuser|u:s'  => \$dbuser,
-		'dbpass|pa:s' => \$dbpass,
-		'dbroot|r:s'  => \$dbroot,
-		'install|f=s' => \$distribution,
+	'dbhost|h:s'  => \$dbhost,
+	'dbname|n:s'  => \$dbname,
+	'dbuser|u:s'  => \$dbuser,
+	'dbpass|pa:s' => \$dbpass,
+	'dbroot|r:s'  => \$dbroot,
+	'install|f=s' => \$distribution,
 );
 
 ################################################################################
@@ -108,10 +113,10 @@ unless ($pid->write) {
 # unpack and verify the distribution
 ################################################################################
 
-# my $unpack_dir = "/tmp/av_unpack_$$";
+my $unpack_dir = "/tmp/av_unpack_$$";
 
-system("rm -rf /tmp/av_unpack");
-my $unpack_dir = "/tmp/av_unpack";
+#system("rm -rf /tmp/av_unpack");
+#my $unpack_dir = "/tmp/av_unpack";
 
 if (-e $unpack_dir) {
 	print "ERROR: $unpack_dir already exists\n";
@@ -211,11 +216,26 @@ if ($old_version) {
 }
 
 print "- Attempting connection to database as root: ";
+my $testdb = $new_cdata{'database'}->{'connect'};
+$testdb =~ s/database=[\w\.-]+/database=test/;
+
 $dbh = DBI->connect(
-	$new_cdata{'database'}->{'connect'},
+	$testdb,
 	'root',
 	$dbroot) || die DBI->errstr;
 print "ok\n";
+
+print "- Checking for existance of the $dbname database: ";
+my $res = $dbh->selectall_arrayref("SHOW DATABASES LIKE '$dbname'");
+unless ($res->[0]->[0] eq $dbname) {
+	$dbh->do("CREATE DATABASE $dbname") || die "Can't create database $dbname: ".DBI->errstr;
+	$dbh = DBI->connect(
+		$new_cdata{'database'}->{'connect'},
+		'root',
+		$dbroot) || die DBI->errstr;
+
+	print "created\n";
+}
 
 ################################################################################
 # See what updates we need to execute and verify that they are valid
@@ -242,10 +262,10 @@ if ($old_version) {
 		$v =~ s/\.xml//;
 		my @v = split(/[\.-]/,$v);
 
-        if ($v[0] >= $newv[0] &&
-			$v[1] >= $newv[1] &&
-			$v[2] >= $newv[2] &&
-			(!defined($newv[3]) || $v[3] ge $newv[3])) {
+        	if ($v[0] >= $newv[0] &&
+		    $v[1] >= $newv[1] &&
+		    $v[2] >= $newv[2] &&
+		    (!defined($newv[3]) || $v[3] ge $newv[3])) {
 
 			# this one is too new
 			$keep = 2;
@@ -264,14 +284,14 @@ if ($old_version) {
 		print "\n";
 
 		if ($keep == 0 &&
-			$v[0] >= $oldv[0] &&
-            $v[1] >= $oldv[1] &&
-            $v[2] >= $oldv[2] &&
-            (!defined($v[3]) || $v[3] ge $oldv[3])) {
+		    $v[0] >= $oldv[0] &&
+		    $v[1] >= $oldv[1] &&
+		    $v[2] >= $oldv[2] &&
+		    (!defined($v[3]) || $v[3] ge $oldv[3])) {
 
 			# we've skipped all the old ones
 			$keep = 1;
-        }
+		}
 	}
 }
 else {
@@ -357,7 +377,54 @@ foreach (@comm_sets) {
 		}
 		elsif ($type eq "sql") {
 			print "        SQL: ", $data, "\n";
-			$pretend || $dbh->do($data) || die "sql failed: DBI->errstr";
+			next if $pretend;
+
+			if ($data =~ /^source\s/i) {
+				$data =~ s/^source\s*//i;
+
+				my ($query,$in_quote,$close_quote);
+				open(SQL,"$install_path/$data") || die "Can't open $install_path/$data: $!";
+				while (!eof(SQL)) {
+					my $c = getc SQL;
+					if (!$in_quote && $c eq ';') {
+						next if ($query =~ /^[\s;]*$/); # an empty query turns a do into a don't
+						$dbh->do($query) || die "sql source failed $query: ".DBI->errstr;
+						$query = '';
+						$c = getc SQL;
+					}
+
+					if ($c eq '\\') {
+						$query .= $c;
+						$c = getc SQL;  # automatically add the next character
+					}
+					elsif ($c eq "'") {
+						if ($in_quote && $close_quote eq "'") {
+							$in_quote = 0;
+							$close_quote = '';
+						}
+						elsif (!$in_quote) {
+							$in_quote = 1;
+							$close_quote = "'";
+						}
+					}
+					elsif ($c eq '"') {
+						if ($in_quote && $close_quote eq '"') {
+							$in_quote = 0;
+							$close_quote = '';
+						}
+						elsif (!$in_quote) {
+							$in_quote = 1;
+							$close_quote = '"';
+						}
+					}
+
+					$query .= $c;
+				}
+				close(SQL);
+			}
+			else {
+				$dbh->do($data) || die "sql failed: DBI->errstr";
+			}
 		}
 		elsif ($type eq "mkdir") {
 			print "        MKDIR: ", $data, "\n";
@@ -365,13 +432,12 @@ foreach (@comm_sets) {
 		}
 		elsif ($type eq "mkfile") {
 			print "        TOUCH/CHMOD: ", $data, "\n";
-		    make_writeable_files(["$install_path/$data"],$apache_user,$pretend);
+			make_writeable_files(["$install_path/$data"],$apache_user,$pretend);
 		}
 		elsif ($type eq "install") {
 			print "        CPAN Install: ", $data, "\n";
 			unless ($pretend) {
-				my $obj = CPAN::Shell->expand('Module',$data);
-				$obj->install;
+				CPAN::Shell->install($data);
 			}
 		}
 		else {
