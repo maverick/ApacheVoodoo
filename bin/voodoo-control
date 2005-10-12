@@ -17,17 +17,17 @@ FIXME: Add documentation
 =cut ####################################################################################
 
 use Apache::Voodoo::Install;
-use File::Pid;
-use Getopt::Long;
-use Config::General;
-use ExtUtils::Install;
-use DBI;
-use Data::Dumper;
 use CPAN::Config;
 use CPAN;
+use Config::General;
+use DBI;
+use Data::Dumper;
+use ExtUtils::Install;
+use File::Pid;
+use Getopt::Long;
+use Sys::Hostname;
 
 use strict;
-
 
 # FIXME scan httpd.conf to find this
 my $apache_user = 'apache';
@@ -47,11 +47,11 @@ my $pretend = 0;
 my ($distribution,$dbhost,$dbname,$dbuser,$dbpass,$dbroot);
 
 GetOptions(
-        'pretend|pr'  => \$pretend,
+	'pretend'     => \$pretend,
 	'dbhost|h:s'  => \$dbhost,
 	'dbname|n:s'  => \$dbname,
 	'dbuser|u:s'  => \$dbuser,
-	'dbpass|pa:s' => \$dbpass,
+	'dbpass|p:s'  => \$dbpass,
 	'dbroot|r:s'  => \$dbroot,
 	'install|f=s' => \$distribution,
 );
@@ -62,12 +62,12 @@ GetOptions(
 unless (defined($distribution)) {
 	print "\nAutomated install / upgrade for Apache::Voodoo based applications.\n\n";
 	print "Usage: voodoo-control [options] --install installfile\n";
-	print "    -P --pretend  Step through operations.  Don't actually do anything\n";
-	print "    -h --dbhost   Override database host name in config files\n";
-	print "    -n --dbname   Override database name in conf files\n";
-	print "    -u --dbuser   Override database username in conf files\n";
-	print "    -p --dbpass   Override database password in conf files\n";
-	print "    -r --dbroot   Database root password\n";
+	print "    --pretend    Step through operations.  Don't actually do anything\n";
+	print "    -h --dbhost  Override database host name in config files\n";
+	print "    -n --dbname  Override database name in conf files\n";
+	print "    -u --dbuser  Override database username in conf files\n";
+	print "    -p --dbpass  Override database password in conf files\n";
+	print "    -r --dbroot  Database root password\n";
 	print "\n";
 	exit;
 }
@@ -352,6 +352,9 @@ make_writeable_dirs([$new_cdata{'session_dir'}],$apache_user,$pretend);
 ################################################################################
 chdir($install_path);
 
+# find out what our hostname is
+my $hostname = Sys::Hostname::hostname();
+
 print "- Running setup/update commands:\n";
 foreach (@comm_sets) {
 	print "    $_->{'file'}:\n";
@@ -362,6 +365,10 @@ foreach (@comm_sets) {
 	for (my $i=0; $i < $#commands; $i+=2) {
 		my $type = $commands[$i];
 		my $data = $commands[$i+1]->[2];
+
+		if (defined($commands[$i+1]->[0]->{'onhosts'})) {
+			next unless grep { /^$hostname$/ } split(/\s*,\s*/,$commands[$i+1]->[0]->{'onhosts'});
+		}
 
 		$data =~ s/^\s*//;
 		$data =~ s/\s*$//;
