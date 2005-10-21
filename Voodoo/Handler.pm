@@ -472,7 +472,7 @@ sub generate_html {
 				$self->display_host_error($r,$return->[1],1);
 			}
 			else {
-				$self->display_host_error($r,"theme handler returned and unsupported type");
+				$self->display_host_error($r,"theme handler returned an unsupported type");
 			}
 			return OK;
 		}

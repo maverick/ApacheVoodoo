@@ -45,7 +45,7 @@ sub handle {
 		       };
 	}
 	else {
-		return {'ERROR_STRING' => "Eeek! Error message not found\n"};
+		return {'ERROR_STRING' => "An unknown error has occurred.\n"};
 	}
 }
 
