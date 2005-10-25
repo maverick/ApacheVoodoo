@@ -197,8 +197,8 @@ sub parse_xml {
 	my $xmlfile = shift;
 
 	my $parser = new XML::Checker::Parser(
-        'Style' => 'Tree',
-        'SkipInsignifWS' => 1
+		'Style' => 'Tree',
+		'SkipInsignifWS' => 1
 	);
 
 	my $dtdpath = $INC{'Apache/Voodoo/Install.pm'};

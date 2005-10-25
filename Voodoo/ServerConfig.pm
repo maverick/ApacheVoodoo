@@ -57,7 +57,25 @@ sub load_config {
 	my $self = shift;
 	my $conf_file = shift;
 
-	my $conf = Config::General->new($conf_file);
+	if (-l $conf_file) {
+		my $nf = readlink($conf_file);
+		if ($nf !~ /^\//) {
+			# symlink is relative
+			$conf_file =~ s/[^\/]*$//;
+			$conf_file .= $nf;
+		}
+		else {
+			# symlink is absolute
+			$conf_file = $nf;
+		}
+	}
+
+	my $conf = Config::General->new(
+		'-ConfigFile' => $conf_file,
+		'-IncludeRelative' => 1,
+		'-UseApacheInclude' => 1
+	);
+
 	my %conf = $conf->getall();
 
 	my ($id) = ($conf_file =~ /([a-zA-Z][\w-]*)\.conf$/);

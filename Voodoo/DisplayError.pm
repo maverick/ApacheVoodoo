@@ -34,18 +34,21 @@ sub handle {
 		my $errorstring = $session->{"er_" . $error}->{'error'};
 		my $errorurl    = $session->{"er_" . $error}->{'return'};
 
-		$self->debug($self->history($session,2));
 		$errorurl ||= $self->history($session,2);
 
 		# remove it from the session to keep it from growing
 		delete $session->{"er_" . $error};
 	
-		return {"ERROR_STRING" => $errorstring,
+		return {
+			"ERROR_STRING" => $errorstring,
 		        "ERROR_URL"    => $errorurl
 		       };
 	}
 	else {
-		return {'ERROR_STRING' => "An unknown error has occurred.\n"};
+		return {
+			'ERROR_STRING' => "Can't find the requested error message.",
+			'ERROR_URL'    => "/index"
+		};
 	}
 }
 

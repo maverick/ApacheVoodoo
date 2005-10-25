@@ -1,24 +1,29 @@
-V 1.13 - 9/15/2005
+1.13 - 9/15/2005
+================
 
-- Works with DSO builds of mod_perl.  The PerlRestartHandler isn't called the same way with ia DSO vs build in version of mod_perl
+Works with DSO builds of mod_perl.  The PerlRestartHandler isn't called the same way with ia DSO vs build in version of mod_perl
 
-- abstracted pagination control object (Apache::Voodoo::Pager)
+abstracted pagination control object (Apache::Voodoo::Pager)
 
-- various bug fixes
+various bug fixes
 
-V 1.1.2 - 2/13/2005
+1.1.2 - 2/13/2005
+=================
 
 Again with the documentation indexing thing.
 
-V 1.1.1 - 2/11/2005
+1.1.1 - 2/11/2005
+=================
 
 search.cpan.org didn't wanna play nice with my documentation...hopefully this fixes it.
 
-V 1.1.0 - 2/11/2005
+1.1.0 - 2/11/2005
+=================
 
 First public release.
 
-V 1.0.x
+1.0.x
+================
 
 Historic, non-public releases.  I have them if anyone is interested, but they are not
 backwards compatable with the current release
