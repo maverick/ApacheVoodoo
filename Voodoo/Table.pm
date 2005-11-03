@@ -89,8 +89,8 @@ sub set_configuration {
 			# but I don't quite remember what :)
 			# primary key definately CAN'T be listed in the columns...it makes 'add' very unhappy
 			#
-			# oh yeah, now I remember, need the column difinition to know type, regexp, etc, etc.
-			# it has to be pulled out and used seperatly.
+			# oh yeah, now I remember, need the column definition to know type, regexp, etc, etc.
+			# it has to be pulled out and used separatly.
 			next;
 		}
 
@@ -184,7 +184,6 @@ sub set_configuration {
 
 		print STDERR "Errors in Apache::Voodoo::Table configuration for $self->{'table'}\n";
 		print STDERR join("\n",@errors,"\n");
-		return;
 	}
 }
 
@@ -221,7 +220,7 @@ sub add {
 	my $self = shift;
 	my $p = shift;
 
-	my $dbh   = $p->{'dbh'};
+	my $dbh    = $p->{'dbh'};
 	my $params = $p->{'params'};
 
 	my $errors = {};
@@ -575,8 +574,8 @@ sub list {
 
 	$self->{'success'} = 0;
 
-	my $dbh      = $p->{'dbh'};
-	my $params    = $p->{'params'};
+	my $dbh    = $p->{'dbh'};
+	my $params = $p->{'params'};
 
 	my $pattern = $params->{'pattern'};
 	my $limit   = $params->{'limit'};
@@ -651,7 +650,6 @@ sub list {
 
 	$select_stmt .= " LIMIT $count OFFSET ". $count * ($page -1) unless $showall;
 
-	$self->debug($select_stmt);
 	my $page_set = $dbh->selectall_arrayref($select_stmt) || $self->db_error();
 
 	my %return;
@@ -716,7 +714,7 @@ sub view {
 
 	$self->{'success'} = 0;
 
-	my $dbh   = $p->{'dbh'};
+	my $dbh    = $p->{'dbh'};
 	my $params = $p->{'params'};
 
 	unless ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
@@ -753,7 +751,6 @@ sub view {
 			$self->{'table'}.$self->{'pkey'} = ?
 			$additional_constraint";
 
-	# $self->debug($select_statement);
 	my $res = $dbh->selectall_arrayref($select_statement,undef,$params->{$self->{'pkey'}}) || $self->db_error();
 
 	my %v;
@@ -794,8 +791,8 @@ sub toggle {
 
 	$self->{'success'} = 0;
 
+	my $dbh    = $p->{'dbh'};
 	my $params = $p->{'params'};
-	my $dbh   = $p->{'dbh'};
 
 	unless ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
 		return $self->display_error("Invalid ID");

@@ -34,7 +34,7 @@ sub handle {
 		my $errorstring = $session->{"er_" . $error}->{'error'};
 		my $errorurl    = $session->{"er_" . $error}->{'return'};
 
-		$errorurl ||= $self->history($session,2);
+		$errorurl ||= $self->history($session,3);
 
 		# remove it from the session to keep it from growing
 		delete $session->{"er_" . $error};

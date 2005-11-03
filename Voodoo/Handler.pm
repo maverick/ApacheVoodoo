@@ -384,7 +384,8 @@ sub generate_html {
 						"template_conf" => $run->{'template_conf'},
 						"themes"        => $host->{'themes'},
 						"uri"           => $run->{'uri'},
-						"user-agent"    => $r->header_in('User-Agent')
+						"user-agent"    => $r->header_in('User-Agent'),
+						"r"             => $r
 					}
 				);
 			};
