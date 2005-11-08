@@ -179,8 +179,10 @@ sub handle ($$) {
 	####################
 	# history capture 
 	####################
-	$self->history_queue($run);
-	$debug->mark("history capture");
+	if ($r->method eq "GET") {
+		$self->history_queue($run);
+		$debug->mark("history capture");
+	}
 
 	####################
 	# see if the user has switched debugging on or off 
