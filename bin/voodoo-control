@@ -16,29 +16,15 @@ FIXME: Add documentation
 
 =cut ####################################################################################
 
-use Apache::Voodoo::Install;
-use CPAN::Config;
-use CPAN;
-use Config::General;
+use Apache::Voodoo::Installer;
+
 use DBI;
-use Data::Dumper;
-use ExtUtils::Install;
-use File::Pid;
 use Getopt::Long;
-use Sys::Hostname;
+
+use Data::Dumper;
 
 use strict;
-
-# FIXME scan httpd.conf to find this
-my $apache_user = 'apache';
-
-my $apache_dir = get_prefix();
-my $conf_dir   = get_confdir();
-
-my $app_install_dir = $apache_dir."/sites";
-
-# make CPAN download dependancies
-$CPAN::Config->{'prerequisites_policy'} = 'follow';
+use warnings;
 
 # turn off buffered output
 $| = 1;
@@ -72,115 +58,26 @@ unless (defined($distribution)) {
 	exit;
 }
 
-unless (-e $distribution && -f $distribution) {
-	# no such file.
-	print "ERROR: No such file or directory\n";
-	exit;
-}
-
-my ($app_name,$app_version) = ($distribution =~ /(\w+)-([\w\.]+)\.tar\.gz$/);
-unless ($app_name && $app_version) {
-	print "ERROR: Distribution file names must follow the format: AppName-Version.tar.gz\n";
-	exit;
-}
-
-################################################################################
-# check user and lock for exclusive run
-################################################################################
-if (!$pretend && $<) {
-	print "\nSetup must be ran as root.\n\n";
-	exit;
-}
-
-if ($pretend) {
-	print "== Pretending to run ==\n";
-}
-
-print "Determined apache path to be: $apache_dir\n";
-
-my $pid = File::Pid->new();
-my $id = $pid->running;
-if ($id) {
-	print "ERROR: Already Running ($id)\n";
-	exit;
-}
-
-unless ($pid->write) {
-	die "ERROR: Couldn't write pid: $!";
-}
+my $installer = Apache::Voodoo::Installer->new(
+	'verbose' => 4,
+	'pretend' => $pretend,
+	'dbhost'  => $dbhost,
+	'dbname'  => $dbname,
+	'dbpass'  => $dbpass,
+	'dbroot'  => $dbroot
+);
 
 ################################################################################
 # unpack and verify the distribution
 ################################################################################
+my ($unpack_dir,$app_name) = $installer->unpack_distribution($distribution);
 
-my $unpack_dir = "/tmp/av_unpack_$$";
-
-#system("rm -rf /tmp/av_unpack");
-#my $unpack_dir = "/tmp/av_unpack";
-
-if (-e $unpack_dir) {
-	print "ERROR: $unpack_dir already exists\n";
-	exit;
-}
-
-mkdir($unpack_dir,0700) || die "Can't create directory $unpack_dir: $!";
-chdir($unpack_dir) || die "Can't change to direcotyr $unpack_dir: $!";
-print "- Unpacking distribution to $unpack_dir\n";
-system("tar","xzf",$distribution) && die "Can't unpack $distribution: $!";
-
-unless (-e $unpack_dir."/etc/$app_name.conf") {
-	print "ERROR: distribution file doesn't contain a configuration file at: etc/$app_name.conf\n";
-	#system("rm","-rf",$unpack_dir);
-	exit;
-}
-
-my $new_config = Config::General->new("$unpack_dir/etc/$app_name.conf");
-my %new_cdata = $new_config->getall();
-
-my $new_version = parse_version($new_cdata{'version'});
-if ($new_version != $app_version) {
-	print "ERROR: Version from filename ($app_version) and version from config file ($new_version) don't agree.  aborting.\n";
-#	system("rm","-rf",$unpack_dir);
-	exit;
-}
-print "Determined app version to be: $app_version\n";
-
-# ok, there's a conf file that matches what the distribution name look like.
-my $install_path = $app_install_dir."/".$app_name;
-print "Determined installation path to be: $install_path\n";
+$installer->check_distribution($unpack_dir,$app_name);
 
 ################################################################################
 # Let's see if we're upgrading an existing app.
 ################################################################################
-my $old_version = 0;
-print "- Checking for existing installation: ";
-if (-e $install_path."/etc/$app_name.conf") {
-	print "Found one. We will be performing an upgrade\n";
-
-	my $old_config = Config::General->new($install_path."/etc/$app_name.conf");
-	my %old_cdata = $old_config->getall();
-
-	# save old (maybe customized?) config variables
-	foreach ('session_dir','devel_mode','shared_cache','debug','devel_mode','cookie_name') {
-		$new_cdata{$_} = $old_cdata{$_};
-	}
-
-	foreach ('connect','username','password') {
-		$new_cdata{'database'}->{$_} = $old_cdata{'database'}->{$_};
-	}
-
-	$old_version = parse_version($old_cdata{'version'});
-	print "Old Version determined to be: $old_version\n";
-}
-else {
-	print "not found. This will be a fresh install.\n";
-}
-
-# overwrite any dbhost info supplied on the command line
-if (defined($dbhost)) { $new_cdata{'database'}->{'connect'} =~ s/host=\w*/host=$dbhost/; }
-if (defined($dbname)) { $new_cdata{'database'}->{'connect'} =~ s/database=\w*/database=$dbname/; }
-if (defined($dbuser)) { $new_cdata{'database'}->{'username'} = $dbuser; }
-if (defined($dbuser)) { $new_cdata{'database'}->{'password'} = $dbpass; }
+my $old_version = $installer->check_existing();
 
 $pretend || $new_config->save_file($unpack_dir."/etc/$app_name.conf");
 
@@ -237,226 +134,12 @@ unless ($res->[0]->[0] eq $dbname) {
 	print "created\n";
 }
 
-################################################################################
-# See what updates we need to execute and verify that they are valid
-################################################################################
-print "- Looking for setup/update command xml files:\n";
-my @comm_sets;
+$installer->prepare_setup_commands();
+$installer->install_files();
+$installer->post_setup_checks();
+$installer->execute_setup_commands();
 
-if (-e "$unpack_dir/etc/pre-setup.xml") {
-	print "    pre-setup.xml\n";
-	push(@comm_sets,{file => "$unpack_dir/etc/pre-setup.xml"});
-}
-
-if ($old_version) {
-	my @updates = sort_updates(find_updates($unpack_dir.'/etc/updates'));
-
-	# bleh.  I'm replicated a good chunk of the sort_updates routine.
-	# maybe they need to be combined somehow?
-	my $keep = 0;
-	my @oldv = split(/[\.-]/,$old_version);
-	my @newv = split(/[\.-]/,$app_version);
-	foreach my $file (@updates) {
-		my $v = $file;
-		$v =~ s/.*\///;
-		$v =~ s/\.xml//;
-		my @v = split(/[\.-]/,$v);
-
-        	if ($v[0] >= $newv[0] &&
-		    $v[1] >= $newv[1] &&
-		    $v[2] >= $newv[2] &&
-		    (!defined($newv[3]) || $v[3] ge $newv[3])) {
-
-			# this one is too new
-			$keep = 2;
-		}
-		
-		print "    $v";
-		if ($keep == 0) {
-			print " (skipped. already applied)";
-		}
-		elsif ($keep == 1) {
-			push(@comm_sets,{file => $file});
-		}
-		elsif ($keep == 2) {
-			print " (skipped. too new)";
-		}
-		print "\n";
-
-		if ($keep == 0 &&
-		    $v[0] >= $oldv[0] &&
-		    $v[1] >= $oldv[1] &&
-		    $v[2] >= $oldv[2] &&
-		    (!defined($v[3]) || $v[3] ge $oldv[3])) {
-
-			# we've skipped all the old ones
-			$keep = 1;
-		}
-	}
-}
-else {
-	if (-e "$unpack_dir/etc/setup.xml") {
-		print "    setup.xml\n";
-		push(@comm_sets,{file => "$unpack_dir/etc/setup.xml"});
-	}
-}
-
-if (-e "$unpack_dir/etc/post-setup.xml") {
-	print "    post-setup.xml\n";
-	push(@comm_sets,{file => "$unpack_dir/etc/post-setup.xml"});
-}
-
-print "- Parsing files:\n";
-
-for (my $i=0; $i <= $#comm_sets; $i++) {
-	my $data = parse_xml($comm_sets[$i]->{'file'});
-
-	if (!defined($data)) {
-		print "\n* Parse of $comm_sets[$i]->{'file'} failed. Aborting *\n";
-		exit;
-	}
-	print "    parsed $comm_sets[$i]->{'file'}\n";
-	$comm_sets[$i]->{'commands'} = $data;
-}
-
-################################################################################
-# Ok, here we go.  Install the files.
-################################################################################
-print "\n* Preparing to install.  Press ctrl-c to abort *\n";
-print "* Installing in ";
-foreach (5,4,3,2,1) {
-	print "$_";
-	print ", " if $_ > 1;
-	$pretend || sleep(1);
-}
-print "\n\n";
-
-print "- Installing files:\n";
-
-$pretend || ExtUtils::Install::install({$unpack_dir => $install_path});
-
-print "- Checking symlinks:\n";
-unless (-e "$conf_dir/voodoo") {
-	mkdir("$conf_dir/voodoo",0700) || die "Can't create $conf_dir/voodoo: $!";
-}
-
-setup_symlink("$install_path/etc/$app_name.conf","$conf_dir/voodoo/$app_name.conf",$pretend);
-setup_symlink("$install_path/code","$apache_dir/lib/perl/$app_name",$pretend);
-
-print "- Checking session directory:\n";
-make_writeable_dirs([$new_cdata{'session_dir'}],$apache_user,$pretend);
-
-
-################################################################################
-# Now run the commands.
-################################################################################
-chdir($install_path);
-
-# find out what our hostname is
-my $hostname = Sys::Hostname::hostname();
-
-print "- Running setup/update commands:\n";
-foreach (@comm_sets) {
-	print "    $_->{'file'}:\n";
-
-	# drop first tags (they're always empty)
-	my (undef,@commands) = @{$_->{'commands'}->[1]};
-
-	for (my $i=0; $i < $#commands; $i+=2) {
-		my $type = $commands[$i];
-		my $data = $commands[$i+1]->[2];
-
-		if (defined($commands[$i+1]->[0]->{'onhosts'})) {
-			next unless grep { /^$hostname$/ } split(/\s*,\s*/,$commands[$i+1]->[0]->{'onhosts'});
-		}
-
-		$data =~ s/^\s*//;
-		$data =~ s/\s*$//;
-
-		$data =~ s/\$DBHOST/$dbhost/g;
-		$data =~ s/\$DBNAME/$dbname/g;
-		$data =~ s/\$DBUSER/$dbuser/g;
-		$data =~ s/\$DBPASS/$dbpass/g;
-
-		if ($type eq "shell") {
-			print "        SHELL: ", $data, "\n";
-			$pretend || (system($data) && die "Shell command failed: $!");
-		}
-		elsif ($type eq "sql") {
-			print "        SQL: ", $data, "\n";
-			next if $pretend;
-
-			if ($data =~ /^source\s/i) {
-				$data =~ s/^source\s*//i;
-
-				my ($query,$in_quote,$close_quote);
-				open(SQL,"$install_path/$data") || die "Can't open $install_path/$data: $!";
-				while (!eof(SQL)) {
-					my $c = getc SQL;
-					if (!$in_quote && $c eq ';') {
-						next if ($query =~ /^[\s;]*$/); # an empty query turns a do into a don't
-						$dbh->do($query) || die "sql source failed $query: ".DBI->errstr;
-						$query = '';
-						$c = getc SQL;
-					}
-
-					if ($c eq '\\') {
-						$query .= $c;
-						$c = getc SQL;  # automatically add the next character
-					}
-					elsif ($c eq "'") {
-						if ($in_quote && $close_quote eq "'") {
-							$in_quote = 0;
-							$close_quote = '';
-						}
-						elsif (!$in_quote) {
-							$in_quote = 1;
-							$close_quote = "'";
-						}
-					}
-					elsif ($c eq '"') {
-						if ($in_quote && $close_quote eq '"') {
-							$in_quote = 0;
-							$close_quote = '';
-						}
-						elsif (!$in_quote) {
-							$in_quote = 1;
-							$close_quote = '"';
-						}
-					}
-
-					$query .= $c;
-				}
-				close(SQL);
-			}
-			else {
-				$dbh->do($data) || die "sql failed: DBI->errstr";
-			}
-		}
-		elsif ($type eq "mkdir") {
-			print "        MKDIR: ", $data, "\n";
-			make_writeable_dirs(["$install_path/$data"],$apache_user,$pretend);
-		}
-		elsif ($type eq "mkfile") {
-			print "        TOUCH/CHMOD: ", $data, "\n";
-			make_writeable_files(["$install_path/$data"],$apache_user,$pretend);
-		}
-		elsif ($type eq "install") {
-			print "        CPAN Install: ", $data, "\n";
-			unless ($pretend) {
-				CPAN::Shell->install($data);
-			}
-		}
-		else {
-			print "\n* Unsupported command type ($type). Aborting *\n";
-			exit;
-		}
-	}
-}
-
-print "\n* Finished Successfully *\n";
-system("rm","-rf",$unpack_dir);
-
+$installer->cleanup();
 
 =pod ################################################################################
 

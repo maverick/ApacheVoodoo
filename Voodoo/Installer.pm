@@ -2,23 +2,15 @@
 
 =head1 NAME
 
-Apache::Voodoo::Install - Contains Apache installation path information extracted from apxs at install time
+Apache::Voodoo::Installer
 
 =head1 SYNOPSIS
 
-	use Apache::Voodoo::Install;
-
-	# Apache installation prefix (server root)
-	print $Apache::Voodoo::Install::PREFIX,"\n";
-
-	# Apache bin directory (where apxs, apachectl, and the like resite)
-	print $Apache::Voodoo::Install::SBINDIR,"\n";
-
-	# Apache configuration file directory (usually PREFIX/conf)
-	print $Apache::Voodoo::Install::SYSCONFDIR,"\n";
+This package provides the methods that do the real installation behind the scenes
+installation work that voodoo-control provides.
 
 =cut ###########################################################################
-package Apache::Voodoo::Install;
+package Apache::Voodoo::Installer;
 
 $VERSION = '1.14';
 
@@ -32,6 +24,7 @@ use DBI;
 use Data::Dumper;
 use ExtUtils::Install;
 use File::Find;
+use File::Pid;
 use Sys::Hostname;
 use XML::Checker::Parser;
 
@@ -51,32 +44,82 @@ $CPAN::Config->{'prerequisites_policy'} = 'follow';
 
 sub new {
 	my $class = shift;
+	my %params = @_;
+
 	my $self = {};
 
 	bless $self, $class;
 
+	$self->{'verbose'} = 0;
+
 	#FIXME determine apache username automatically
-	my (undef,undef,$uid,$gid) = getpwnam('apache') or die "Can't find password entry for $apache";
+	my $APACHE = 'apache';
+	my (undef,undef,$uid,$gid) = getpwnam($APACHE) or die "Can't find password entry for $APACHE";
 
 	$self->{'apache_uid'} = $uid;
 	$self->{'apache_gid'} = $gid;
 
+	# we do this below the apache uid/gid setup to allow the user to override it in the constructor.
+	foreach (keys %params) {
+		$self->{$_} = $params{$_};
+	}
+
+	if (!$self->{'pretend'} && $<) {
+		print "\nSetup must be ran as root.\n\n";
+		exit;
+	}
+
+	if ($self->{'pretend'}) {
+		$self->mesg("== Pretending to run ==");
+	}
+
+	$self->{'pid'} = File::Pid->new();
+	my $id = $self->{'pid'}->running;
+	if ($id) {
+		print "ERROR: Already Running ($id)\n";
+		exit;
+	}
+
+	unless ($self->{'pid'}->write) {
+		die "ERROR: Couldn't write pid: $!";
+	}
+
 	return $self;
 }
 
-sub get_prefix  { return $PREFIX;     }
-sub get_confdir { return $SYSCONFDIR; }
-sub get_bindir  { return $SBINDIR;    }
+sub _printer {
+	my $self  = shift;
+	my $level = shift;
 
-sub pretend {
+	if ($self->{'verbose'} >= $level) {
+		foreach (@_) {
+			if (ref($_)) {
+				print Dumper $_;
+			}
+			else {
+				print $_,"\n";
+			}
+		}
+	}
+}
+
+sub mesg {
 	my $self = shift;
-	$self->{'pretend'} = shift;
+	$self->_printer(0,@_);
+}
+
+sub info {
+	my $self = shift;
+	$self->_printer(1,@_);
+}
+
+sub debug {
+	my $self = shift;
+	$self->_printer(2,@_);
 }
 
 ################################################################################
-#
 # Handles installer cleanup tasks.
-#
 ################################################################################
 sub cleanup {
 	my $self = shift;
@@ -84,64 +127,28 @@ sub cleanup {
 	if ($self->{'unpack_dir'}) {
 		system("rm", "-rf", $self->{'unpack_dir'});
 	}
+
+	$self->{'pid'}->remove;
 }
 
 ################################################################################
-# 
-# Checks for an existing installation of the app.  If it exists, it saves
-# it's site specific config data, and returns it's version number.
-#
+# Accessor methods
 ################################################################################
-sub check_existing {
+sub get_prefix  { return $PREFIX;     }
+sub get_confdir { return $SYSCONFDIR; }
+sub get_bindir  { return $SBINDIR;    }
+
+################################################################################
+# Sets / unsets the 'pretend' run mode
+################################################################################
+sub pretend {
 	my $self = shift;
-
-	my $app_name = $self->{'app_name'};
-
-	$self->{'install_path'} = $self->{'apache_dir'}."/sites/".$app_name;
-	my $install_path = $self->{'install_path'};
-
-	my $old_version = 0;
-	if (-e $install_path."/etc/$app_name.conf") {
-		print "Found one. We will be performing an upgrade\n";
-
-		$old_config = Config::General->new($install_path."/etc/$app_name.conf");
-		my %old_cdata = $old_config->getall();
-
-		# save old (maybe customized?) config variables
-		foreach ('session_dir','devel_mode','shared_cache','debug','devel_mode','cookie_name','database') {
-			$self->{'old_conf_data'}->{$_} = $old_cdata{$_};
-		}
-
-		$old_version = $self->parse_version($old_cdata{'version'});
-		$self->{'old_version'} = $old_version;
-		print "Old Version determined to be: $old_version\n";
-
-		my $dbhost = $old_cdata{'database'}->{'connect'};
-		my $dbname = $old_cdata{'database'}->{'connect'};
-
-		$dbhost =~ s/.*\bhost=//;
-		$dbhost =~ s/[^\w\.-]+.*$//;
-
-		$dbname =~ s/.*\bdatabase=//;
-		$dbname =~ s/[^\w\.-]+.*$//;
-
-		$self->{'dbhost'} ||= $dbhost;
-		$self->{'dbname'} ||= $dbname;
-		$self->{'dbuser'} ||= $old_cdata{'database'}->{'username'};
-		$self->{'dbpass'} ||= $old_cdata{'database'}->{'password'};
-	}
-	else {
-		print "not found. This will be a fresh install.\n";
-	}
-
-	return $old_version;
+	$self->{'pretend'} = shift;
 }
 
 ################################################################################
-#
 # Unpacks a tar.gz to a temporary directory.
 # Returns the path to the directory.
-#
 ################################################################################
 sub unpack_distribution {
 	my $self = shift;
@@ -173,12 +180,61 @@ sub unpack_distribution {
 
 	mkdir($unpack_dir,0700) || die "Can't create directory $unpack_dir: $!";
 	chdir($unpack_dir) || die "Can't change to direcotyr $unpack_dir: $!";
-	print "- Unpacking distribution to $unpack_dir\n";
+	$self->info("- Unpacking distribution to $unpack_dir");
 	system("tar","xzf",$file) && die "Can't unpack $file: $!";
 
 	$self->{'unpack_dir'} = $unpack_dir;
 
 	return ($unpack_dir,$app_name);
+}
+
+################################################################################
+# Checks for an existing installation of the app.  If it exists, it saves
+# it's site specific config data, and returns it's version number.
+################################################################################
+sub check_existing {
+	my $self = shift;
+
+	my $app_name = $self->{'app_name'};
+
+	$self->{'install_path'} = $self->{'apache_dir'}."/sites/".$app_name;
+	my $install_path = $self->{'install_path'};
+
+	my $old_version = 0;
+	if (-e $install_path."/etc/$app_name.conf") {
+		$self->info("Found one. We will be performing an upgrade");
+
+		my $old_config = Config::General->new($install_path."/etc/$app_name.conf");
+		my %old_cdata = $old_config->getall();
+
+		# save old (maybe customized?) config variables
+		foreach ('session_dir','devel_mode','shared_cache','debug','devel_mode','cookie_name','database') {
+			$self->{'old_conf_data'}->{$_} = $old_cdata{$_};
+		}
+
+		$old_version = $self->parse_version($old_cdata{'version'});
+		$self->{'old_version'} = $old_version;
+		$self->info("Old Version determined to be: $old_version");
+
+		my $dbhost = $old_cdata{'database'}->{'connect'};
+		my $dbname = $old_cdata{'database'}->{'connect'};
+
+		$dbhost =~ s/.*\bhost=//;
+		$dbhost =~ s/[^\w\.-]+.*$//;
+
+		$dbname =~ s/.*\bdatabase=//;
+		$dbname =~ s/[^\w\.-]+.*$//;
+
+		$self->{'dbhost'} ||= $dbhost;
+		$self->{'dbname'} ||= $dbname;
+		$self->{'dbuser'} ||= $old_cdata{'database'}->{'username'};
+		$self->{'dbpass'} ||= $old_cdata{'database'}->{'password'};
+	}
+	else {
+		$self->info("not found. This will be a fresh install.");
+	}
+
+	return $old_version;
 }
 
 sub check_distribution {
@@ -210,8 +266,7 @@ sub check_distribution {
 		$self->{'app_version'} = $new_version;
 	}
 
-	print "Determined app version to be: $self->{'app_version'}\n";
-
+	$self->mesg("Determined app version to be: $self->{'app_version'}");
 }
 
 sub install_files {
@@ -221,27 +276,28 @@ sub install_files {
 	my $unpack_dir   = $self->{'unpack_dir'};
 	my $install_path = $self->{'install_path'};
 
-	print "\n* Preparing to install.  Press ctrl-c to abort *\n";
-	print "* Installing in ";
-	foreach (5,4,3,2,1) {
-		print "$_";
-		print ", " if $_ > 1;
-		$self->{'pretend'} || sleep(1);
-	}
-	print "\n\n";
+	if ($self->{'verbose'} >= 0) {
+		$self->mesg("\n* Preparing to install.  Press ctrl-c to abort *\n");
+		$self->mesg("* Installing in ");
+		foreach (5,4,3,2,1) {
+			$self->mesg("$_");
+			$self->{'pretend'} || sleep(1);
+		}
+		$self->mesg("\n");
 
-	print "- Installing files:\n";
+		$self->mesg("- Installing files:");
+	}
 
 	$self->{'pretend'} || ExtUtils::Install::install({$unpack_dir => $install_path});
 }
 
-sub setup_symlinks {
+sub post_setup_checks {
 	my $self = shift;
 
 	my $install_path = $self->{'install_path'};
 	my $app_name     = $self->{'app_name'};
 
-	print "- Checking symlinks:\n";
+	$self->info("- Checking symlinks:");
 	unless (-e "$SYSCONFDIR/voodoo") {
 		mkdir("$SYSCONFDIR/voodoo",0700) || die "Can't create $SYSCONFDIR/voodoo: $!";
 	}
@@ -249,8 +305,8 @@ sub setup_symlinks {
 	$self->make_symlink("$install_path/etc/$app_name.conf","$SYSCONFDIR/voodoo/$app_name.conf");
 	$self->make_symlink("$install_path/code","$PREFIX/lib/perl/$app_name");
 
-	print "- Checking session directory:\n";
-	$self->make_writeable_dirs($new_cdata{'session_dir'});
+	$self->info("- Checking session directory:");
+	# $self->make_writeable_dirs($new_cdata{'session_dir'});
 }
 
 sub make_symlink {
@@ -260,7 +316,7 @@ sub make_symlink {
 
 	my $pretend = $self->{'pretend'};
 
-	print "- Checking symlink $target: ";
+	$self->info("- Checking symlink $target");
 
 	lstat($target);
 	if (-e _ && -l _ ) {
@@ -271,10 +327,10 @@ sub make_symlink {
 			# inode's are different.
 			$pretend || unlink($target) || die "Can't remove bogus link: $!";
 			$pretend || symlink($source,$target) || die "Can't create symlink: $!";
-			print "invalid, fixed\n";
+			$self->debug(": invalid, fixed");
 		}
 		else {
-			print "ok\n";
+			$self->debug(": ok");
 		}
 	}
 	else {
@@ -294,7 +350,7 @@ sub make_symlink {
 		$pretend || unlink($target);	# in case it was there.
 
 		$pretend || symlink($source,$target) || die "Can't create symlink: $!";
-		print "missing, created\n";
+		$self->debug(": missing, created");
 	}
 }
 
@@ -307,43 +363,43 @@ sub make_writeable_dirs {
 	my $gid     = $self->{'apache_gid'};
 
 	foreach my $dir (@dirs) {
-		print "- Checking directory $dir: ";
+		$self->info("- Checking directory $dir");
 		stat($dir);
 		if (-e _ && -d _ ) {
-			print "ok\n";
+			$self->debug(": ok");
 		}
 		else {
 			$pretend || mkdir($dir,770) or die "Can't create directory $dir: $!";
-			print "created\n";
+			$self->debug(": created");
 		}
-		print "- Making sure the $dir directory is writable by apache: ";
+		$self->info("- Making sure the $dir directory is writable by apache");
 		$pretend || chown($uid,$gid,$dir) or die "Can't chown directory: $!";
 		$pretend || chmod(0770,$dir)      or die "Can't chmod directory: $!";
-		print "ok\n";
+		$self->debug(": ok");
 	}
 }
 
 sub make_writeable_files {
 	my $self  = shift;
-	my $files = shift;
+	my @files = shift;
 
 	my $pretend = $self->{'pretend'};
 	my $uid     = $self->{'apache_uid'};
 	my $gid     = $self->{'apache_gid'};
 
-	foreach my $file (@{$files}) {
-		print "- Checking file $file: ";
+	foreach my $file (@files) {
+		$self->info("- Checking file $file");
 		if (-e $file) {
-			print "ok\n";
+			$self->debug(": ok");
 		}
 		else {
 			$pretend || (system("touch $file") && die "Can't create file: $!");
-			print "created\n";
+			$self->debug(": created");
 		}
-		print "- Making sure the $file directory is writable by apache: ";
+		$self->info("- Making sure the $file directory is writable by apache");
 		$pretend || chown($uid,$gid,$file) or die "Can't chown file: $!";
 		$pretend || chmod(0600,$file)      or die "Can't chmod file: $!";
-		print "ok\n";
+		$self->debug(": ok");
 	}
 }
 
@@ -361,7 +417,7 @@ sub parse_version {
 	}
 
 	# If it doesn't look like one of the above, we'll just treat is as the actual version number.
-	return $v;
+	return $ver;
 }
 
 sub find_updates {
@@ -412,11 +468,11 @@ sub prepare_setup_commands {
 
 	my $unpack_dir = $self->{'unpack_dir'};
 
-	print "- Looking for setup/update command xml files:\n";
+	$self->mesg("- Looking for setup/update command xml files");
 	my @comm_sets;
 
 	if (-e "$unpack_dir/etc/pre-setup.xml") {
-		print "    pre-setup.xml\n";
+		$self->debug("    pre-setup.xml");
 		push(@comm_sets,{file => "$unpack_dir/etc/pre-setup.xml"});
 	}
 
@@ -445,13 +501,13 @@ sub prepare_setup_commands {
 			
 			print "    $v";
 			if ($keep == 0) {
-				print " (skipped. already applied)";
+				$self->debug(" (skipped. already applied)");
 			}
 			elsif ($keep == 1) {
 				push(@comm_sets,{file => $file});
 			}
 			elsif ($keep == 2) {
-				print " (skipped. too new)";
+				$self->debug(" (skipped. too new)");
 			}
 			print "\n";
 
@@ -468,13 +524,13 @@ sub prepare_setup_commands {
 	}
 	else {
 		if (-e "$unpack_dir/etc/setup.xml") {
-			print "    setup.xml\n";
+			$self->debug("    setup.xml");
 			push(@comm_sets,{file => "$unpack_dir/etc/setup.xml"});
 		}
 	}
 
 	if (-e "$unpack_dir/etc/post-setup.xml") {
-		print "    post-setup.xml\n";
+		$self->debug("    post-setup.xml");
 		push(@comm_sets,{file => "$unpack_dir/etc/post-setup.xml"});
 	}
 
@@ -513,7 +569,14 @@ sub parse_xml {
 	eval {
 			# parser checker only dies on catastrophic errors.  Adding this handler
 			# makes it die on ALL errors.
-			local $XML::Checker::FAIL = \&failure_handler;
+			local $XML::Checker::FAIL = sub {
+				my $errcode = shift;
+
+				print "\n ** Parse of $xmlfile failed **\n";
+				die XML::Checker::error_string ($errcode, @_) if $errcode < 200;
+				XML::Checker::print_error ($errcode, @_);
+			};
+
 			$data = $parser->parsefile($xmlfile);
 	};
 	if ($@) {
@@ -522,18 +585,12 @@ sub parse_xml {
 	}
 	return $data;
 
-	sub failure_handler {
-		my $code = shift;
-
-		print "\n ** Parse of $xmlfile failed **\n";
-		die XML::Checker::error_string ($code, @_) if $code < 200;
-		XML::Checker::print_error ($code, @_);
-	}
 }
 
 sub execute_setup_commands {
 	my $self = shift;
 
+	my $pretend      = $self->{'pretend'};
 	my $install_path = $self->{'install_path'};
 
 	chdir($install_path);
@@ -541,9 +598,9 @@ sub execute_setup_commands {
 	# find out what our hostname is
 	my $hostname = Sys::Hostname::hostname();
 
-	print "- Running setup/update commands:\n";
+	$self->info("- Running setup/update commands");
 	foreach (@{$self->{'comm_sets'}}) {
-		print "    $_->{'file'}:\n";
+		$self->debug("    $_->{'file'}");
 
 		# drop first tags (they're always empty)
 		my (undef,@commands) = @{$_->{'commands'}->[1]};
@@ -559,17 +616,17 @@ sub execute_setup_commands {
 			$data =~ s/^\s*//;
 			$data =~ s/\s*$//;
 
-			$data =~ s/\$DBHOST/$dbhost/g;
-			$data =~ s/\$DBNAME/$dbname/g;
-			$data =~ s/\$DBUSER/$dbuser/g;
-			$data =~ s/\$DBPASS/$dbpass/g;
+			#$data =~ s/\$DBHOST/$dbhost/g;
+			#$data =~ s/\$DBNAME/$dbname/g;
+			#$data =~ s/\$DBUSER/$dbuser/g;
+			#$data =~ s/\$DBPASS/$dbpass/g;
 
 			if ($type eq "shell") {
-				print "        SHELL: ", $data, "\n";
+				$self->debug("        SHELL: ", $data);
 				$pretend || (system($data) && die "Shell command failed: $!");
 			}
 			elsif ($type eq "sql") {
-				print "        SQL: ", $data, "\n";
+				$self->debug("        SQL: ", $data);
 				next if $pretend;
 
 				if ($data =~ /^source\s/i) {
@@ -581,7 +638,7 @@ sub execute_setup_commands {
 						my $c = getc SQL;
 						if (!$in_quote && $c eq ';') {
 							next if ($query =~ /^[\s;]*$/); # an empty query turns a do into a don't
-							$dbh->do($query) || die "sql source failed $query: ".DBI->errstr;
+							#$dbh->do($query) || die "sql source failed $query: ".DBI->errstr;
 							$query = '';
 							$c = getc SQL;
 						}
@@ -616,19 +673,19 @@ sub execute_setup_commands {
 					close(SQL);
 				}
 				else {
-					$dbh->do($data) || die "sql failed: DBI->errstr";
+					#$dbh->do($data) || die "sql failed: DBI->errstr";
 				}
 			}
 			elsif ($type eq "mkdir") {
-				print "        MKDIR: ", $data, "\n";
-				make_writeable_dirs("$install_path/$data");
+				$self->debug("        MKDIR: ", $data);
+				$self->make_writeable_dirs("$install_path/$data");
 			}
 			elsif ($type eq "mkfile") {
-				print "        TOUCH/CHMOD: ", $data, "\n";
-				make_writeable_files(["$install_path/$data"],$apache_user,$pretend);
+				$self->debug("        TOUCH/CHMOD: ", $data);
+				$self->make_writeable_files("$install_path/$data");
 			}
 			elsif ($type eq "install") {
-				print "        CPAN Install: ", $data, "\n";
+				$self->debug("        CPAN Install: ", $data);
 				unless ($pretend) {
 					CPAN::Shell->install($data);
 				}
@@ -639,8 +696,6 @@ sub execute_setup_commands {
 			}
 		}
 	}
-
-
 }
 
 1;
