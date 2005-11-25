@@ -67,6 +67,10 @@ my $installer = Apache::Voodoo::Installer->new(
 	'dbroot'  => $dbroot
 );
 
+print Dumper $installer;
+
+=pod
+
 ################################################################################
 # unpack and verify the distribution
 ################################################################################

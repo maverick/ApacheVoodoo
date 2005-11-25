@@ -1,35 +1,5 @@
 use 5.008000;
 use ExtUtils::MakeMaker;
-use Apache::MyConfig;
-
-# figure out where apache in installed
-my $APXS = $Apache::MyConfig::Setup{'APXS'};
-
-my %paths;
-my $filter;
-foreach my $item (qw{PREFIX SBINDIR SYSCONFDIR}) {
-	open(APXS,"$APXS -q $item |") || die "Can't get info from $APXS: $!";
-	$paths{$item} = <APXS>;
-	close(APXS);
-
-}
-
-# one would have though that this would have been a simple task for PM_FILTER, but alas,
-# it is not.
-open(OUT,"> Install.pm")                   || die "Can't open Install.pm for writing: $!";
-open(IN, "< lib/Apache/Voodoo/Install.pm") || die "Can't open Install.pm for reading: $!";
-
-while (<IN>) {
-	    s/^\$PREFIX\s*=\s*['"][\w\/\-]*['"]\s*;\s*$/\$PREFIX     = '$paths{PREFIX}';\n/;
-	   s/^\$SBINDIR\s*=\s*['"][\w\/\-]*['"]\s*;\s*$/\$SBINDIR    = '$paths{SBINDIR}';\n/;
-	s/^\$SYSCONFDIR\s*=\s*['"][\w\/\-]*['"]\s*;\s*$/\$SYSCONFDIR = '$paths{SYSCONFDIR}';\n/;
-
-	print OUT;
-}
-close(IN);
-close(OUT);
-unlink('lib/Apache/Voodoo/Install.pm');
-rename('Install.pm','lib/Apache/Voodoo/Install.pm');
 
 WriteMakefile(
 	NAME          => 'Apache::Voodoo',

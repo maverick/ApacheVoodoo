@@ -17,6 +17,7 @@ $VERSION = '1.14';
 use strict;
 use warnings;
 
+use Apache::MyConfig;
 use CPAN::Config;
 use CPAN;
 use Config::General;
@@ -29,15 +30,6 @@ use Sys::Hostname;
 use XML::Checker::Parser;
 
 use Data::Dumper;
-
-#################################################################################
-# These get set by the Makefile.PL distributed with Apache::Voodoo
-# The path to axps is extracted from the mod_perl configuration and
-# it is used to obtaine these paths.
-#################################################################################
-my $PREFIX     = "/data/apache";
-my $SYSCONFDIR = "/data/apache/conf";
-my $SBINDIR    = "/data/apache/bin";
 
 # make CPAN download dependancies
 $CPAN::Config->{'prerequisites_policy'} = 'follow';
@@ -58,6 +50,19 @@ sub new {
 
 	$self->{'apache_uid'} = $uid;
 	$self->{'apache_gid'} = $gid;
+
+	# figure out where apache is installed.  Originally I had the Makefile hard code this,
+	# but late realized that this made distributed development kind of tricky and meant than
+	# any alterations to the apache setup paths post install would break this.
+	
+	my $APXS = $Apache::MyConfig::Setup{'APXS'};
+
+	foreach my $item (qw{PREFIX SBINDIR SYSCONFDIR}) {
+		open(APXS,"$APXS -q $item |") || die "Can't get info from $APXS: $!";
+		$self->{$item} = <APXS>;
+		close(APXS);
+	}
+
 
 	# we do this below the apache uid/gid setup to allow the user to override it in the constructor.
 	foreach (keys %params) {
@@ -83,6 +88,11 @@ sub new {
 	unless ($self->{'pid'}->write) {
 		die "ERROR: Couldn't write pid: $!";
 	}
+
+	$self->debug("APXS: $APXS");
+	$self->debug("PREFIX: $self->{'PREFIX'}");
+	$self->debug("SBINDIR: $self->{'SBINDIR'}");
+	$self->debug("SYSCONFDIR: $self->{'SYSCONFDIR'}");
 
 	return $self;
 }
@@ -134,9 +144,9 @@ sub cleanup {
 ################################################################################
 # Accessor methods
 ################################################################################
-sub get_prefix  { return $PREFIX;     }
-sub get_confdir { return $SYSCONFDIR; }
-sub get_bindir  { return $SBINDIR;    }
+sub get_prefix  { return $_[0]->{'PREFIX'};     }
+sub get_confdir { return $_[0]->{'SYSCONFDIR'}; }
+sub get_bindir  { return $_[0]->{'SBINDIR'};    }
 
 ################################################################################
 # Sets / unsets the 'pretend' run mode
@@ -166,7 +176,7 @@ sub unpack_distribution {
 		exit;
 	}
 
-	$self->{'install_path'} = $self->{'apache_dir'}."/sites/".$app_name;
+	$self->{'install_path'} = $self->{'PREFIX'}."/sites/".$app_name;
 
 	$self->{'app_name'} = $app_name;
 	$self->{'app_version'} = $app_version;
@@ -197,7 +207,7 @@ sub check_existing {
 
 	my $app_name = $self->{'app_name'};
 
-	$self->{'install_path'} = $self->{'apache_dir'}."/sites/".$app_name;
+	$self->{'install_path'} = $self->{'PREFIX'}."/sites/".$app_name;
 	my $install_path = $self->{'install_path'};
 
 	my $old_version = 0;
@@ -297,13 +307,15 @@ sub post_setup_checks {
 	my $install_path = $self->{'install_path'};
 	my $app_name     = $self->{'app_name'};
 
+	my $conf_dir = $self->{'SYSCONFDIR'}."/voodoo";
+
 	$self->info("- Checking symlinks:");
-	unless (-e "$SYSCONFDIR/voodoo") {
-		mkdir("$SYSCONFDIR/voodoo",0700) || die "Can't create $SYSCONFDIR/voodoo: $!";
+	unless (-e $conf_dir) {
+		mkdir($conf_dir,0700) || die "Can't create $conf_dir: $!";
 	}
 
-	$self->make_symlink("$install_path/etc/$app_name.conf","$SYSCONFDIR/voodoo/$app_name.conf");
-	$self->make_symlink("$install_path/code","$PREFIX/lib/perl/$app_name");
+	$self->make_symlink("$install_path/etc/$app_name.conf","$conf_dir/$app_name.conf");
+	$self->make_symlink("$install_path/code",$self->{'PREFIX'}."/lib/perl/$app_name");
 
 	$self->info("- Checking session directory:");
 	# $self->make_writeable_dirs($new_cdata{'session_dir'});
