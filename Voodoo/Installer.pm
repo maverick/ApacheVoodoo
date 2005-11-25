@@ -51,16 +51,20 @@ sub new {
 	$self->{'apache_uid'} = $uid;
 	$self->{'apache_gid'} = $gid;
 
-	# figure out where apache is installed.  Originally I had the Makefile hard code this,
-	# but late realized that this made distributed development kind of tricky and meant than
-	# any alterations to the apache setup paths post install would break this.
-	
-	my $APXS = $Apache::MyConfig::Setup{'APXS'};
+	my $APXS = '[no used]';
+	unless ($params{'PREFIX'} && $params{'SBINDIR'} && $params{'SYSCONFDIR'}) {
+		# User hasn't supplied/overridden them so we'll figure out where apache is installed.
 
-	foreach my $item (qw{PREFIX SBINDIR SYSCONFDIR}) {
-		open(APXS,"$APXS -q $item |") || die "Can't get info from $APXS: $!";
-		$self->{$item} = <APXS>;
-		close(APXS);
+		# Originally I had the Makefile hard code this, but later realized that this made distributed 
+		# development kind of tricky and meant than any alterations to the apache setup paths post
+		# install would break things.
+		$APXS = $Apache::MyConfig::Setup{'APXS'};
+
+		foreach my $item (qw{PREFIX SBINDIR SYSCONFDIR}) {
+			open(APXS,"$APXS -q $item |") || die "Can't get info from $APXS: $!";
+			$self->{$item} = <APXS>;
+			close(APXS);
+		}
 	}
 
 
