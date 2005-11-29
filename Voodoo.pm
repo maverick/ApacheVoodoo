@@ -81,7 +81,7 @@ sub access_denied {
 sub history {
 	my $self = shift;
 	my $session = shift;
-	my $index = shift || 1;
+	my $index = shift;
 
 	return $session->{'history'}->[$index]->{'uri'}.'?'.$session->{'history'}->[$index]->{'params'};
 }
@@ -89,20 +89,22 @@ sub history {
 sub tardis {
 	my $self = shift;
 	my $p = shift;
-	my $uri = $p->{'uri'};
+
+	my %targets = map { $_ => 1 } @_;
+
+	my $uri = '/'.$p->{'uri'};
 	my $history = $p->{'session'}->{'history'};
 
-	my $i;
 	my $find_uri=1;
-	for ($i=0; $i <= $#{$history}; $i++) {
-		if ($find_uri && $p->{'uri'} eq $history->[$i]->{'uri'}) {
-			$find_uri = 0;
+	for (my $i=0; $i <= $#{$history}; $i++) {
+		if ($find_uri) {
+			if ($uri eq $history->[$i]->{'uri'}) {
+				$find_uri = 0;
+			}
 		}
 		else {
-			foreach (@_) {
-				if ($_ eq $history->[$i]->{'uri'}) {
-					return $self->redirect($self->history($p->{'session'},$i));
-				}
+			if ($targets{$history->[$i]->{'uri'}}) {
+				return $self->redirect($self->history($p->{'session'},$i));
 			}
 		}
 	}
