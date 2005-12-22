@@ -67,7 +67,6 @@ sub new {
 		}
 	}
 
-
 	# we do this below the apache uid/gid setup to allow the user to override it in the constructor.
 	foreach (keys %params) {
 		$self->{$_} = $params{$_};
@@ -283,6 +282,29 @@ sub check_distribution {
 	$self->mesg("Determined app version to be: $self->{'app_version'}");
 }
 
+sub update_conf_file {
+	my $self = shift;
+
+	my $install_path = $self->{'install_path'};
+	my $app_name     = $self->{'app_name'};
+
+	my $config = Config::General->new("$install_path/dir/etc/$app_name.conf");
+	my %cdata = $config->getall();
+
+	foreach (keys %{$self->{'old_conf_data'}}) {
+		$self->debug("Merging config data: $_");
+		$cdata{$_} = $self->{'old_conf_data'}->{$_};
+	}
+
+	$self->debug("Merging database config: $_");
+	$cdata{'database'}->{'username'} = $self->{'dbuser'};
+	$cdata{'database'}->{'password'} = $self->{'dbpass'};
+	$cdata{'database'}->{'connect'} =~ s/\bdatabase=[^;"]+/database=$self->{'dbname'}/;
+	$cdata{'database'}->{'connect'} =~ s/\bhost=[^;"]+/host=$self->{'host'}/;
+
+	$self->{'pretend'} || $config->save_file;
+}
+
 sub install_files {
 	my $self = shift;
 
@@ -322,7 +344,7 @@ sub post_setup_checks {
 	$self->make_symlink("$install_path/code",$self->{'PREFIX'}."/lib/perl/$app_name");
 
 	$self->info("- Checking session directory:");
-	# $self->make_writeable_dirs($new_cdata{'session_dir'});
+	$self->make_writeable_dirs($self->{'cdata'}->{'session_dir'});
 }
 
 sub make_symlink {

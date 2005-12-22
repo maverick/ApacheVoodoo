@@ -74,9 +74,6 @@ my $installer = Apache::Voodoo::Installer->new(
 	%defaults
 );
 
-print Dumper $installer;
-
-=pod
 
 ################################################################################
 # unpack and verify the distribution
@@ -90,63 +87,9 @@ $installer->check_distribution($unpack_dir,$app_name);
 ################################################################################
 my $old_version = $installer->check_existing();
 
-$pretend || $new_config->save_file($unpack_dir."/etc/$app_name.conf");
-
-################################################################################
-# Make sure the supplied database info works.
-################################################################################
-
-# pull these (back?) out to use below
-$dbhost = $new_cdata{'database'}->{'connect'};
-$dbname = $new_cdata{'database'}->{'connect'};
-$dbuser = $new_cdata{'database'}->{'username'};
-$dbpass = $new_cdata{'database'}->{'password'};
-
-$dbhost =~ s/.*\bhost=//;
-$dbhost =~ s/[^\w\.-]+.*$//;
-
-$dbname =~ s/.*\bdatabase=//;
-$dbname =~ s/[^\w\.-]+.*$//;
-
-my $dbh;
-if ($old_version) {
-	# If there is an old version (meaning we're doing an upgrade)
-	# we would expect to be able to connect to that database.
-	# Not so for a new installation...we expect that the setup.xml creates it
-	# and the user account as necessary.
-	print "- Attempting connection to database: ";
-	$dbh = DBI->connect(
-		$new_cdata{'database'}->{'connect'},
-		$new_cdata{'database'}->{'username'},
-		$new_cdata{'database'}->{'password'}) || die DBI->errstr;
-	$dbh->disconnect;
-	print "ok\n";
-}
-
-print "- Attempting connection to database as root: ";
-my $testdb = $new_cdata{'database'}->{'connect'};
-$testdb =~ s/database=[\w\.-]+/database=test/;
-
-$dbh = DBI->connect(
-	$testdb,
-	'root',
-	$dbroot) || die DBI->errstr;
-print "ok\n";
-
-print "- Checking for existance of the $dbname database: ";
-my $res = $dbh->selectall_arrayref("SHOW DATABASES LIKE '$dbname'");
-unless ($res->[0]->[0] eq $dbname) {
-	$dbh->do("CREATE DATABASE $dbname") || die "Can't create database $dbname: ".DBI->errstr;
-	$dbh = DBI->connect(
-		$new_cdata{'database'}->{'connect'},
-		'root',
-		$dbroot) || die DBI->errstr;
-
-	print "created\n";
-}
-
 $installer->prepare_setup_commands();
 $installer->install_files();
+$installer->update_conf_file();
 $installer->post_setup_checks();
 $installer->execute_setup_commands();
 
