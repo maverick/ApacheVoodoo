@@ -584,7 +584,7 @@ sub list {
 	my $last_sort = $params->{'last_sort'} || $self->{'default_sort'};
 	my $desc      = $params->{'desc'};
 	
-	my $count   = $params->{'count'}   || "40";
+	my $count   = $params->{'count'}   || $self->{'pager'}->{'count'};
 	my $page    = $params->{'page'}    || 1;
 	my $showall = $params->{'showall'} || 0;
 
