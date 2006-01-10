@@ -572,6 +572,7 @@ sub restart {
 	$s->log_error("Voodoo starting...");
 
 	my $conf_dir = Apache->server_root_relative("conf/voodoo");
+	$s->log_error("Determined conf directory to be: $conf_dir");
 
 	unless(opendir(DIR,$conf_dir)) {
 		$s->log_error("Can't open configuration dir: $!");

@@ -182,7 +182,7 @@ sub set_configuration {
 	if (@errors) {
 		$self->{'config_invalid'} = 1;
 
-		print STDERR "Errors in Apache::Voodoo::Table configuration for $self->{'table'}\n";
+		print STDERR "Errors in Apache::Voodoo::Table configuration in ".(caller(1))[1]."\n";
 		print STDERR join("\n",@errors,"\n");
 	}
 }
