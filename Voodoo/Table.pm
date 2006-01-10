@@ -38,7 +38,15 @@ sub new {
 
 sub set_configuration {
 	my $self = shift;
-	my $c    = shift;
+	my $conf = shift;
+
+	# Data::Dumper is something that comes by default with perl installs
+	# and provides a easy way to make deep copies.
+	my $c;
+	{
+		$Data::Dumper::terse = 1;
+		$c = eval Dumper($conf);
+	}
 
 	my %COLUMN_TYPES = (
 		"varchar" => { 
@@ -60,11 +68,12 @@ sub set_configuration {
 			'left'  => 1,
 			'right' => 1,
 		},
-		'date'     => {},
-		'time'     => {},
-		'datetime' => {},
-		'text'     => {},
-		'bit'      => {}
+		'date'      => {},
+		'time'      => {},
+		'datetime'  => {},
+		'timestamp' => {},
+		'text'      => {},
+		'bit'       => {}
 	);
 
 	my @errors;
@@ -80,7 +89,7 @@ sub set_configuration {
 		}
 
 		unless (defined($COLUMN_TYPES{$conf->{'type'}})) {
-			push(@errors,"don't know how to handle colum type $conf->{'type'} $name");
+			push(@errors,"don't know how to handle type $conf->{'type'} for column $name");
 			next;
 		}
 		
@@ -111,7 +120,7 @@ sub set_configuration {
 			if ($conf->{$_}) {
 				push(@{$self->{$_}},$name);
 			}
-			delete $conf->{$_};
+			delete($conf->{$_});
 		}
 
 		if (defined($conf->{'references'})) {
@@ -150,7 +159,7 @@ sub set_configuration {
 		delete $conf->{'type'};
 
 		foreach (keys %{$conf}) {
-			push(@errors,"unknown option: $_ in column $name");
+			push(@errors,"unknown option: \"$_\" in column \"$name\"");
 		}
 	}
 
