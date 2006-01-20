@@ -1,16 +1,16 @@
-=pod ################################################################################
+=pod ############################################################################
 
 =head1 NAME
 
-Apache::Voodoo::Installer
+Apache::Voodoo::Install
 
 =head1 SYNOPSIS
 
-This package provides the methods that do the real installation behind the scenes
-installation work that voodoo-control provides.
+This package provides some basic common methods needed by all the "real work"
+Apache::Voodoo::Install::* objects.
 
 =cut ###########################################################################
-package Apache::Voodoo::Installer;
+package Apache::Voodoo::Install;
 
 $VERSION = '1.14';
 
@@ -18,21 +18,14 @@ use strict;
 use warnings;
 
 use Apache::MyConfig;
-use CPAN::Config;
-use CPAN;
 use Config::General;
 use DBI;
-use Data::Dumper;
 use ExtUtils::Install;
 use File::Find;
 use File::Pid;
 use Sys::Hostname;
-use XML::Checker::Parser;
 
 use Data::Dumper;
-
-# make CPAN download dependancies
-$CPAN::Config->{'prerequisites_policy'} = 'follow';
 
 sub new {
 	my $class = shift;
@@ -100,6 +93,14 @@ sub new {
 	return $self;
 }
 
+################################################################################
+# Sets / unsets the 'pretend' run mode
+################################################################################
+sub pretend {
+	my $self = shift;
+	$self->{'pretend'} = shift;
+}
+
 sub _printer {
 	my $self  = shift;
 	my $level = shift;
@@ -151,13 +152,6 @@ sub get_prefix  { return $_[0]->{'PREFIX'};     }
 sub get_confdir { return $_[0]->{'SYSCONFDIR'}; }
 sub get_bindir  { return $_[0]->{'SBINDIR'};    }
 
-################################################################################
-# Sets / unsets the 'pretend' run mode
-################################################################################
-sub pretend {
-	my $self = shift;
-	$self->{'pretend'} = shift;
-}
 
 ################################################################################
 # Unpacks a tar.gz to a temporary directory.
