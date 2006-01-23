@@ -15,13 +15,15 @@ package Apache::Voodoo::Install::Updater;
 use strict;
 use warnings;
 
-use base("Apache::Voodoo::Installer");
+use base("Apache::Voodoo::Install");
 
 use CPAN::Config;
 use CPAN;
 use DBI;
 use Digest::MD5;
+use Sys::Hostname;
 use XML::Checker::Parser;
+use File::Find;
 
 # make CPAN download dependancies
 $CPAN::Config->{'prerequisites_policy'} = 'follow';
@@ -30,9 +32,357 @@ sub new {
 	my $class = shift;
 	my %params = @_;
 
-	my $self = {};
+	my $self = {%params};
+
+	$self->{'_md5_'} = Digest::MD5->new;
 
 	bless $self, $class;
+}
+
+sub do_update      { $_[0]->_do_all(0); }
+sub do_new_install { $_[0]->_do_all(1); }
+
+sub _do_all {
+	my $self = shift;
+	my $new  = shift;
+
+	my $path = $self->{'install_path'};
+	if ($new) {
+		$self->mesg("- Looking for setup command xml files");
+	}
+	else {
+		$self->mesg("- Looking for update command xml files");
+	}
+
+	# even if this is a new installation, we still need a list of the update files that came with
+	# this distribution so that we'll know what updates to *not* perform in the event of an upgrade
+	my @updates = $self->_find_updates();
+
+	my @files;
+	push(@files,$self->_find('pre-setup'));
+
+	if ($new) {
+		push(@files,$self->_find('setup'));
+	}
+	else {
+		push(@files,@updates);
+	}
+
+	push(@files,$self->_find('post-setup'));
+
+	# remove any "gaps".  There might not have been a pre/post/setup file.
+	@files = grep { defined($_) } @files;
+
+	my @commands = $self->_parse_commands(@files);
+
+	$self->_execute_commands(@commands);
+
+	# as noted above.  even for new installs we need to keep track of what updates
+	# were part of this distro so we don't do them on the next update.
+	$self->_record_updates(@updates);
+}
+
+sub _find {
+	my $self = shift;
+	my $file = shift;
+
+	my $path = $self->{'install_path'};
+	if (-e "$path/etc/$file.xml") {
+		$self->debug("    $file.xml");
+		return "$path/etc/$file.xml";
+	}
+
+	return undef;
+}
+
+sub _find_updates {
+	my $self = shift;
+
+	my $dbh = $self->{'dbh'};
+
+	my @updates;
+	find({
+			wanted => sub {
+				my $file = $_;
+				if ($file =~ /\d+\.\d+\.\d+(-[a-z\d]+)?\.xml$/) {
+					push(@updates,$file);
+				}
+			},
+			no_chdir => 1
+		},
+		$self->{'install_path'}."/etc/updates"
+	);
+
+	# Swartzian transform
+	@updates = map { 
+		$_->[0]
+	}
+	sort { 
+		$a->[1] <=> $b->[1] || 
+		$a->[2] <=> $b->[2] ||
+		$a->[3] <=> $b->[3] ||
+		defined($b->[4]) <=> defined($a->[4]) ||
+		$a->[4] cmp $b->[4]
+	}
+	map {
+		my $f = $_;
+		s/.*\///;
+		s/\.xml$//;
+		[ $f , split(/[\.-]/,$_) ]
+	}
+	@updates;
+
+	$self->_touch_updates_table();
+
+	return grep { ! $self->_is_applied($_) } @updates;
+}
+
+sub _touch_updates_table {
+	my $dbh = $_[0]->{'dbh'};
+
+	my $res = $dbh->selectall_arrayref("SHOW TABLES LIKE '_updates'");
+	unless (defined($res->[0]) && $res->[0]->[0] eq "_updates") {
+		# not there.  create it.
+		$dbh->do("
+			CREATE TABLE _updates (
+				file VARCHAR(255) NOT NULL PRIMARY KEY,
+				checksum VARCHAR(32) NOT NULL
+			)") || die DBI->errstr;
+	}
+}
+
+sub _record_updates {
+	my $self  = shift;
+	my @files = @_;
+
+	$self->_touch_updates_table();
+
+	my $dbh = $self->{'dbh'};
+
+	foreach my $file (@files) {
+		my $sum = $self->_md5_checksum($file);
+		$file =~ s/.*\///;
+		$file =~ s/\.xml//;
+		$dbh->do("REPLACE INTO _updates(file,checksum) VALUES(?,?)",undef,$file,$sum) || die DBI->errstr;
+	}
+}
+
+sub _is_applied {
+	my $self = shift;
+	my $file = shift;
+
+	my $dbh = $self->{'dbh'};
+
+	my $f = $file;
+	$f =~ s/.*\///;
+	$f =~ s/\.xml//;
+
+	my $res = $dbh->selectall_arrayref("
+		SELECT
+			checksum
+		FROM
+			_updates
+		WHERE
+			file = ?",undef,
+		$f) || die DBI->errstr;
+
+	if (defined($res->[0]->[0])) {
+		if ($res->[0]->[0] ne $self->_md5_checksum($file)) {
+			# YIKES!!! this update file doesn't match the one
+			# we think we've already ran.
+			print "MD5 checksum of $f doesn't match the one store in the DB.  aborting\n";
+			exit;
+		}
+		else {
+			return 1;
+		}
+	}
+	else {
+		return 0;
+	}
+}
+
+sub _md5_checksum {
+	my $self = shift;
+	my $file = shift;
+
+	my $md5 = $self->{'_md5_'};
+	$md5->reset;
+
+	open(F,$file) || die "Can't md5 file $file: $!";
+	$md5->add(<F>);
+	close(F);
+
+	return $md5->hexdigest;
+}
+
+sub _parse_commands {
+	my $self  = shift;
+
+	my @commands;
+	foreach my $file (@_) {
+		my $data = $self->_parse_xml($file);
+
+		if (!defined($data)) {
+			print "\n* Parse of $file failed. Aborting *\n";
+			exit;
+		}
+		print "    parsed $file\n";
+		push(@commands,[$file,$data]);
+	}
+	return @commands;
+}
+
+sub _parse_xml {
+	my $self    = shift;
+	my $xmlfile = shift;
+
+	my $parser = new XML::Checker::Parser(
+		'Style' => 'Tree',
+		'SkipInsignifWS' => 1
+	);
+
+	my $dtdpath = $INC{'Apache/Voodoo/Install.pm'};
+	$dtdpath =~ s/Install\.pm$//;
+
+	$parser->set_sgml_search_path($dtdpath);
+
+	my $data;
+	eval {
+			# parser checker only dies on catastrophic errors.  Adding this handler
+			# makes it die on ALL errors.
+			local $XML::Checker::FAIL = sub {
+				my $errcode = shift;
+
+				print "\n ** Parse of $xmlfile failed **\n";
+				die XML::Checker::error_string ($errcode, @_) if $errcode < 200;
+				XML::Checker::print_error ($errcode, @_);
+			};
+
+			$data = $parser->parsefile($xmlfile);
+	};
+	if ($@) {
+			print $@;
+			return undef;
+	}
+	return $data;
+
+}
+
+sub _execute_commands {
+	my $self = shift;
+	my @set  = @_;
+
+	my $pretend      = $self->{'pretend'};
+	my $install_path = $self->{'install_path'};
+
+	chdir($install_path);
+
+	# find out what our hostname is
+	my $hostname = Sys::Hostname::hostname();
+
+	$self->info("- Running setup/update commands");
+	foreach (@set) {
+		my $file = $_->[0];
+		my @commands = @{$_->[1]->[1]};
+
+		$self->debug("    $file");
+		for (my $i=1; $i < $#commands; $i+=2) {
+			my $type = $commands[$i];
+			my $data = $commands[$i+1]->[2];
+
+			if (defined($commands[$i+1]->[0]->{'onhosts'})) {
+				next unless grep { /^$hostname$/ } split(/\s*,\s*/,$commands[$i+1]->[0]->{'onhosts'});
+			}
+
+			$data =~ s/^\s*//;
+			$data =~ s/\s*$//;
+
+			if ($type eq "shell") {
+				$self->debug("        SHELL: ", $data);
+				$self->{'pretend'} || (system($data) && die "Shell command failed: $!");
+			}
+			elsif ($type eq "sql") {
+				$self->_execute_sql($data);
+			}
+			elsif ($type eq "mkdir") {
+				$self->debug("        MKDIR: ", $data);
+				$self->make_writeable_dirs("$install_path/$data");
+			}
+			elsif ($type eq "mkfile") {
+				$self->debug("        TOUCH/CHMOD: ", $data);
+				$self->make_writeable_files("$install_path/$data");
+			}
+			elsif ($type eq "install") {
+				$self->debug("        CPAN Install: ", $data);
+				unless ($pretend) {
+					CPAN::Shell->install($data);
+				}
+			}
+			else {
+				print "\n* Unsupported command type ($type). Aborting *\n";
+				exit;
+			}
+		}
+	}
+}
+
+sub _execute_sql {
+	my $self = shift;
+	my $data = shift;
+
+	$self->debug("        SQL: ", $data);
+	return if $self->{'pretend'};
+
+	my $path = $self->{'install_path'};
+	my $dbh  = $self->{'dbh'};
+
+	if ($data =~ /^source\s/i) {
+		$data =~ s/^source\s*//i;
+
+		my ($query,$in_quote,$close_quote);
+		open(SQL,"$path/$data") || die "Can't open $path/$data: $!";
+		while (!eof(SQL)) {
+			my $c = getc SQL;
+			if (!$in_quote && $c eq ';') {
+				next if ($query =~ /^[\s;]*$/); # an empty query turns a do into a don't
+				$dbh->do($query) || die "sql source failed $query: ".DBI->errstr;
+				$query = '';
+				$c = getc SQL;
+			}
+
+			if ($c eq '\\') {
+				$query .= $c;
+				$c = getc SQL;  # automatically add the next character
+			}
+			elsif ($c eq "'") {
+				if ($in_quote && $close_quote eq "'") {
+					$in_quote = 0;
+					$close_quote = '';
+				}
+				elsif (!$in_quote) {
+					$in_quote = 1;
+					$close_quote = "'";
+				}
+			}
+			elsif ($c eq '"') {
+				if ($in_quote && $close_quote eq '"') {
+					$in_quote = 0;
+					$close_quote = '';
+				}
+				elsif (!$in_quote) {
+					$in_quote = 1;
+					$close_quote = '"';
+				}
+			}
+
+			$query .= $c;
+		}
+		close(SQL);
+	}
+	else {
+		$dbh->do($data) || die "sql failed: DBI->errstr";
+	}
 }
 
 1;
