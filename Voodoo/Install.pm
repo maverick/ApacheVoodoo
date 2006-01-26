@@ -17,80 +17,12 @@ $VERSION = '1.14';
 use strict;
 use warnings;
 
-use Apache::MyConfig;
 use Config::General;
 use DBI;
 use ExtUtils::Install;
 use File::Find;
-use File::Pid;
 
 use Data::Dumper;
-
-sub new {
-	my $class = shift;
-	my %params = @_;
-
-	my $self = {};
-
-	bless $self, $class;
-
-	$self->{'verbose'} = 0;
-
-	#FIXME determine apache username automatically
-	my $APACHE = 'apache';
-	my (undef,undef,$uid,$gid) = getpwnam($APACHE) or die "Can't find password entry for $APACHE";
-
-	$self->{'apache_uid'} = $uid;
-	$self->{'apache_gid'} = $gid;
-
-	my $APXS = '[no used]';
-	unless ($params{'PREFIX'} && $params{'SBINDIR'} && $params{'SYSCONFDIR'}) {
-		# User hasn't supplied/overridden them so we'll figure out where apache is installed.
-
-		# Originally I had the Makefile hard code this, but later realized that this made distributed 
-		# development kind of tricky and meant than any alterations to the apache setup paths post
-		# install would break things.
-		$APXS = $Apache::MyConfig::Setup{'APXS'};
-
-		foreach my $item (qw{PREFIX SBINDIR SYSCONFDIR}) {
-			open(APXS,"$APXS -q $item |") || die "Can't get info from $APXS: $!";
-			$self->{$item} = <APXS>;
-			close(APXS);
-		}
-	}
-
-	# we do this below the apache uid/gid setup to allow the user to override it in the constructor.
-	foreach (keys %params) {
-		$self->{$_} = $params{$_};
-	}
-
-	if (!$self->{'pretend'} && $<) {
-		print "\nSetup must be ran as root.\n\n";
-		exit;
-	}
-
-	if ($self->{'pretend'}) {
-		$self->mesg("== Pretending to run ==");
-	}
-
-	$self->{'pid'} = File::Pid->new();
-	my $id = $self->{'pid'}->running;
-	if ($id) {
-		print "ERROR: Already Running ($id)\n";
-		exit;
-	}
-
-	unless ($self->{'pid'}->write) {
-		die "ERROR: Couldn't write pid: $!";
-	}
-
-	$self->debug("APXS: $APXS");
-	$self->debug("PREFIX: $self->{'PREFIX'}");
-	$self->debug("SBINDIR: $self->{'SBINDIR'}");
-	$self->debug("SYSCONFDIR: $self->{'SYSCONFDIR'}");
-
-	return $self;
-}
 
 ################################################################################
 # Sets / unsets the 'pretend' run mode
@@ -140,8 +72,6 @@ sub cleanup {
 	if ($self->{'unpack_dir'}) {
 		system("rm", "-rf", $self->{'unpack_dir'});
 	}
-
-	$self->{'pid'}->remove;
 }
 
 ################################################################################
@@ -431,24 +361,6 @@ sub make_writeable_files {
 		$self->debug(": ok");
 	}
 }
-
-sub parse_version {
-	my $self = shift;
-	my $ver  = shift;
-
-	if ($ver =~ /^SVN:\s*/) {
-		# Looks like a Subversion HeadURL
- 		$ver =~ s/SVN:\s*//;
-		$ver =~ s!^.*svn://[^/]*/[^/]+/!!;
-		$ver =~ s!^branch/!!;
-		$ver =~ s!^release/!!;
-		$ver =~ s/\/.*$//;
-	}
-
-	# If it doesn't look like one of the above, we'll just treat is as the actual version number.
-	return $ver;
-}
-
 
 1;
 =pod ################################################################################

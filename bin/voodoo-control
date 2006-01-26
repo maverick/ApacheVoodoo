@@ -16,7 +16,8 @@ FIXME: Add documentation
 
 =cut ####################################################################################
 
-use Apache::Voodoo::Installer;
+use Apache::Voodoo::Constants;
+use Apache::Voodoo::Install::Updater;
 
 use DBI;
 use Getopt::Long;
@@ -30,30 +31,93 @@ use warnings;
 $| = 1;
 
 my $pretend = 0;
-my ($distribution,$dbhost,$dbname,$dbuser,$dbpass,$dbroot);
+my $help    = 0;
+my ($dbhost,$dbname,$dbuser,$dbpass,$dbroot);
 
 my %defaults = (
-	'PREFIX' => '/data/apache',
-	'SBINDIR' => '/data/apache/bin',
+	'PREFIX'     => '/data/apache',
+	'SBINDIR'    => '/data/apache/bin',
 	'SYSCONFDIR' => '/data/apache/conf'
 );
 
 GetOptions(
+	'help'        => \$help,
 	'pretend'     => \$pretend,
+	'verbose|v:s' => \$verbose,
 	'dbhost|h:s'  => \$dbhost,
 	'dbname|n:s'  => \$dbname,
 	'dbuser|u:s'  => \$dbuser,
 	'dbpass|p:s'  => \$dbpass,
-	'dbroot|r:s'  => \$dbroot,
-	'install|f=s' => \$distribution,
+	'dbroot|r:s'  => \$dbroot
 );
 
-################################################################################
-# make sure this file exists and that the name follows the correct format
-################################################################################
-unless (defined($distribution)) {
+show_usage() if $help;
+
+my $constants = Apache::Voodoo::Constants->new();
+
+my ($command,$path) = @ARGV;
+
+if ($command eq "install") {
+	################################################################################
+	# make sure this file exists and that the name follows the correct format
+	################################################################################
+	my $installer = Apache::Voodoo::Installer->new(
+		'verbose' => 4,
+		'pretend' => $pretend,
+		'dbhost'  => $dbhost,
+		'dbname'  => $dbname,
+		'dbpass'  => $dbpass,
+		'dbroot'  => $dbroot,
+		%defaults
+	);
+
+	################################################################################
+	# unpack and verify the distribution
+	################################################################################
+	my ($unpack_dir,$app_name) = $installer->unpack_distribution($distribution);
+
+	$installer->check_distribution($unpack_dir,$app_name);
+
+	################################################################################
+	# Let's see if we're upgrading an existing app.
+	################################################################################
+	my $has_existing = $installer->check_existing();
+
+}
+elsif ($command eq "update") {
+	my $conf_file = $path."/".$constants->conf_file();
+
+	unless (-e $conf_file) {
+		print "Can't open configuration file: $conf_file\n";
+		exit;
+	}
+
+	my %conf = ParseConfig($conf_file);
+
+	my @dbdata = (
+			$conf{'database'}->{'connect'},
+			$conf{'database'}->{'username'},
+			$conf{'database'}->{'password'}
+	);
+
+	my $dbh = DBI->connect(@dbdata) || die DBI->errstr;
+
+	my $updater = Apache::Voodoo::Install::Updater->new(
+			dbh      => $dbh,
+			path     => $path,
+			verbose  => $verbose,
+			pretend  => $pretend
+	);
+
+	$updater->do_update();
+}
+else {
+	show_usage();
+}
+	
+sub show_usage {
 	print "\nAutomated install / upgrade for Apache::Voodoo based applications.\n\n";
-	print "Usage: voodoo-control [options] --install installfile\n";
+	print "Usage: voodoo-control [options] [install \"installfile\"|update \"application root\"]\n";
 	print "    --pretend    Step through operations.  Don't actually do anything\n";
 	print "    -h --dbhost  Override database host name in config files\n";
 	print "    -n --dbname  Override database name in conf files\n";
@@ -63,29 +127,6 @@ unless (defined($distribution)) {
 	print "\n";
 	exit;
 }
-
-my $installer = Apache::Voodoo::Installer->new(
-	'verbose' => 4,
-	'pretend' => $pretend,
-	'dbhost'  => $dbhost,
-	'dbname'  => $dbname,
-	'dbpass'  => $dbpass,
-	'dbroot'  => $dbroot,
-	%defaults
-);
-
-
-################################################################################
-# unpack and verify the distribution
-################################################################################
-my ($unpack_dir,$app_name) = $installer->unpack_distribution($distribution);
-
-$installer->check_distribution($unpack_dir,$app_name);
-
-################################################################################
-# Let's see if we're upgrading an existing app.
-################################################################################
-my $old_version = $installer->check_existing();
 
 $installer->prepare_setup_commands();
 $installer->install_files();

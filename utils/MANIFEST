@@ -1,10 +1,13 @@
 lib/Apache/Voodoo.pod
 lib/Apache/Voodoo.pm
 lib/Apache/Voodoo/api.pod
+lib/Apache/Voodoo/Constants.pod
 lib/Apache/Voodoo/Debug.pm
 lib/Apache/Voodoo/DisplayError.pm
 lib/Apache/Voodoo/Handler.pm
-lib/Apache/Voodoo/Installer.pm
+lib/Apache/Voodoo/Install.pm
+lib/Apache/Voodoo/Install/Updater.pm
+lib/Apache/Voodoo/Install/Pid.pm
 lib/Apache/Voodoo/license.pod
 lib/Apache/Voodoo/Loader/Dynamic.pm
 lib/Apache/Voodoo/Loader.pm
