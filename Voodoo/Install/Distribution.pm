@@ -116,7 +116,7 @@ sub unpack_distribution {
 
 	$self->{'unpack_dir'} = $unpack_dir;
 
-	my $new_conf = $self->{'unpack_dir'}."/".$ac->conf_file();
+	my $new_conf = $self->{'unpack_dir'}."/".$self->{'ac'}->conf_file();
 
 	unless (-e $new_conf) {
 		print "ERROR: install doesn't contain a configuration file at: $new_conf\n";
@@ -167,7 +167,7 @@ sub check_existing {
 sub update_conf_file {
 	my $self = shift;
 
-	my $new_conf = $self->{'unpack_dir'}."/".$ac->conf_file();
+	my $new_conf = $self->{'unpack_dir'}."/".$self->{'ac'}->conf_file();
 
 	my $config = Config::General->new($new_conf);
 	my %cdata = $config->getall();
@@ -206,3 +206,21 @@ sub install_files {
 
 	$self->{'pretend'} || ExtUtils::Install::install({$unpack_dir => $install_path});
 }
+
+1;
+
+=pod ################################################################################
+
+=head1 AUTHOR
+
+Maverick, /\/\averick@smurfbaneDOTorg
+
+=head1 COPYRIGHT
+
+Copyright (c) 2005 Steven Edwards.  All rights reserved.
+
+You may use and distribute Voodoo under the terms described in the LICENSE file include
+in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
+of the Artistic License :)
+
+=cut ################################################################################
