@@ -1,4 +1,4 @@
-use Test::More tests => 15;
+use Test::More tests => 17;
 
 use_ok('Apache::Voodoo');
 use_ok('Apache::Voodoo::Constants');
@@ -6,6 +6,8 @@ use_ok('Apache::Voodoo::Debug');
 use_ok('Apache::Voodoo::DisplayError');
 use_ok('Apache::Voodoo::Handler');
 use_ok('Apache::Voodoo::Install');
+use_ok('Apache::Voodoo::Install::Distribution');
+use_ok('Apache::Voodoo::Install::Post');
 use_ok('Apache::Voodoo::Install::Updater');
 use_ok('Apache::Voodoo::Loader::Dynamic');
 use_ok('Apache::Voodoo::Loader::Static');

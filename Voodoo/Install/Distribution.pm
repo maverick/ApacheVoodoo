@@ -28,6 +28,10 @@ sub new {
 
 	my $self = {%params};
 
+	unless (-e $self->{'distribution'} && -f $self->{'distribution'}) {
+		die "ERROR: No such file or directory\n";
+	}
+
 	$self->{'app_name'} = $self->{'distribution'};
 	$self->{'app_name'} =~ s/\.tar\.(bz2|gz)$//i;
 	$self->{'app_name'} =~ s/-.*$//;
@@ -38,6 +42,7 @@ sub new {
 	}
 
 	my $ac = Apache::Voodoo::Constants->new();
+	$self->{'ac'} = $ac;
 
 	$self->{'install_path'} = $ac->install_path()."/".$self->{'app_name'};
 
@@ -52,16 +57,35 @@ sub new {
 	return $self;
 }
 
+sub app_name {
+	my $self = shift;
+	$self->{'app_name'} = $_[0] if $_[0];
+	return $self->{'app_name'};
+}
+
+sub existing {
+	my $self = shift;
+	return $self->{'is_existing'};
+}
 
 ################################################################################
 # Handles installer cleanup tasks.
 ################################################################################
-sub cleanup {
+sub DESTROY {
 	my $self = shift;
 
 	if ($self->{'unpack_dir'}) {
 		system("rm", "-rf", $self->{'unpack_dir'});
 	}
+}
+
+sub do_install {
+	my $self = shift;
+
+	$self->unpack_distribution();
+	$self->check_existing();
+	$self->update_conf_file();
+	$self->install_files();
 }
 
 ################################################################################
@@ -70,39 +94,34 @@ sub cleanup {
 ################################################################################
 sub unpack_distribution {
 	my $self = shift;
-	my $file = shift;
 
-	unless (-e $file && -f $file) {
-		# no such file.
-		print "ERROR: No such file or directory\n";
-		exit;
-	}
-
-	my ($app_name,$app_version) = ($file =~ /(\w+)-([\w\.]+)\.tar\.gz$/);
-	unless ($app_name && $app_version) {
-		exit;
-	}
-
-	$self->{'install_path'} = $self->{'PREFIX'}."/sites/".$app_name;
-
-	$self->{'app_name'} = $app_name;
-	$self->{'app_version'} = $app_version;
+	my $file = $self->{'distribution'};
 
 	my $unpack_dir = "/tmp/av_unpack_$$";
 
 	if (-e $unpack_dir) {
-		print "ERROR: $unpack_dir already exists\n";
-		exit;
+		die "ERROR: $unpack_dir already exists\n";
 	}
 
 	mkdir($unpack_dir,0700) || die "Can't create directory $unpack_dir: $!";
 	chdir($unpack_dir) || die "Can't change to direcotyr $unpack_dir: $!";
 	$self->info("- Unpacking distribution to $unpack_dir");
-	system("tar","xzf",$file) && die "Can't unpack $file: $!";
+
+	if ($file =~ /\.gz$/) {
+		system("tar","xzf",$file) && die "Can't unpack $file: $!";
+	}
+	else {
+		system("tar","xjf",$file) && die "Can't unpack $file: $!";
+	}
 
 	$self->{'unpack_dir'} = $unpack_dir;
 
-	return ($unpack_dir,$app_name);
+	my $new_conf = $self->{'unpack_dir'}."/".$ac->conf_file();
+
+	unless (-e $new_conf) {
+		print "ERROR: install doesn't contain a configuration file at: $new_conf\n";
+		exit;
+	}
 }
 
 ################################################################################
@@ -112,26 +131,19 @@ sub unpack_distribution {
 sub check_existing {
 	my $self = shift;
 
-	my $app_name = $self->{'app_name'};
+	my $conf_file = $self->{'conf_file'};
 
-	$self->{'install_path'} = $self->{'PREFIX'}."/sites/".$app_name;
-	my $install_path = $self->{'install_path'};
-
-	my $old_version = 0;
-	if (-e $install_path."/etc/$app_name.conf") {
+	if (-e $conf_file) {
+		$self->{'is_existing'} = 1;
 		$self->info("Found one. We will be performing an upgrade");
 
-		my $old_config = Config::General->new($install_path."/etc/$app_name.conf");
+		my $old_config = Config::General->new($conf_file);
 		my %old_cdata = $old_config->getall();
 
 		# save old (maybe customized?) config variables
 		foreach ('session_dir','devel_mode','shared_cache','debug','devel_mode','cookie_name','database') {
 			$self->{'old_conf_data'}->{$_} = $old_cdata{$_};
 		}
-
-		$old_version = $self->parse_version($old_cdata{'version'});
-		$self->{'old_version'} = $old_version;
-		$self->info("Old Version determined to be: $old_version");
 
 		my $dbhost = $old_cdata{'database'}->{'connect'};
 		my $dbname = $old_cdata{'database'}->{'connect'};
@@ -150,49 +162,14 @@ sub check_existing {
 	else {
 		$self->info("not found. This will be a fresh install.");
 	}
-
-	return $old_version;
-}
-
-sub check_distribution {
-	my $self = shift;
-
-	my $dir      = shift;
-	my $app_name = shift;
-
-	unless (-e $dir."/etc/$app_name.conf") {
-		print "ERROR: install doesn't contain a configuration file at: $dir/etc/$app_name.conf\n";
-		$self->cleanup;
-		exit;
-	}
-
-	my $new_config = Config::General->new("$dir/etc/$app_name.conf");
-	my %new_cdata = $new_config->getall();
-
-	my $new_version = $self->parse_version($new_cdata{'version'});
-
-	if ($self->{'app_version'}) {
-		# unpacked directory
-		if ($new_version != $self->{'app_version'}) {
-			print "ERROR: Version from filename ($self->{'app_version'}) and version from config file ($new_version) don't agree.  aborting.\n";
-			$self->cleanup;
-			exit;
-		}
-	}
-	else {
-		$self->{'app_version'} = $new_version;
-	}
-
-	$self->mesg("Determined app version to be: $self->{'app_version'}");
 }
 
 sub update_conf_file {
 	my $self = shift;
 
-	my $install_path = $self->{'install_path'};
-	my $app_name     = $self->{'app_name'};
+	my $new_conf = $self->{'unpack_dir'}."/".$ac->conf_file();
 
-	my $config = Config::General->new("$install_path/dir/etc/$app_name.conf");
+	my $config = Config::General->new($new_conf);
 	my %cdata = $config->getall();
 
 	foreach (keys %{$self->{'old_conf_data'}}) {
@@ -212,7 +189,6 @@ sub update_conf_file {
 sub install_files {
 	my $self = shift;
 
-	my $pretend      = $self->{'pretend'};
 	my $unpack_dir   = $self->{'unpack_dir'};
 	my $install_path = $self->{'install_path'};
 

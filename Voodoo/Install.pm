@@ -59,26 +59,6 @@ sub debug {
 }
 
 
-sub post_setup_checks {
-	my $self = shift;
-
-	my $install_path = $self->{'install_path'};
-	my $app_name     = $self->{'app_name'};
-
-	my $conf_dir = $self->{'SYSCONFDIR'}."/voodoo";
-
-	$self->info("- Checking symlinks:");
-	unless (-e $conf_dir) {
-		mkdir($conf_dir,0700) || die "Can't create $conf_dir: $!";
-	}
-
-	$self->make_symlink("$install_path/etc/$app_name.conf","$conf_dir/$app_name.conf");
-	$self->make_symlink("$install_path/code",$self->{'PREFIX'}."/lib/perl/$app_name");
-
-	$self->info("- Checking session directory:");
-	$self->make_writeable_dirs($self->{'cdata'}->{'session_dir'});
-}
-
 sub make_symlink {
 	my $self    = shift;
 	my $source  = shift;

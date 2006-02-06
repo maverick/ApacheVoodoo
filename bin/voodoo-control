@@ -22,7 +22,9 @@ use warnings;
 use Getopt::Long;
 use Data::Dumper;
 
+use Apache::Voodoo::Install::Distribution;
 use Apache::Voodoo::Install::Updater;
+use Apache::Voodoo::Install::Post;
 
 # turn off buffered output
 $| = 1;
@@ -51,12 +53,13 @@ GetOptions(
 show_usage() if $help;
 
 my ($command,$target) = @ARGV;
+my $app_name;
 
 if ($command eq "install") {
 	################################################################################
 	# make sure this file exists and that the name follows the correct format
 	################################################################################
-	my $installer = Apache::Voodoo::Install::Distribution->new(
+	my $distro = Apache::Voodoo::Install::Distribution->new(
 		'verbose'      => $verbose,
 		'pretend'      => $pretend,
 		'dbhost'       => $dbhost,
@@ -66,26 +69,18 @@ if ($command eq "install") {
 		'distribution' => $target
 	);
 
-	################################################################################
-	# unpack and verify the distribution
-	################################################################################
-	my ($unpack_dir,$app_name) = $installer->unpack_distribution($target);
+	$distro->do_install();
 
-	$installer->check_distribution($unpack_dir,$app_name);
-
-	################################################################################
-	# Let's see if we're upgrading an existing app.
-	################################################################################
-	my $has_existing = $installer->check_existing();
+	$app_name = $distro->app_name();
 
 	my $updater = Apache::Voodoo::Install::Updater->new(
 			dbroot   => $dbroot,
-			app_name => $target,
+			app_name => $app_name,
 			verbose  => $verbose,
 			pretend  => $pretend
 	);
 
-	if ($has_existing) {
+	if ($distro->existing()) {
 		$updater->do_update();
 	}
 	else {
@@ -98,9 +93,11 @@ elsif ($command eq "update") {
 		exit;
 	}
 
+	$app_name = $target;
+
 	my $updater = Apache::Voodoo::Install::Updater->new(
 			dbroot   => $dbroot,
-			app_name => $target,
+			app_name => $app_name,
 			verbose  => $verbose,
 			pretend  => $pretend
 	);
@@ -110,6 +107,14 @@ elsif ($command eq "update") {
 else {
 	show_usage();
 }
+
+my $post = Apache::Voodoo::Install::Post->new(
+	app_name => $app_name,
+	verbose  => $verbose,
+	pretend  => $pretend
+);
+
+$post->do_setup_checks();
 	
 sub show_usage {
 	print "\nAutomated install / upgrade for Apache::Voodoo based applications.\n\n";
@@ -123,15 +128,6 @@ sub show_usage {
 	print "\n";
 	exit;
 }
-
-
-$installer->prepare_setup_commands();
-$installer->install_files();
-$installer->update_conf_file();
-$installer->post_setup_checks();
-$installer->execute_setup_commands();
-
-$installer->cleanup();
 
 =pod ################################################################################
 
