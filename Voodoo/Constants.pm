@@ -57,11 +57,17 @@ my $AV_CONF_FILE    = "etc/voodoo.conf";
 my $AV_TMPL_PATH    = "html";
 my $AV_CODE_PATH    = "code";
 
+# yep.  It's a singleton
+my $self = undef;
+
 sub new {
 	my $class = shift;
 
-	my $self = {};
+	if (defined($self)) {
+		return $self;
+	}
 
+	$self = {};
 	bless($self,$class);
 
 	#FIXME determine apache username automatically

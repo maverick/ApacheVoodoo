@@ -17,6 +17,8 @@ use warnings;
 
 use base("Apache::Voodoo::Install");
 
+use Apache::Voodoo::Constants;
+
 use CPAN::Config;
 use CPAN;
 use DBI;
@@ -24,6 +26,7 @@ use Digest::MD5;
 use Sys::Hostname;
 use XML::Checker::Parser;
 use File::Find;
+use Config::General;
 
 # make CPAN download dependancies
 $CPAN::Config->{'prerequisites_policy'} = 'follow';
@@ -34,9 +37,28 @@ sub new {
 
 	my $self = {%params};
 
+	my $ac = Apache::Voodoo::Constants->new();
 	$self->{'_md5_'} = Digest::MD5->new;
 
+	$self->{'install_path'} = $ac->install_path()."/".$self->{'app_name'};
+
+	$self->{'conf_file'}    = $self->{'install_path'}."/".$ac->conf_file();
+	$self->{'conf_path'}    = $self->{'install_path'}."/".$ac->conf_path();
+	$self->{'updates_path'} = $self->{'install_path'}."/".$ac->updates_path();
+	$self->{'apache_uid'}   = $ac->apache_uid();
+	$self->{'apache_gid'}   = $ac->apache_gid();
+
+	unless (-e $self->{'conf_file'}) {
+		die "Can't open configuration file: $self->{'conf_file'}\n";
+	}
+
+	my %conf = ParseConfig($self->{'conf_file'});
+
+	$self->{'dbh'} = DBI->connect($conf{'database'}->{'connect'},'root',$self->{'dbroot'}) || die DBI->errstr;
+
 	bless $self, $class;
+
+	return $self;
 }
 
 sub do_update      { $_[0]->_do_all(0); }
@@ -46,7 +68,6 @@ sub _do_all {
 	my $self = shift;
 	my $new  = shift;
 
-	my $path = $self->{'install_path'};
 	if ($new) {
 		$self->mesg("- Looking for setup command xml files");
 	}
@@ -86,10 +107,10 @@ sub _find {
 	my $self = shift;
 	my $file = shift;
 
-	my $path = $self->{'install_path'};
-	if (-e "$path/etc/$file.xml") {
+	my $path = $self->{'conf_path'};
+	if (-e "$path/$file.xml") {
 		$self->debug("    $file.xml");
-		return "$path/etc/$file.xml";
+		return "$path/$file.xml";
 	}
 
 	return undef;
@@ -110,7 +131,7 @@ sub _find_updates {
 			},
 			no_chdir => 1
 		},
-		$self->{'install_path'}."/etc/updates"
+		$self->{'updates_path'}
 	);
 
 	# Swartzian transform

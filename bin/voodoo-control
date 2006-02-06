@@ -16,16 +16,13 @@ FIXME: Add documentation
 
 =cut ####################################################################################
 
-use Apache::Voodoo::Constants;
-use Apache::Voodoo::Install::Updater;
-
-use DBI;
-use Getopt::Long;
-
-use Data::Dumper;
-
 use strict;
 use warnings;
+
+use Getopt::Long;
+use Data::Dumper;
+
+use Apache::Voodoo::Install::Updater;
 
 # turn off buffered output
 $| = 1;
@@ -53,28 +50,26 @@ GetOptions(
 
 show_usage() if $help;
 
-my $constants = Apache::Voodoo::Constants->new();
-
-my ($command,$path) = @ARGV;
+my ($command,$target) = @ARGV;
 
 if ($command eq "install") {
 	################################################################################
 	# make sure this file exists and that the name follows the correct format
 	################################################################################
-	my $installer = Apache::Voodoo::Installer->new(
-		'verbose' => 4,
-		'pretend' => $pretend,
-		'dbhost'  => $dbhost,
-		'dbname'  => $dbname,
-		'dbpass'  => $dbpass,
-		'dbroot'  => $dbroot,
-		%defaults
+	my $installer = Apache::Voodoo::Install::Distribution->new(
+		'verbose'      => $verbose,
+		'pretend'      => $pretend,
+		'dbhost'       => $dbhost,
+		'dbname'       => $dbname,
+		'dbpass'       => $dbpass,
+		'dbroot'       => $dbroot,
+		'distribution' => $target
 	);
 
 	################################################################################
 	# unpack and verify the distribution
 	################################################################################
-	my ($unpack_dir,$app_name) = $installer->unpack_distribution($distribution);
+	my ($unpack_dir,$app_name) = $installer->unpack_distribution($target);
 
 	$installer->check_distribution($unpack_dir,$app_name);
 
@@ -83,28 +78,29 @@ if ($command eq "install") {
 	################################################################################
 	my $has_existing = $installer->check_existing();
 
+	my $updater = Apache::Voodoo::Install::Updater->new(
+			dbroot   => $dbroot,
+			app_name => $target,
+			verbose  => $verbose,
+			pretend  => $pretend
+	);
+
+	if ($has_existing) {
+		$updater->do_update();
+	}
+	else {
+		$updater->do_new_install();
+	}
 }
 elsif ($command eq "update") {
-	my $conf_file = $path."/".$constants->conf_file();
-
-	unless (-e $conf_file) {
-		print "Can't open configuration file: $conf_file\n";
+	unless ($target =~ /^[a-z]\w*$/i) {
+		print "Invalid application name.  Valid names must begin with a letter and only contain letters, numbers and _\n";
 		exit;
 	}
 
-	my %conf = ParseConfig($conf_file);
-
-	my @dbdata = (
-			$conf{'database'}->{'connect'},
-			$conf{'database'}->{'username'},
-			$conf{'database'}->{'password'}
-	);
-
-	my $dbh = DBI->connect(@dbdata) || die DBI->errstr;
-
 	my $updater = Apache::Voodoo::Install::Updater->new(
-			dbh      => $dbh,
-			path     => $path,
+			dbroot   => $dbroot,
+			app_name => $target,
 			verbose  => $verbose,
 			pretend  => $pretend
 	);
@@ -127,6 +123,7 @@ sub show_usage {
 	print "\n";
 	exit;
 }
+
 
 $installer->prepare_setup_commands();
 $installer->install_files();
