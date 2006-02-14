@@ -31,13 +31,7 @@ $| = 1;
 
 my $pretend = 0;
 my $help    = 0;
-my ($dbhost,$dbname,$dbuser,$dbpass,$dbroot);
-
-my %defaults = (
-	'PREFIX'     => '/data/apache',
-	'SBINDIR'    => '/data/apache/bin',
-	'SYSCONFDIR' => '/data/apache/conf'
-);
+my ($dbhost,$dbname,$dbuser,$dbpass,$dbroot,$verbose);
 
 GetOptions(
 	'help'        => \$help,

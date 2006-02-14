@@ -177,13 +177,13 @@ sub update_conf_file {
 		$cdata{$_} = $self->{'old_conf_data'}->{$_};
 	}
 
-	$self->debug("Merging database config: $_");
-	$cdata{'database'}->{'username'} = $self->{'dbuser'};
-	$cdata{'database'}->{'password'} = $self->{'dbpass'};
-	$cdata{'database'}->{'connect'} =~ s/\bdatabase=[^;"]+/database=$self->{'dbname'}/;
-	$cdata{'database'}->{'connect'} =~ s/\bhost=[^;"]+/host=$self->{'host'}/;
+	$self->debug("Merging database config");
+	$cdata{'database'}->{'username'} = $self->{'dbuser'}                               if $self->{'dbuser'};
+	$cdata{'database'}->{'password'} = $self->{'dbpass'}                               if $self->{'dbpass'};
+	$cdata{'database'}->{'connect'} =~ s/\bdatabase=[^;"]+/database=$self->{'dbname'}/ if $self->{'dbname'};
+	$cdata{'database'}->{'connect'} =~ s/\bhost=[^;"]+/host=$self->{'dbhost'}/         if $self->{'dbhost'};
 
-	$self->{'pretend'} || $config->save_file;
+	$self->{'pretend'} || $config->save_file($new_conf);
 }
 
 sub install_files {

@@ -24,9 +24,14 @@ sub new {
 
 	bless $self, $class;
 
-	my $conf = shift;
-	if (defined($conf)) {
-		$self->load($conf);
+	$self->{'id'}        = shift;
+	$self->{'conf_file'} = shift;
+
+	if (defined($self->{'id'}) && defined($self->{'conf_file'})) {
+		$self->load();
+	}
+	else {
+		$self->{'errors'} = "ID and configuration file paths are requried parameters";
 	}
 
 	return $self;
@@ -34,9 +39,8 @@ sub new {
 
 sub load {
 	my $self = shift;
-	my $conf_file = shift;
 
-	$self->load_config($conf_file);
+	$self->load_config();
 
 	# get the list of modules we're going to use
 	foreach (keys %{$self->{'modules'}}) {
@@ -55,31 +59,14 @@ sub load {
 
 sub load_config {
 	my $self = shift;
-	my $conf_file = shift;
-
-	if (-l $conf_file) {
-		my $nf = readlink($conf_file);
-		if ($nf !~ /^\//) {
-			# symlink is relative
-			$conf_file =~ s/[^\/]*$//;
-			$conf_file .= $nf;
-		}
-		else {
-			# symlink is absolute
-			$conf_file = $nf;
-		}
-	}
 
 	my $conf = Config::General->new(
-		'-ConfigFile' => $conf_file,
+		'-ConfigFile' => $self->{'conf_file'},
 		'-IncludeRelative' => 1,
 		'-UseApacheInclude' => 1
 	);
 
 	my %conf = $conf->getall();
-
-	my ($id) = ($conf_file =~ /([a-zA-Z][\w-]*)\.conf$/);
-	$self->{'id'} = $id;
 
 	$self->{'base_package'} = $conf{'base_package'} || $self->{'id'};
 
@@ -110,11 +97,9 @@ sub load_config {
 	}
 
 	if ($self->{'dynamic_loading'}) {
-		$self->{'conf_mtime'}  = (stat($conf_file))[9];
-		$self->{'conf_file'}   = $conf_file;
+		$self->{'conf_mtime'}  = (stat($self->{'conf_file'}))[9];
 	}
 
-	$self->debug($conf{'database'});
 	if (defined($conf{'database'})) {
 		my $db;
 		if (ref($conf{'database'}) eq "ARRAY") {
@@ -203,7 +188,6 @@ sub map_uri {
 
 sub refresh {
 	my $self = shift;
-	my $page = shift;
 
 	# bypass if we're not doing dynamic loading
 	return unless $self->{'dynamic_loading'};

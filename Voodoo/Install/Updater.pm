@@ -52,10 +52,6 @@ sub new {
 		die "Can't open configuration file: $self->{'conf_file'}\n";
 	}
 
-	my %conf = ParseConfig($self->{'conf_file'});
-
-	$self->{'dbh'} = DBI->connect($conf{'database'}->{'connect'},'root',$self->{'dbroot'}) || die DBI->errstr;
-
 	bless $self, $class;
 
 	return $self;
@@ -68,10 +64,28 @@ sub _do_all {
 	my $self = shift;
 	my $new  = shift;
 
+	my %conf = ParseConfig($self->{'conf_file'});
+
 	if ($new) {
+		$self->mesg("- Creating database");
+
+		# FIXME create a factory structure to support multiple database types.
+		my $c = $conf{'database'}->{'connect'};
+		my ($dbname) = ($c =~/database=([^;]+)/);
+		$c =~ s/database=[^;]+/database=test/;
+
+		$self->{'dbh'} = DBI->connect($c,'root',$self->{'dbroot'}) || die DBI->errstr;
+		$self->{'dbh'}->do("CREATE DATABASE $dbname") || die DBI->errstr;
+		$self->{'dbh'}->disconnect;
+
+		$self->{'dbh'} = DBI->connect($conf{'database'}->{'connect'},'root',$self->{'dbroot'}) || die DBI->errstr;
+		
 		$self->mesg("- Looking for setup command xml files");
 	}
 	else {
+		$self->mesg("- Connection to database");
+		$self->{'dbh'} = DBI->connect($conf{'database'}->{'connect'},'root',$self->{'dbroot'}) || die DBI->errstr;
+
 		$self->mesg("- Looking for update command xml files");
 	}
 
@@ -366,8 +380,12 @@ sub _execute_sql {
 		while (!eof(SQL)) {
 			my $c = getc SQL;
 			if (!$in_quote && $c eq ';') {
-				next if ($query =~ /^[\s;]*$/); # an empty query turns a do into a don't
-				$dbh->do($query) || die "sql source failed $query: ".DBI->errstr;
+				$query =~ s/^\s*//;
+				$query =~ s/\s$//;
+				next if ($query =~ /^[\s;]*$/);        # an empty query turns a do into a don't
+				next if ($query =~ /^(UN)?LOCK /i);    # do yacks on these too
+
+				$dbh->do($query) || die "sql source failed $query: " . DBI->errstr;
 				$query = '';
 				$c = getc SQL;
 			}

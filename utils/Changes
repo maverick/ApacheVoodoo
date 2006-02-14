@@ -1,3 +1,19 @@
+1.20 - 2/07/2006
+================
+Added automated install / upgrade process of Voodoo based sites (see voodoo-control for details).
+Unfortunately to make this work cleanly, I had to introduce a backwards-incompatibility.  The
+layout of a site is no longer completely arbirary as it was before, certain things are expected
+to reside in certain locations.  Completely arbirary layouts yielded no real benefit, made the docs
+more complex thus raising the initial learning curve, and introduced needless complexities and hoop jumping.
+
+Loads of bug fixes:
+	AV::Table is no longer destructive to the incomming configuration structure.
+
+	Made history capture only operation on GET requests.  Capturing POSTs can lead to bad things
+	happening if you happen to redirect back to a posted history event...same thing applies
+	for puts.  The side effect is that you now need to be more careful with your form method settings,
+	which we all should be doing anyway :)
+
 1.13 - 9/15/2005
 ================
 

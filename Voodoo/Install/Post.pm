@@ -24,6 +24,8 @@ use base("Apache::Voodoo::Install");
 
 use Apache::Voodoo::Constants;
 
+use Config::General;
+
 sub new {
 	my $class = shift;
 	my %params = @_;
@@ -44,7 +46,7 @@ sub new {
 		die "Can't open configuration file: $self->{'conf_file'}\n";
 	}
 
-	$self->{'conf_data'} = ParseConfig($self->{'conf_file'});
+	$self->{'conf_data'} = { ParseConfig($self->{'conf_file'}) };
 
 	bless $self, $class;
 	return $self;

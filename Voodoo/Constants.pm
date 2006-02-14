@@ -23,22 +23,14 @@ $VERSION = '1.14';
 use strict;
 use Apache::MyConfig;
 
+# Different install methods yield different configurations.  I know of two so far.
+# 1) call APXS to find out where the apache prefix is.  (gentoo, rpms?)
+# 2) apache prefix is listed directly in A::MC (apachetoolbox, source?)
 #
-# If APXS yields the wrong paths on your system, you can provide the correct values here.
-#
-# For example, a source build of Apache by default will have this layout:
-# PREFIX = /usr/local/apache
-# SBINDIR = /usr/local/apache/bin
-# SYSCONFDIR = /usr/local/apache/conf
-#
-# and a RPM style layout could be:
-# PREFIX = /usr
-# SBINDIR = /usr/sbin
-# SYSCONFIDIR = /etc/apache
-#
-my $PREFIX     = undef;
-my $SBINDIR    = undef;
-my $SYSCONFDIR = undef;
+# If eithers yields the wrong path on your system, you can provide the correct value here.
+# my $PREFIX = undef;
+
+my $PREFIX = '/tmp/fake_apache_root';
 
 #
 # Here are the variables which control where Apache::Voodoo looks for things.
@@ -77,15 +69,21 @@ sub new {
 	$self->{'apache_uid'} = $uid;
 	$self->{'apache_gid'} = $gid;
 
-	unless ($PREFIX && $SBINDIR && $SYSCONFDIR) {
+	unless ($PREFIX) {
 		# User hasn't supplied/overridden them so we'll figure out where apache is installed.
 		# Originally I had the Makefile hard code this, but later realized that this made distributed 
 		# development kind of tricky and meant than any alterations to the apache setup paths post
 		# install would break things.
 
-		$PREFIX     = _ask_apxs('PREFIX');	
-		$SBINDIR    = _ask_apxs('SBINDIR');	
-		$SYSCONFDIR = _ask_apxs('SYSCONFDIR');	
+		if ($Apache::MyConfig::Setup{'USE_APXS'} == 1) {
+			$PREFIX = _ask_apxs('PREFIX');	
+		}
+		elsif (length($Apache::MyConfig::Setup{'APACHE_PREFIX'}) > 0) {
+			$PREFIX = $Apache::MyConfig::Setup{'APACHE_PREFIX'};
+		}
+		else {
+			die "Can't determine where Apache is installed. Please define it in Apache::Voodoo::Constants\n";
+		}
 	}
 
 	$AV_INSTALL_PATH = $PREFIX."/".$AV_INSTALL_PATH unless $AV_INSTALL_PATH =~ /^\//;
@@ -95,8 +93,6 @@ sub new {
 }
 
 sub prefix     { return $PREFIX;     }
-sub sbindir    { return $SBINDIR;    }
-sub sysconfdir { return $SYSCONFDIR; }
 
 sub install_path { return $AV_INSTALL_PATH; }
 sub session_path { return $AV_SESSION_PATH; }
