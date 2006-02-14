@@ -34,6 +34,7 @@ use Time::HiRes;
 use Data::Dumper;
 $Data::Dumper::Terse = 1;
 
+use Apache::Voodoo::Constants;
 use Apache::Voodoo::ServerConfig;
 use Apache::Voodoo::Debug;
 use Apache::Voodoo::DisplayError;
@@ -60,6 +61,8 @@ sub new {
 	my $class = shift;
 	my $self = {@_};
 	bless $self, $class;
+
+	$self->{'constants'} = Apache::Voodoo::Constants->new();
 
 	if (exists $ENV{'MOD_PERL'}) {
 		# let's us do a compile check outside of mod_perl
@@ -107,8 +110,8 @@ sub handle ($$) {
    	$run->{'filename'} =~ s/\.tmpl$//o;
    	$run->{'uri'}      =~ s/\.tmpl$//o;
 
-	unless (-e "$run->{'filename'}.tmpl") {  return DECLINED;  }
-	unless (-r "$run->{'filename'}.tmpl") {  return FORBIDDEN; }
+	unless (-e "$run->{'filename'}.tmpl") { return DECLINED;  }
+	unless (-r "$run->{'filename'}.tmpl") { return FORBIDDEN; }
 
 	########################################
 	# We now know we have a valid file that we need to handle
@@ -226,19 +229,19 @@ sub parse_params {
 
 	my $apr  = Apache::Request->new($r,
 	                                POST_MAX => $host->{'upload_size_max'});
-	if($apr->parse()) {
+	if ($apr->parse()) {
 		$self->display_host_error($r, "File upload has returned the following error:\n".$apr->notes('error-notes'));
 		return OK;
 	}
 
 	my %params;
-	foreach($apr->param) {
+	foreach ($apr->param) {
 		my @value = $apr->param($_);
 		$params{$_} = @value > 1 ? [@value] : $value[0];
 	}
 
 	my @uploads = $apr->upload;
-	if(@uploads) {
+	if (@uploads) {
 		$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
 	}
 
@@ -571,22 +574,25 @@ sub restart {
 
 	$s->log_error("Voodoo starting...");
 
-	my $conf_dir = Apache->server_root_relative("conf/voodoo");
-	$s->log_error("Determined conf directory to be: $conf_dir");
+	my $cf_name      = $self->{'constants'}->conf_file();
+	my $install_path = $self->{'constants'}->install_path();
 
-	unless(opendir(DIR,$conf_dir)) {
-		$s->log_error("Can't open configuration dir: $!");
+	$s->log_error("Scanning: $install_path");
+
+	unless (opendir(DIR,$install_path)) {
+		$s->log_error("Can't open dir: $!");
 		return;
 	}
 
-	foreach (readdir(DIR)) {
-		next unless $_ =~ /[a-zA-Z]\w*\.conf$/;
-		next unless -f "$conf_dir/$_";
-		next unless -r "$conf_dir/$_";
+	foreach my $id (readdir(DIR)) {
+		next unless $id =~ /^[a-z]\w*$/i;
+		my $fp = "$install_path/$id/$cf_name";
+		next unless -f $fp;
+		next unless -r $fp;
 
-		$s->log_error("starting host $_");
+		$s->log_error("starting host $id");
 
-		my $conf = Apache::Voodoo::ServerConfig->new("$conf_dir/$_");
+		my $conf = Apache::Voodoo::ServerConfig->new($id,$fp);
 
 		# check to see if we can get a database connection
 		foreach (@{$conf->{'dbs'}}) {
@@ -594,7 +600,7 @@ sub restart {
 			last if $conf->{'dbh'};
 			
 			$s->log_error("========================================================");
-			$s->log_error("DB CONNECT FAILED FOR ".$conf->{'id'});
+			$s->log_error("DB CONNECT FAILED FOR $id");
 			$s->log_error("$DBI::errstr");
 			$s->log_error("========================================================");
 		}
@@ -605,13 +611,13 @@ sub restart {
 			$conf->{'dbh'}->disconnect;
 		};
 
-		$self->{'hosts'}->{$conf->{'id'}} = $conf;
+		$self->{'hosts'}->{$id} = $conf;
 		
 		# notifiy of start errors
-		$self->{'hosts'}->{$conf->{'id'}}->{"DEAD"} = 0;
+		$self->{'hosts'}->{$id}->{"DEAD"} = 0;
 
 		if ($conf->{'errors'}) {
-			$s->log_error($conf->{'id'}." has ".$conf->{'errors'}." errors");
+			$s->log_error("$id has ".$conf->{'errors'}." errors");
 			if ($conf->{'halt_on_errors'}) {
 				$s->log_error(" (dropping this site)");
 

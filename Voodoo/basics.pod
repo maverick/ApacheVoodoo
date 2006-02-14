@@ -209,7 +209,7 @@ via $p->{'template_conf'}
 
 =head1 3) Basic Templates
 
-In your html directory, create a file named 'skeleton.tmpl' (or whatever you specified in the 'skeleton' parameter above),
+In <ServerRoot>/sites/<name_of_site>/html directory, create a file named 'skeleton.tmpl' (or whatever you specified in the 'skeleton' parameter above),
 and place (at least) this in it:
 
 	<html>
@@ -246,6 +246,44 @@ done on the entire thing.
 Only files that end in .tmpl are processed by Voodoo.  It ignores any other files and leaves them for Apache to
 handle natively.  The .tmpl is optional in the URLs,  http://yoursite.com/index.tmpl and http://yoursite.com/index are
 functionally identical.
+
+=head1 4) Module Location
+
+All the .pm's for your site go in <ServerRoot>/sites/<name_of_site>/code and follow Perl's naming convention as they appear in
+the voodoo.conf file.  In other words, the module's package name might be "my_app::login" but it belongs in
+<ServerRoot>/sites/my_app/code/login.pm
+
+=head1 EXAMPLE SITE LAYOUT
+
+etc, html, and code are the three directories whose locations are fixed, you can create other "top level" directories
+as you need them.  For example, this layout has worked well for myself and others.
+
+    <ServerRoot>/sites/my_app
+        |_ bin
+        |   |_ a_cron_job.pl
+        |   |_ a_utility_program.pl
+        |_ code
+        |   |_ skeleton.pm
+        |   |_ login.pm
+        |_ db
+        |   |_ database_schema.sql
+        |_ docs
+        |   |_ who_are_we_kidding_right_guys.doc
+        |_ etc
+        |   |_ voodoo.conf
+		|_ html
+        |   |_ skeleton.tmpl
+        |   |_ login.tmpl
+        |   |_ images
+        |   |_ logo.gif
+        |_ tests
+            |_ a_test_script.t
+
+=head1 AUTOMATING INSTALLS/UPGRADES
+
+Voodoo has a automated install/upgrade system for sites developed within it.  See the program "voodoo-control".
+
+FIXME: loads of docs needed here.
 
 =head1 TEMPLATE TO PAGE MODULE MAPPING
 
