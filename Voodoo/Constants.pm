@@ -18,7 +18,7 @@ This object is used by Voodoo internally.
 =cut ###########################################################################
 package Apache::Voodoo::Constants;
 
-$VERSION = '1.14';
+$VERSION = '1.20';
 
 use strict;
 use Apache::MyConfig;

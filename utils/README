@@ -17,26 +17,30 @@ Some features include:
     * Powerful database abstraction system via Apache::Voodoo::Table
     * Simple enough API that the learning curve is pretty shallow
     * Integrated debugging tools
+    * Automated installation / upgrade of sites developed with Voodoo
 
 INSTALLATION
 
 To install this module type the following:
 
-   perl Makefile.PL
-   make
-   make test
-   make install
+    perl Makefile.PL
+    make
+    make test
+    make install
 
 DEPENDENCIES
 
     Apache::DBI
+    Apache::Request
     Apache::Session
     Config::General
     Email::Valid
+    File::Pid
     HTML::Template
     IPC::Shareable
     IPC::SharedCache
     Time::HiRes
+    XML::Checker::Parser
 
 AUTHOR
 

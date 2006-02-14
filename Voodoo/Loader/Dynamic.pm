@@ -1,7 +1,7 @@
 # $Id$
 package Apache::Voodoo::Loader::Dynamic;
 
-$VERSION = '1.14';
+$VERSION = '1.20';
 
 use strict;
 use base("Apache::Voodoo::Loader");

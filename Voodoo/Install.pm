@@ -12,7 +12,7 @@ Apache::Voodoo::Install::* objects.
 =cut ###########################################################################
 package Apache::Voodoo::Install;
 
-$VERSION = '1.14';
+$VERSION = '1.20';
 
 use strict;
 use warnings;

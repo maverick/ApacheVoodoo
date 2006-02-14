@@ -12,7 +12,7 @@
 
 package Apache::Voodoo::Table;
 
-$VERSION = '1.14';
+$VERSION = '1.20';
 
 use strict;
 
