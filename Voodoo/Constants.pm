@@ -28,9 +28,7 @@ use Apache::MyConfig;
 # 2) apache prefix is listed directly in A::MC (apachetoolbox, source?)
 #
 # If eithers yields the wrong path on your system, you can provide the correct value here.
-# my $PREFIX = undef;
-
-my $PREFIX = '/tmp/fake_apache_root';
+my $PREFIX = undef;
 
 #
 # Here are the variables which control where Apache::Voodoo looks for things.
