@@ -603,6 +603,12 @@ sub list {
 		push(@list,"$self->{'table'}.$_");
 	}
 
+	if(ref($additional_constraint)) {
+		if(defined($additional_constraint->{'additional_column'})) {
+			push(@list, $additional_constraint->{'additional_column'});
+		}
+	}
+
 	# figure out tables to join against
 	my @joins;
 	foreach my $join (@{$self->{'references'}}) {
@@ -626,11 +632,19 @@ sub list {
 		# 7-18-2001 added lower to make case insensitive for Postgres
 		$select_stmt .= " WHERE $limit LIKE LOWER('$pattern%') ";
 
-		if (length($additional_constraint)) {
+	# FIXME!!!
+		if(ref($additional_constraint)) {
+			if(defined($additional_constraint->{'additional_contraint'})) {
+				$select_stmt .= "AND ".$additional_constraint->{'additional_constraint'};
+			}
+		} elsif (length($additional_constraint)) {
 			$select_stmt .= "AND $additional_constraint";
 		}
-	}
-	elsif (length($additional_constraint)) {
+	} elsif(ref($additional_constraint)) {
+		if(defined($additional_constraint->{'additional_contraint'})) {
+			$select_stmt .= "AND ".$additional_constraint->{'additional_constraint'};
+		}
+	} elsif (length($additional_constraint)) {
 		$select_stmt .= " WHERE $additional_constraint";
 	}
 
@@ -698,6 +712,7 @@ sub list {
 			$key =~ s/$self->{'table'}\.//; # take of the table name in front
 			# we either end up with the column name from the primay table,
 			# or the joined table name + column
+			$key =~ s/^.* AS //i;
 
 			$v{$key} = $_->[$i];
 
