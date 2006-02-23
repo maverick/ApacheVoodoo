@@ -577,8 +577,8 @@ sub delete {
 }
 
 sub list {
-	my $self = shift;
-	my $p    = shift;
+	my $self                  = shift;
+	my $p                     = shift;
 	my $additional_constraint = shift;
 
 	$self->{'success'} = 0;
@@ -634,15 +634,15 @@ sub list {
 
 	# FIXME!!!
 		if(ref($additional_constraint)) {
-			if(defined($additional_constraint->{'additional_contraint'})) {
+			if(defined($additional_constraint->{'additional_constraint'})) {
 				$select_stmt .= "AND ".$additional_constraint->{'additional_constraint'};
 			}
 		} elsif (length($additional_constraint)) {
 			$select_stmt .= "AND $additional_constraint";
 		}
 	} elsif(ref($additional_constraint)) {
-		if(defined($additional_constraint->{'additional_contraint'})) {
-			$select_stmt .= "AND ".$additional_constraint->{'additional_constraint'};
+		if(defined($additional_constraint->{'additional_constraint'})) {
+			$select_stmt .= " WHERE ".$additional_constraint->{'additional_constraint'};
 		}
 	} elsif (length($additional_constraint)) {
 		$select_stmt .= " WHERE $additional_constraint";
