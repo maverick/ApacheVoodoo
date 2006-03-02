@@ -31,7 +31,8 @@ $| = 1;
 
 my $pretend = 0;
 my $help    = 0;
-my ($dbhost,$dbname,$dbuser,$dbpass,$dbroot,$verbose);
+my $verbose = 0;
+my ($dbhost,$dbname,$dbuser,$dbpass,$dbroot);
 
 GetOptions(
 	'help'        => \$help,
