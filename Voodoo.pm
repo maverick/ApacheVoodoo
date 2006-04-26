@@ -178,9 +178,11 @@ sub prep_select {
 	return [ 
 		map {
 			{
-				"ID"       => $_->[0],
-				"NAME"     => $_->[1],
-				"SELECTED" => defined $selected{$_->[0]}
+				"ID"                => $_->[0],
+				"ID." . $_->[0]     => 1,
+				"NAME"              => $_->[1],
+				"NAME." . $_->[1]   => 1,
+				"SELECTED"          => defined $selected{$_->[0]}
 			}
 		} @{$list}
 	];
