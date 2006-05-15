@@ -520,6 +520,7 @@ sub generate_html {
 			'filename'          => $host->{'template_dir'}."/$skeleton_file.tmpl",
 			'path'              => [ $host->{'template_dir'} ],
 			'shared_cache'      => $host->{'shared_cache'},
+			'loop_context_vars' => $host->{'context_vars'},
 			'global_vars'       => 1,
 			'die_on_bad_params' => 0,
 		);

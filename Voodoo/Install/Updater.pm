@@ -75,7 +75,7 @@ sub _do_all {
 		$c =~ s/database=[^;]+/database=test/;
 
 		$self->{'dbh'} = DBI->connect($c,'root',$self->{'dbroot'}) || die DBI->errstr;
-		$self->{'dbh'}->do("CREATE DATABASE $dbname") || die DBI->errstr;
+		$self->{'dbh'}->do("CREATE DATABASE $dbname"); # allowed to silently fail, db may already exist
 		$self->{'dbh'}->disconnect;
 
 		$self->{'dbh'} = DBI->connect($conf{'database'}->{'connect'},'root',$self->{'dbroot'}) || die DBI->errstr;
@@ -133,7 +133,7 @@ sub _find {
 sub _find_updates {
 	my $self = shift;
 
-	my $dbh = $self->{'dbh'};
+	return () unless (-e $self->{'updates_path'});
 
 	my @updates;
 	find({
