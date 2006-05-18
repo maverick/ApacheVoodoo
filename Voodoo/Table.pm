@@ -630,7 +630,7 @@ sub list {
 	if (defined($self->{'list_search'}->{$limit}) && $self->safe_text($pattern)) {
 		# we need to narrow the set
 		# 7-18-2001 added lower to make case insensitive for Postgres
-		$select_stmt .= " WHERE $limit LIKE LOWER('$pattern%') ";
+		$select_stmt .= " WHERE $limit LIKE LOWER(\"$pattern%\") ";
 
 	# FIXME!!!
 		if(ref($additional_constraint)) {

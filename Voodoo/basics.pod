@@ -23,9 +23,6 @@ The first thing we need to do is modify Apache's configuration file to load Vood
   # load Apache::Voodoo
   PerlModule Apache::Voodoo::Handler
 
-  # hook in the restart function
-  PerlRestartHandler $Apache::Voodoo::Handler->restart
-
   <Directory /data/apache/sites/my_app/html>
     SetHandler perl-script
     PerlHandler $Apache::Voodoo::Handler->handle
@@ -47,15 +44,6 @@ Directory Aliases and Virtual Hosts may also be used in the same manner.
 
 Loads Voodoo.  This line must be present somewhere inside the 'main' section of the
 apache configuration file...IE. not within a <directory> or <virtual> block.
-
-=item PerlRestartHandler $Apache::Voodoo::Handler->restart
-
-Triggers the initialization of Voodoo on Apache start or restarts.  This let's us use 'graceful'
-restarts with apache.  
-
-You need to have mod_perl compiled with support for the Restart Handler.  Some pre-compiled
-versions of mod_perl do not include it.  If you get an error about PerlRestartHandler being
-and invalid directive, that's the culprit.
 
 =item SetHandle perl-script
 
@@ -151,7 +139,7 @@ and writable by whatever user Apache runs as.
 
 =item debug
 
-Enables or disables the debug() method from Apache::Voodoo. and its associated output on each page.  See L<Apache::Voodoo::Debug> for more information.
+Enables or disables the debug() method from Apache::Voodoo and its associated output on each page.  See L<Apache::Voodoo::Debug> for more information.
 
 =item halt_on_errors
 
@@ -167,7 +155,7 @@ saves a bunch of typing, but more importantly prevents accidental cross-site mod
 
 These modules must reside in <ServerRoot>/sites/<name_of_site>/code, and of course follow Perl's 
 conventions for directory and file names. mod_perl appends <ServerRoot>/lib/perl to @INC and this is used
-as a convient directory to symlink in the path to the site's modules.  This method saves us the hassle
+as a convenient directory to symlink in the path to the site's modules.  This method saves us the hassle
 fiddling with @INC and doesn't increase the number of directories the loader must search through.
 
 =item includes
@@ -188,19 +176,19 @@ Standard items are:
 
 =item skeleton
 
-which skeleton template to use
+Which skeleton template to use
 
 =item pre_include
 
-a list of include modules to call on this page, BEFORE the main page handling module
+A list of include modules to call on this page, BEFORE the main page handling module
 
 =item post_include
 
-a list of include modules to call on this page, AFTER the main page handling module
+A list of include modules to call on this page, AFTER the main page handling module
 
 =item content-type
 
-content type for the output.  Defaults to text/html
+Content type for the output.  Defaults to text/html
 
 =back
 
@@ -230,7 +218,7 @@ Let's say your index.tmpl file contains:
 	<h1>Hello, welcome to my site</h1>
 	Enjoy your stay.
 
-The resulting html as sent to the browswer would be:
+The resulting html as sent to the browser would be:
 
     
 	<html>
@@ -298,7 +286,7 @@ If that fails then it looks for...
 
 =item 2) /my/url/foo_path => base_package::my::url::path->foo
 
-It removes the file name up to the first '_', looks for module matching that url containing
+It removes the file name up to the first '_', looks for module matching that URL containing
 a method named whatever was removed.
 
 =back
@@ -306,9 +294,9 @@ a method named whatever was removed.
 If neither of these rules match, then template is just inserted into the skeleton as is.
 This allows you to create static content without having to make a module that basically does nothing.
 
-The interesting side effect of rule two is that you can't make methods that have a _ in them.
+The interesting side effect of rule two is that you can't make page handling methods that have a _ in them.
 They would never match the criteria of rule two.  This allows you to make methods that have no 
-way of accidentially being mapped to a URL...just add an underscore to them.
+way of accidentally being mapped to a URL...just add an underscore to them.
 
 =head2 Examples
 

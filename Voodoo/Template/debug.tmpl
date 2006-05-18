@@ -1,6 +1,6 @@
 <!-- $Id$ -->
 <TMPL_IF NAME="DEBUG">
-<script>
+<script language="Javascript" type="text/javascript" >
 var __YourBrowserIsBroken__ = (navigator.userAgent.toLowerCase().indexOf("msie") != -1);
 function vd_toggle (obj, topLevel) {
 	obj.parentNode.className = (obj.parentNode.className == "vdOpen") ? 'vdClosed' : 'vdOpen';
@@ -9,7 +9,7 @@ function vd_toggle (obj, topLevel) {
 	if (__YourBrowserIsBroken__) {
 
 		var selectState;
-                if (topLevel == 1) {
+		if (topLevel == 1) {
 			selectState = (obj.parentNode.className == "vdOpen") ? 'hidden': 'visible';
 		}
 		else {
