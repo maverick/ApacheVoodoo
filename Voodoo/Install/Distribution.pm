@@ -183,7 +183,7 @@ sub update_conf_file {
 	$cdata{'database'}->{'connect'} =~ s/\bdatabase=[^;"]+/database=$self->{'dbname'}/ if $self->{'dbname'};
 	$cdata{'database'}->{'connect'} =~ s/\bhost=[^;"]+/host=$self->{'dbhost'}/         if $self->{'dbhost'};
 
-	$self->{'pretend'} || $config->save_file($new_conf);
+	$self->{'pretend'} || $config->save_file($new_conf,\%cdata);
 }
 
 sub install_files {
