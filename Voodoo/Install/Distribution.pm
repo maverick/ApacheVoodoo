@@ -19,6 +19,7 @@ use base("Apache::Voodoo::Install");
 
 use Apache::Voodoo::Constants;
 
+use File::Spec;
 use Config::General;
 use ExtUtils::Install;
 
@@ -27,6 +28,8 @@ sub new {
 	my %params = @_;
 
 	my $self = {%params};
+
+	$self->{'distribution'} = File::Spec->rel2abs($self->{'distribution'});
 
 	unless (-e $self->{'distribution'} && -f $self->{'distribution'}) {
 		die "ERROR: No such file or directory\n";

@@ -177,6 +177,11 @@ sub handle ($$) {
 	# get paramaters 
 	####################
 	$run->{'input_params'} = $self->parse_params($r, $host);
+	unless (ref($run->{'input_params'})) {
+		# something went boom
+		return $run->{'input_params'};
+	}
+
 	$debug->mark("parameter parsing");
 
 	####################
