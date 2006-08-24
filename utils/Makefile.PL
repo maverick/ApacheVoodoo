@@ -9,6 +9,7 @@ WriteMakefile(
 		Apache::Request      => 1.33,
 		Apache::Session      => 1.6,
 		Config::General      => 2.27,
+		Digest::MD5          => 2.36,
 		Email::Valid         => 0.15,
 		File::Pid            => 0,
 		HTML::Template       => 2.7,
@@ -24,8 +25,8 @@ WriteMakefile(
 		AUTHOR         => 'Maverick Edwards <maverick@smurfbane.org>') : ()
 	),
 	INSTALLSCRIPT => $paths{'SBINDIR'},
-	EXE_FILES => ['bin/voodoo-control'],
-	PM_FILTER => $filter
+	EXE_FILES => ['bin/voodoo-control']
+	# PM_FILTER => $filter
 );
 
 ################################################################################

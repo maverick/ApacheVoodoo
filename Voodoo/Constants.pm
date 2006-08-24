@@ -27,7 +27,7 @@ use Apache::MyConfig;
 # 1) call APXS to find out where the apache prefix is.  (gentoo, rpms?)
 # 2) apache prefix is listed directly in A::MC (apachetoolbox, source?)
 #
-# If eithers yields the wrong path on your system, you can provide the correct value here.
+# If either yields the wrong path on your system, you can provide the correct value here.
 my $PREFIX = undef;
 
 #
