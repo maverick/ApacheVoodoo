@@ -39,7 +39,7 @@ sub load_module {
 		$obj = $module->new;
 	};
 	if ($@) {
-		Apache->server->log_error("Failed to load $module: $@");
+		$self->{'log'}->error("Failed to load $module: $@");
 		my $error = $@;
 
 		$module =~ s/^[^:]+:://;

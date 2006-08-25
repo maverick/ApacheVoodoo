@@ -38,6 +38,7 @@ use Apache::Voodoo::Constants;
 use Apache::Voodoo::ServerConfig;
 use Apache::Voodoo::Debug;
 use Apache::Voodoo::DisplayError;
+use Apache::Voodoo::Log;
 
 ######################################
 # GLOBAL CONFIG VARIABLES            #
@@ -63,6 +64,7 @@ sub new {
 	bless $self, $class;
 
 	$self->{'constants'} = Apache::Voodoo::Constants->new();
+	$self->{'log'} = Apache::Voodoo::Log->new();
 
 	if (exists $ENV{'MOD_PERL'}) {
 		# let's us do a compile check outside of mod_perl
@@ -79,12 +81,12 @@ sub handle ($$) {
 
 	my $id = $r->dir_config("ID");
 	unless (defined($id)) {
-		$r->log_error("PerlSetVar ID not present in configuration.  Giving up");
+		$self->{'log'}->error("PerlSetVar ID not present in configuration.  Giving up");
 		return 503;
 	}
 
 	unless (defined($self->{'hosts'}->{$id})) {
-		$r->log_error("host id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'hosts'}}));
+		$self->{'log'}->error("host id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'hosts'}}));
 		return 503;
 	}
 
@@ -447,7 +449,7 @@ sub generate_html {
 					return OK;
 				}
 				else {
-					$r->log_error("AIEEE!! $return->[0] is not a supported command");
+					$self->{'log'}->error("AIEEE!! $return->[0] is not a supported command");
 					$return = {};
 				}
 			}
@@ -576,17 +578,15 @@ sub restart {
 	# wipe / initialize host information
 	$self->{'hosts'} = {};
 
-	my $s = Apache->server;
-
-	$s->log_error("Voodoo starting...");
+	$self->{'log'}->error("Voodoo starting...");
 
 	my $cf_name      = $self->{'constants'}->conf_file();
 	my $install_path = $self->{'constants'}->install_path();
 
-	$s->log_error("Scanning: $install_path");
+	$self->{'log'}->error("Scanning: $install_path");
 
 	unless (opendir(DIR,$install_path)) {
-		$s->log_error("Can't open dir: $!");
+		$self->{'log'}->error("Can't open dir: $!");
 		return;
 	}
 
@@ -596,7 +596,7 @@ sub restart {
 		next unless -f $fp;
 		next unless -r $fp;
 
-		$s->log_error("starting host $id");
+		$self->{'log'}->error("starting host $id");
 
 		my $conf = Apache::Voodoo::ServerConfig->new($id,$fp);
 
@@ -605,10 +605,10 @@ sub restart {
 			$conf->{'dbh'} = DBI->connect(@{$_});
 			last if $conf->{'dbh'};
 			
-			$s->log_error("========================================================");
-			$s->log_error("DB CONNECT FAILED FOR $id");
-			$s->log_error("$DBI::errstr");
-			$s->log_error("========================================================");
+			$self->{'log'}->error("========================================================");
+			$self->{'log'}->error("DB CONNECT FAILED FOR $id");
+			$self->{'log'}->error("$DBI::errstr");
+			$self->{'log'}->error("========================================================");
 		}
 
 		# if the database connection was invalid (or there wasn't one, this would 'die'.  
@@ -623,16 +623,16 @@ sub restart {
 		$self->{'hosts'}->{$id}->{"DEAD"} = 0;
 
 		if ($conf->{'errors'}) {
-			$s->log_error("$id has ".$conf->{'errors'}." errors");
+			$self->{'log'}->error("$id has ".$conf->{'errors'}." errors");
 			if ($conf->{'halt_on_errors'}) {
-				$s->log_error(" (dropping this site)");
+				$self->{'log'}->error(" (dropping this site)");
 
 				$self->{'hosts'}->{$conf->{'id'}}->{"DEAD"} = 1;
 
 				return;
 			}
 			else {
-				$s->log_error(" (loading anyway)");
+				$self->{'log'}->error(" (loading anyway)");
 			}
 		}
 

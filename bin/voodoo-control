@@ -82,7 +82,7 @@ if ($command eq "install") {
 		$updater->do_new_install();
 	}
 }
-elsif ($command eq "update") {
+elsif ($command =~ /^(update|mark_updates_applied)$/) {
 	unless ($target =~ /^[a-z]\w*$/i) {
 		print "Invalid application name.  Valid names must begin with a letter and only contain letters, numbers and _\n";
 		exit;
@@ -97,7 +97,12 @@ elsif ($command eq "update") {
 			pretend  => $pretend
 	);
 
-	$updater->do_update();
+	if ($command eq "update") {
+		$updater->do_update();
+	}
+	else {
+		$updater->mark_updates_applied();
+	}
 }
 else {
 	show_usage();
