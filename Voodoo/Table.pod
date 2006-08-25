@@ -148,7 +148,6 @@ Displays a particular row from the table
 
 Toggles the column specified by the second parameter
 
-
 =head1 AUTHOR
 
 Maverick, /\/\averick@smurfbaneDOTorg

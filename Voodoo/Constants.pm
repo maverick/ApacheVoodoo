@@ -13,8 +13,6 @@ $Id$
 
 This object is used by Voodoo internally.
 
-=head1 OUTPUT
-
 =cut ###########################################################################
 package Apache::Voodoo::Constants;
 

@@ -13,9 +13,7 @@ $Id$
 This object is used by Voodoo internally to handling various types of debugging
 information and to produce end user display of that information.  End users 
 never interact with this module directly, instead they use the debug() and mark()
-methods from L<Apache::Voodoo>
-
-=head1 OUTPUT
+methods from L<Apache::Voodoo>.
 
 =cut ###########################################################################
 package Apache::Voodoo::Debug;

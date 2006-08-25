@@ -180,11 +180,13 @@ Which skeleton template to use
 
 =item pre_include
 
-A list of include modules to call on this page, BEFORE the main page handling module
+A list of include modules to call on this page, BEFORE the main page handling module.
+These will be called in the order given in the list.
 
 =item post_include
 
-A list of include modules to call on this page, AFTER the main page handling module
+A list of include modules to call on this page, AFTER the main page handling module.
+These will be called in the order given in the list.
 
 =item content-type
 
@@ -208,7 +210,7 @@ and place (at least) this in it:
 Here's the logic.  The vast majority of the time, every page on a site has the same basic look; the same header, the same footer, 
 the same menu, etc.  What changes page to page is the core content, the meat so to speak.  Why write the HTML for the 
 headers, etc over and over?  Why have to remember to include header and footer templates in every file?  Why have to go 
-back and edit ever file if you want to move the menu from the left to the right side?
+back and edit every file if you want to move the menu from the left to the right side?
 
 This method allows you to write all header/footer stuff once and have a single point of alteration for it.  
 The core content (your other template files), are simply inlined where _MAIN_BODY_ is in the skeleton.

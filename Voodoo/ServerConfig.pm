@@ -1,15 +1,18 @@
 =pod #####################################################################################
 
-=head1 Apache::Voodoo::ServerConfig
+=head1 NAME
+
+Apache::Voodoo::ServerConfig
+
+=head1 VERSION
 
 $Id$
 
-=head1 Initial Coding: Maverick
+=head1 SYNOPSIS
 
-This handles all of the config file parsing and module loading.
+This modules is used internally by Voodoo for application setup and module loading/reloading.
 
 =cut ################################################################################
-
 package Apache::Voodoo::ServerConfig;
 
 $VERSION = '1.20';
@@ -40,6 +43,7 @@ sub new {
 sub load {
 	my $self = shift;
 
+	# load the configuration file.
 	$self->load_config();
 
 	# get the list of modules we're going to use

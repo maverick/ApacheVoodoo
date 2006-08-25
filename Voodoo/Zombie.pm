@@ -11,10 +11,9 @@ $Id$
 =head1 SYNOPSIS
 
 This module is used by Apache::Voodoo::ServerConfig as a facimily replacement for a dead module
-when halt_on_errors is 0 in the server configuration.  Any calls to this module
-displays and error message via L<Apache::Voodoo::DisplayError> describing what blew up and
-where.  This is a development tool...you shouldn't have any Zombies in your 
-production server :)
+when either devel_mode or debug is 1 in the application's voodoo.conf.  Any calls to this module
+displays an error message via L<Apache::Voodoo::DisplayError> describing what blew up and
+where.  This is a development tool...you shouldn't have any Zombies in your production server :)
 
 =cut ################################################################################
 package Apache::Voodoo::Zombie;

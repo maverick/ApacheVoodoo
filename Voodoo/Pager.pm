@@ -244,7 +244,6 @@ be used by the caller to determine how to properly cut the result set.
         # other stuff this method does
     }
 
-=pod ################################################################################
 
 =head1 EXAMPLE HTML::Template
 
