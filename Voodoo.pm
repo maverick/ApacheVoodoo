@@ -237,8 +237,8 @@ sub date_to_sql {
 	# Get rid of all spaces in the date
 	$date =~ s/\s//go;
 
-	# date missing. return null;
-	return undef unless (length($date));
+        # date missing. return null;
+        return undef unless (length($date));
 
 	# Split the date up into month day year
 	my ($m,$d,$y) = split(/[\/-]/,$date,3);
