@@ -46,7 +46,8 @@ sub _log {
 
 	my $r = Apache->request || Apache->server;
 
-	if ($r) {
+	#uhhhhhhh.....Mav told me to do it
+	if (0 && $r) {
 		foreach (@_) {
 			if (ref($_)) {
 				$r->log->$level(Dumper $_);
