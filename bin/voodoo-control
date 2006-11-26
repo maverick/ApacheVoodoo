@@ -22,6 +22,7 @@ use warnings;
 use Getopt::Long;
 use Data::Dumper;
 
+use Apache::Voodoo::Constants;
 use Apache::Voodoo::Install::Distribution;
 use Apache::Voodoo::Install::Updater;
 use Apache::Voodoo::Install::Post;
@@ -103,6 +104,22 @@ elsif ($command =~ /^(update|mark_updates_applied)$/) {
 	else {
 		$updater->mark_updates_applied();
 	}
+}
+elsif ($command eq "showconfig") {
+	my $cnf = Apache::Voodoo::Constants->new();
+	print "Apache Prefix Path: ",$cnf->prefix(),"\n";
+	print "  App Install Path: ",$cnf->install_path(),"\n";
+	print "      Session Path: ",$cnf->session_path(),"\n";
+	print "  Config File Path: ", $cnf->conf_path(),"\n";
+	print "  Config File Name: ", $cnf->conf_file(),"\n";
+	print "  Update File Path: ", $cnf->updates_path(),"\n";
+	print "Template File Path: ", $cnf->tmpl_path(),"\n";
+	print "  Perl Module Path: ", $cnf->code_path(),"\n";
+	print "        Apache UID: ", $cnf->apache_uid(),"\n";
+	print "        Apache GID: ", $cnf->apache_gid(),"\n";
+	print "\n";
+	print "Config settings stored in:", $INC{'Apache/Voodoo/Constants.pm'},"\n";
+	exit 0;	
 }
 else {
 	show_usage();
