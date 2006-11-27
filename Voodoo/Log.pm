@@ -46,7 +46,6 @@ sub _log {
 
 	my $r = Apache->request || Apache->server;
 
-	#uhhhhhhh.....Mav told me to do it
 	if (0 && $r) {
 		foreach (@_) {
 			if (ref($_)) {

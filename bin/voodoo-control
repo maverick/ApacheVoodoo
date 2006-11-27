@@ -22,11 +22,6 @@ use warnings;
 use Getopt::Long;
 use Data::Dumper;
 
-use Apache::Voodoo::Constants;
-use Apache::Voodoo::Install::Distribution;
-use Apache::Voodoo::Install::Updater;
-use Apache::Voodoo::Install::Post;
-
 # turn off buffered output
 $| = 1;
 
@@ -52,6 +47,16 @@ my ($command,$target) = @ARGV;
 my $app_name;
 
 if ($command eq "install") {
+	# use these on demand.  This has two benefits.
+	# a) We don't spend time using in stuff we don't need.
+	# b) This program will still run even if these fail to load because of bad config data.
+	#    This allows this program to be used to fix the broken config
+	eval "
+		use Apache::Voodoo::Install::Distribution;
+		use Apache::Voodoo::Install::Updater;
+	";
+	die $@ if ($@);
+
 	################################################################################
 	# make sure this file exists and that the name follows the correct format
 	################################################################################
@@ -89,6 +94,13 @@ elsif ($command =~ /^(update|mark_updates_applied)$/) {
 		exit;
 	}
 
+	# use these on demand.  This has two benefits.
+	# a) We don't spend time using in stuff we don't need.
+	# b) This program will still run even if these fail to load because of bad config data.
+	#    This allows this program to be used to fix the broken config
+	eval "use Apache::Voodoo::Install::Updater;";
+	die $@ if ($@);
+
 	$app_name = $target;
 
 	my $updater = Apache::Voodoo::Install::Updater->new(
@@ -100,16 +112,21 @@ elsif ($command =~ /^(update|mark_updates_applied)$/) {
 
 	if ($command eq "update") {
 		$updater->do_update();
+		do_post($app_name,$verbose,$pretend);
 	}
 	else {
 		$updater->mark_updates_applied();
 	}
 }
 elsif ($command eq "showconfig") {
+	eval "use Apache::Voodoo::Constants;";
+	if ($@) { die $@; }
+
 	my $cnf = Apache::Voodoo::Constants->new();
-	print "Apache Prefix Path: ",$cnf->prefix(),"\n";
-	print "  App Install Path: ",$cnf->install_path(),"\n";
-	print "      Session Path: ",$cnf->session_path(),"\n";
+
+	print "Apache Prefix Path: ", $cnf->prefix(),"\n";
+	print "  App Install Path: ", $cnf->install_path(),"\n";
+	print "      Session Path: ", $cnf->session_path(),"\n";
 	print "  Config File Path: ", $cnf->conf_path(),"\n";
 	print "  Config File Name: ", $cnf->conf_file(),"\n";
 	print "  Update File Path: ", $cnf->updates_path(),"\n";
@@ -118,20 +135,49 @@ elsif ($command eq "showconfig") {
 	print "        Apache UID: ", $cnf->apache_uid(),"\n";
 	print "        Apache GID: ", $cnf->apache_gid(),"\n";
 	print "\n";
-	print "Config settings stored in:", $INC{'Apache/Voodoo/Constants.pm'},"\n";
+	print "Config settings stored in: ", $INC{'Apache/Voodoo/MyConfig.pm'},"\n";
 	exit 0;	
+}
+elsif ($command eq "setconfig") {
+	my $cnf = {};
+
+	eval "use Apache::Voodoo::MyConfig;";
+	unless ($@) {
+		# There is one, so we'll use the settings in it as the default
+		if (ref($Apache::Voodoo::MyConfig::Config) eq "HASH") {
+			$cnf = $Apache::Voodoo::MyConfig::Config;
+		}
+	}
+
+	eval "use Apache::Voodoo::Install::Config;";
+	die $@ if ($@);
+
+	my $cfg = Apache::Voodoo::Install::Config->new(%{$cnf});
+
+	$cfg->do_config_setup();
 }
 else {
 	show_usage();
 }
 
-my $post = Apache::Voodoo::Install::Post->new(
-	app_name => $app_name,
-	verbose  => $verbose,
-	pretend  => $pretend
-);
+sub do_post {
+	my ($app_name,$verbose,$pretend) = @_;
 
-$post->do_setup_checks();
+	eval "
+		use Apache::Voodoo::Install::Post;
+	";
+	if ($@) {
+		die $@;
+	}
+
+	my $post = Apache::Voodoo::Install::Post->new(
+		app_name => $app_name,
+		verbose  => $verbose,
+		pretend  => $pretend
+	);
+
+	$post->do_setup_checks();
+}
 	
 sub show_usage {
 	print "\nAutomated install / upgrade for Apache::Voodoo based applications.\n\n";

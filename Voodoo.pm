@@ -193,6 +193,15 @@ sub safe_text {
 	return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*]*$/;
 }
 
+sub sanitize_text {
+	my $self = shift;
+	my $text = shift;
+
+	# return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*\'\!]*$/;
+	$text =~ s/[^\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*]/ /g;
+	return $text;
+}
+
 sub trim {
 	my $self  = shift;
 	my $param = shift;

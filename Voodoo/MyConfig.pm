@@ -13,17 +13,18 @@ directly; use the supplied "voodoo-control" program instead.
 package Apache::Voodoo::MyConfig;
 
 $CONFIG = {
-	PREFIX => '/data/apache',
-	INSTALL_PATH => '/data/apache/sites',
-	SESSION_PATH => '/data/apache/session',
-	CONF_PATH => "etc",
-	UPDATES_PATH => "etc/updates",
-	CONF_FILE => "etc/voodoo.conf",
-	TMPL_PATH => "html",
-	CODE_PATH => "code",
-	APACHE_UID => "81",
-	APACHE_GID => "81"
-};
+  'SESSION_PATH' => '/data/apache/session',
+  'INSTALL_PATH' => '/data/apache/sites',
+  'TMPL_PATH' => 'html',
+  'APACHE_UID' => 81,
+  'PREFIX' => '/data/apache',
+  'APACHE_GID' => 81,
+  'UPDATES_PATH' => 'etc/updates',
+  'CONF_PATH' => 'etc',
+  'CONF_FILE' => 'etc/voodoo.conf',
+  'CODE_PATH' => 'code'
+}
+;
 
 1;
 
@@ -37,7 +38,7 @@ Maverick, /\/\averick@smurfbaneDOTorg
 
 Copyright (c) 2005 Steven Edwards.  All rights reserved.
 
-You may use and distribute Voodoo under the terms described in the LICENSE 
+You may use and distribute Voodoo under the terms described in the LICENSE
 file include in this package or L<Apache::Voodoo::license>.  The summary is
 it's a legalese version of the Artistic License :)
 

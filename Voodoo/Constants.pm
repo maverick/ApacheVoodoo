@@ -23,20 +23,18 @@ sub new {
 
 	use Data::Dumper;
 	my $self;
-	eval {
+	eval "
 		use Apache::Voodoo::MyConfig;
-		$self = $Apache::Voodoo::MyConfig::CONFIG;
-	};
+	";
+	$self = $Apache::Voodoo::MyConfig::CONFIG;
 	if ($@) {
-		print $@,"\n\n";
-		print "Can't find Apache::Voodoo::MyConfig.  This probably means that Apache Voodoo hasn't been configured yet.\n";
-		print "Please do so by running \"voodoo-control setconfig\"\n";
-		exit 1;
+		die "$@\n".
+		    "Can't find Apache::Voodoo::MyConfig.  This probably means that Apache Voodoo hasn't been configured yet.\n".
+		    "Please do so by running \"voodoo-control setconfig\"\n";
 	}
 
 	unless (ref($self) eq "HASH") {
-		print "There was an error loading Apache::Voodoo::MyConfig.  Please run \"voodoo-control setconfig\"\n";
-		exit 1;
+		die "There was an error loading Apache::Voodoo::MyConfig.  Please run \"voodoo-control setconfig\"\n";
 	}
 
 	bless($self,$class);
