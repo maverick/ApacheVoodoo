@@ -13,7 +13,7 @@ This is old and crufty and not for public use
 =cut ################################################################################
 package Apache::Voodoo::Table::Probe::mysql;
 
-$VERSION = '1.20';
+$VERSION = '1.21';
 
 use DBI;
 

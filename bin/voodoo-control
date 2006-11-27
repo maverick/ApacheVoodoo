@@ -154,7 +154,7 @@ elsif ($command eq "setconfig") {
 
 	my $cfg = Apache::Voodoo::Install::Config->new(%{$cnf});
 
-	$cfg->do_config_setup();
+	$cfg->do_config_setup($pretend);
 }
 else {
 	show_usage();
@@ -181,7 +181,14 @@ sub do_post {
 	
 sub show_usage {
 	print "\nAutomated install / upgrade for Apache::Voodoo based applications.\n\n";
-	print "Usage: voodoo-control [options] [install \"installfile\"|update \"application root\"]\n";
+	print "Usage: voodoo-control [options] [command]\n";
+	print "Commands:\n";
+	print "    install \"installfile\" Install the given application.\n";
+	print "    update \"app name\"     Run the update steps on an already installed application.\n";
+	print "    showconfig            Show global configuration settings.\n";
+	print "    showconfig            Change global configuration settings.\n";
+	print "    anything else         Show this help message.\n";
+	print "Options:\n";
 	print "    --pretend    Step through operations.  Don't actually do anything\n";
 	print "    -h --dbhost  Override database host name in config files\n";
 	print "    -n --dbname  Override database name in conf files\n";

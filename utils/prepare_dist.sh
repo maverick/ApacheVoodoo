@@ -8,5 +8,8 @@ cp -r ../bin /tmp/voodoo_dist/bin
 
 cd /tmp/voodoo_dist
 
+rm prepare_dist.sh
+rm lib/Apache/Voodoo/MyConfig.pm
+
 perl Makefile.PL
 make && make test && make dist

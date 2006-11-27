@@ -18,7 +18,7 @@ methods from L<Apache::Voodoo>.
 =cut ###########################################################################
 package Apache::Voodoo::Debug;
 
-$VERSION = '1.20';
+$VERSION = '1.21';
 
 use strict;
 use Time::HiRes;

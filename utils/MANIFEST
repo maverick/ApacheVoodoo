@@ -5,6 +5,7 @@ lib/Apache/Voodoo/Debug.pm
 lib/Apache/Voodoo/DisplayError.pm
 lib/Apache/Voodoo/Handler.pm
 lib/Apache/Voodoo/Install.pm
+lib/Apache/Voodoo/Install/Config.pm
 lib/Apache/Voodoo/Install/Distribution.pm
 lib/Apache/Voodoo/Install/Pid.pm
 lib/Apache/Voodoo/Install/Post.pm

@@ -60,7 +60,10 @@ sub do_config_setup {
 	$self->apache_uid();
 	$self->apache_gid();
 
-	# FIXME: save settigs
+	# pretend is true, bail.
+	return if $pretend;
+
+	# save settings
 	my %cfg = %{$self};
 
 	my $path = $INC{"Apache/Voodoo/MyConfig.pm"} || $INC{"Apache/Voodoo/Install/Config.pm"};

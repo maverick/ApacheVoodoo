@@ -18,7 +18,7 @@ where.  This is a development tool...you shouldn't have any Zombies in your prod
 =cut ################################################################################
 package Apache::Voodoo::Zombie;
 
-$VERSION = '1.20';
+$VERSION = '1.21';
 
 use strict;
 
