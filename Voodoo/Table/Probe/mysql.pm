@@ -2,7 +2,7 @@
 
 =head1 Apache::Voodoo::Table::Probe::mysql
 
-$Id: mysql.pm,v 1.4 2001/12/27 05:01:16 maverick Exp $
+$Id$
 
 =head1 Initial Coding: Maverick
 

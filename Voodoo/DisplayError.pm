@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::DisplayError
+Apache::Voodoo::DisplayError - error message displayer
 
 =head1 VERSION
 

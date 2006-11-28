@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::Install
+Apache::Voodoo::Install - Base package for Apache::Voodoo::Install::* objects.
 
 =head1 SYNOPSIS
 

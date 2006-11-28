@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::Constants
+Apache::Voodoo::Constants - interface to Apache::Voodoo configuration settings.
 
 =head1 VERSION
 
@@ -14,6 +14,8 @@ This package provide an OO interface to retrive the various paths and config set
 
 =cut ###########################################################################
 package Apache::Voodoo::Constants;
+
+$VERSION = '1.21';
 
 use strict;
 use warnings;

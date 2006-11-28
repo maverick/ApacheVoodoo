@@ -15,6 +15,8 @@ This object is used by Voodoo internally by "voodoo-control setconfig".
 =cut ###########################################################################
 package Apache::Voodoo::Install::Config;
 
+$VERSION = '1.21';
+
 use strict;
 use warnings;
 

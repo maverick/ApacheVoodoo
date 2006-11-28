@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::Install::Pid
+Apache::Voodoo::Install::Pid - Pid file handler
 
 =head1 VERSION
 

@@ -4,6 +4,10 @@
 
 Apache::Voodoo::Install::Updater
 
+=head1 VERSION
+
+$Id$
+
 =head1 SYNOPSIS
 
 This package provides the methods that do pre/post/upgrade commands as specified
@@ -11,6 +15,8 @@ by the various .xml files in an application.
 
 =cut ###########################################################################
 package Apache::Voodoo::Install::Distribution;
+
+$VERSION = '1.21';
 
 use strict;
 use warnings;
