@@ -135,6 +135,15 @@ sub load_config {
 		$self->{'template_conf'}->{'default'} = {};
 	}
 
+	# merge in the default block to each of the others now so that we don't have to
+	# do it at page request time.
+	foreach my $key (grep {$_ ne 'default'} keys %{$self->{'template_conf'}}) {
+		$self->{'template_conf'}->{$key} = { 
+			%{$self->{'template_conf'}->{'default'}},
+			%{$self->{'template_conf'}->{$key}}
+		};
+	}
+
 	#
 	# Theme support
 	#

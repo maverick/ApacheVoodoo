@@ -337,28 +337,20 @@ sub resolve_conf_section {
 	my $host = shift;
 	my $run  = shift;
 
-	my $config_sec = undef;
 	if (exists($host->{'template_conf'}->{$run->{'uri'}})) {
 		# one specific to this page
-		$config_sec = $run->{'uri'};
+		return $host->{'template_conf'}->{$run->{'uri'}};
 	}
-	else {
-		foreach (sort { length($b) <=> length($a) } keys %{$host->{'template_conf'}}) {
-			if ($run->{'uri'} =~ /^$_$/) {
-				$config_sec = $_;
-				last;
-			}
+
+	foreach (sort { length($b) <=> length($a) } keys %{$host->{'template_conf'}}) {
+		if ($run->{'uri'} =~ /^$_$/) {
+			# match by uri regexp
+			return $host->{'template_conf'}->{$_};
 		}
 	}
 
-	my %template_conf = %{$host->{'template_conf'}->{'default'}};
-
-	# add the page specific section if it exists...
-	if (defined($host->{'template_conf'}->{$config_sec})) {
-		@template_conf{keys %{$host->{'template_conf'}->{$config_sec}}} = values %{$host->{'template_conf'}->{$config_sec}};
-	}
-
-	return \%template_conf;
+	# not one, return the default
+	return $host->{'template_conf'}->{'default'};
 }
 
 sub generate_html {
