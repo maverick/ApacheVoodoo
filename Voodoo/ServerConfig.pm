@@ -79,6 +79,7 @@ sub load_config {
 	$self->{'session_timeout'} = $conf{'session_timeout'} || 0;
 	$self->{'cookie_name'}     = $conf{'cookie_name'}     || uc($self->{'id'}). "_SID";
 	$self->{'shared_cache'}    = $conf{'shared_cache'}    || 0;
+	$self->{'ipc_max_size'}    = $conf{'ipc_max_size'}    || 0;
 	$self->{'context_vars'}    = $conf{'context_vars'}    || 0;
 	$self->{'template_conf'}   = $conf{'template_conf'}   || {};
 

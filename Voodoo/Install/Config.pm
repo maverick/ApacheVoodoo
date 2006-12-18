@@ -49,7 +49,6 @@ sub new {
 sub do_config_setup {
 	my $self = shift;
 
-
 	# get settings
 	$self->prefix();
 	$self->install_path();
@@ -62,7 +61,6 @@ sub do_config_setup {
 	$self->apache_uid();
 	$self->apache_gid();
 
-	# pretend is true, bail.
 	return if $self->{"pretend"};
 
 	# save settings

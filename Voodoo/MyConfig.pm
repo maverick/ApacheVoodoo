@@ -23,8 +23,7 @@ $CONFIG = {
   'CONF_PATH' => 'etc',
   'CONF_FILE' => 'etc/voodoo.conf',
   'CODE_PATH' => 'code'
-}
-;
+};
 
 1;
 
