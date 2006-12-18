@@ -17,7 +17,7 @@ application's page handling modules.
 =cut ################################################################################
 package Apache::Voodoo::Handler;
 
-$VERSION = '1.21';
+$VERSION = '1.22';
 
 use strict;
 
@@ -497,6 +497,7 @@ sub generate_html {
 			'filename'          => $host->{'template_dir'}."/".$run->{'uri'}.".tmpl",
 			'path'              => [ $host->{'template_dir'} ],
 			'shared_cache'      => $host->{'shared_cache'},
+			'ipc_max_size'      => $host->{'ipc_max_size'},
 			'loop_context_vars' => $host->{'context_vars'},
 			'global_vars'       => 1,
 			'die_on_bad_params' => 0,
@@ -519,6 +520,7 @@ sub generate_html {
 			'filename'          => $host->{'template_dir'}."/$skeleton_file.tmpl",
 			'path'              => [ $host->{'template_dir'} ],
 			'shared_cache'      => $host->{'shared_cache'},
+			'ipc_max_size'      => $host->{'ipc_max_size'},
 			'loop_context_vars' => $host->{'context_vars'},
 			'global_vars'       => 1,
 			'die_on_bad_params' => 0,
