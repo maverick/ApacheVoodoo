@@ -186,7 +186,7 @@ sub show_usage {
 	print "    install \"installfile\" Install the given application.\n";
 	print "    update \"app name\"     Run the update steps on an already installed application.\n";
 	print "    showconfig            Show global configuration settings.\n";
-	print "    showconfig            Change global configuration settings.\n";
+	print "    setconfig             Change global configuration settings.\n";
 	print "    anything else         Show this help message.\n";
 	print "Options:\n";
 	print "    --pretend    Step through operations.  Don't actually do anything\n";
