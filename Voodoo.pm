@@ -10,7 +10,7 @@
 ####################################################################################
 package Apache::Voodoo;
 
-$VERSION = '1.21';
+$VERSION = '1.22';
 
 use strict;
 use Data::Dumper;
