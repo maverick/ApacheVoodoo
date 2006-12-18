@@ -63,7 +63,7 @@ sub do_config_setup {
 	$self->apache_gid();
 
 	# pretend is true, bail.
-	return if $pretend;
+	return if $self->{"pretend"};
 
 	# save settings
 	my %cfg = %{$self};
