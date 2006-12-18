@@ -23,7 +23,6 @@ use warnings;
 sub new {
 	my $class = shift;
 
-	use Data::Dumper;
 	my $self;
 	eval "
 		use Apache::Voodoo::MyConfig;
@@ -39,8 +38,6 @@ sub new {
 	}
 
 	unless (ref($self) eq "HASH") {
-		use Data::Dumper;
-		print STDERR Dumper $self;
 		die "There was an error loading Apache::Voodoo::MyConfig.  Please run \"voodoo-control setconfig\"\n";
 	}
 
