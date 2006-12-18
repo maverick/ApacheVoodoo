@@ -15,7 +15,7 @@ This package provide an OO interface to retrive the various paths and config set
 =cut ###########################################################################
 package Apache::Voodoo::Constants;
 
-$VERSION = '1.21';
+$VERSION = '1.22';
 
 use strict;
 use warnings;
@@ -28,7 +28,10 @@ sub new {
 	eval "
 		use Apache::Voodoo::MyConfig;
 	";
-	$self = $Apache::Voodoo::MyConfig::CONFIG;
+
+	# copy the config.
+	$self = { %{$Apache::Voodoo::MyConfig::CONFIG} };
+
 	if ($@) {
 		die "$@\n".
 		    "Can't find Apache::Voodoo::MyConfig.  This probably means that Apache Voodoo hasn't been configured yet.\n".
@@ -36,6 +39,8 @@ sub new {
 	}
 
 	unless (ref($self) eq "HASH") {
+		use Data::Dumper;
+		print STDERR Dumper $self;
 		die "There was an error loading Apache::Voodoo::MyConfig.  Please run \"voodoo-control setconfig\"\n";
 	}
 
