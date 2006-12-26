@@ -413,7 +413,7 @@ sub generate_html {
 					my $ts = Time::HiRes::time;
 					$run->{'session'}->{"er_$ts"}->{'error'}  = $return->[1];
 					$run->{'session'}->{"er_$ts"}->{'return'} = $return->[2];
-
+					$self->untie();
 					return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts",1);
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
