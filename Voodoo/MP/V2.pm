@@ -3,10 +3,11 @@ package Apache::Voodoo::MP::V2;
 use strict;
 use warnings;
 
-require Apache2::Const;
-require Apache2::RequestRec;
-require Apache2::RequestIO;
-require Apache2::Request;
+use Apache2::Const;
+use Apache2::RequestRec;
+use Apache2::RequestIO;
+use Apache2::Request;
+use Apache2::SubRequest;
 
 Apache2::Const->import(-compile => qw(OK REDIRECT DECLINED FORBIDDEN SERVER_ERROR M_GET));
 
@@ -37,7 +38,6 @@ sub filename       { shift()->{'r'}->filename(); }
 sub flush          { shift()->{'r'}->rflush(); }
 sub header_in      { shift()->{'r'}->headers_in->{shift()}; }
 sub header_out     { shift()->{'r'}->headers_out->add(@_); }
-sub internal_redirect { shift()->{'r'}->internal_redirect(@_); }
 sub print { shift()->{'r'}->print(@_); }
 sub uri            { shift()->{'r'}->uri(); }
 sub method         { shift()->{'r'}->method(@_); }
