@@ -20,13 +20,10 @@ package Apache::Voodoo::Handler;
 $VERSION = '1.22';
 
 use strict;
-
-use Apache;
-use Apache::Constants qw(:response M_GET);
-use Apache::Request;
-use Apache::Session::File;
+use warnings;
 
 use Apache::DBI;	
+use Apache::Session::File;
 
 use HTML::Template;
 use Time::HiRes;
@@ -34,20 +31,35 @@ use Time::HiRes;
 use Data::Dumper;
 $Data::Dumper::Terse = 1;
 
+use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::ServerConfig;
 use Apache::Voodoo::Debug;
 use Apache::Voodoo::DisplayError;
-use Apache::Voodoo::Log;
 
-######################################
-# GLOBAL CONFIG VARIABLES            #
-# set once at compile time by init() #
-######################################
+use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2 ); 
+			  
+# setup primary hook to mod_perl depending on which version we're running
+BEGIN {
+	if (MP2) {
+		*handler = sub : method { shift()->handle_request(@_) };
+	}
+	else {
+		*handler = sub ($$) { shift()->handle_request(@_) };
+		# $Apache::Voodoo::Handler = Apache::Voodoo::Handler->new();
+	}
+}
 
-# untie is weird, bad and wrong.  
+# *THE* one thing that has never made any sense to me about the mod_perl universe:
+# "How" to make method handlers is well documented, but MP doesn't call new() or provide
+# any way of making that happen...and weirder yet, no one seems to notice.
+# Thus we're left with leaving a global $self haning around long enough to copy
+# replace the first arg to our handler with it.
+my $self_init = Apache::Voodoo::Handler->new();
+
+# untie does something weird, bad and wrong.  
 # The *ONLY* way to properly untie is with the *ORIGINAL* variable that was tied too.
-# Thus, this is a global variable so that we can get to it from elsewhere in the code
+# Thus, this is a global variable so that we can get to it from elsewhere in the code.
 # *barf*
 my %session;
 
@@ -56,15 +68,14 @@ my %session;
 # myself that this is STDERR on god's own steroids so I can sleep at night.
 our $debug = Apache::Voodoo::Debug->new();
 
-$Apache::Voodoo::Handler = Apache::Voodoo::Handler->new();
-
 sub new {
 	my $class = shift;
-	my $self = {@_};
+	my $self = {};
 	bless $self, $class;
 
+	print STDERR "made it past the new\n";
+	$self->{'mp'}        = Apache::Voodoo::MP->new();
 	$self->{'constants'} = Apache::Voodoo::Constants->new();
-	$self->{'log'} = Apache::Voodoo::Log->new();
 
 	if (exists $ENV{'MOD_PERL'}) {
 		# let's us do a compile check outside of mod_perl
@@ -74,37 +85,43 @@ sub new {
 	return $self;
 }
 
-
-sub handle ($$) {
+sub handle_request {
 	my $self = shift;
 	my $r    = shift;
 
-	my $id = $r->dir_config("ID");
+	unless (ref($self)) {
+		print STDERR "self is a string; replacing\n";
+		$self = $self_init;
+	};
+
+	$self->{mp}->set_request($r);
+
+	my $id = $self->{mp}->get_app_id();
 	unless (defined($id)) {
-		$self->{'log'}->error("PerlSetVar ID not present in configuration.  Giving up");
-		return 503;
+		$self->{mp}->error("PerlSetVar ID not present in configuration.  Giving up");
+		return $self->{mp}->SERVER_ERROR;
 	}
 
 	unless (defined($self->{'hosts'}->{$id})) {
-		$self->{'log'}->error("host id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'hosts'}}));
-		return 503;
+		$self->{mp}->error("host id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'hosts'}}));
+		return $self->{mp}->SERVER_ERROR;
 	}
 
 	# holds all vars associated with this page processing request
 	my $run = {};
 
-	$run->{'filename'} = $r->filename();
-	$run->{'uri'}      = $r->uri();
+	$run->{'filename'} = $self->{mp}->filename();
+	$run->{'uri'}      = $self->{mp}->uri();
 
 	####################
 	# URI translation jazz to get down to a proper filename
 	####################
 	if ($run->{'uri'} =~ /\/$/o) {
 		if (-e "$run->{'filename'}/index.tmpl") { 
-			return $self->redirect($r,$run->{'uri'}."index");
+			return $self->{mp}->redirect($run->{'uri'}."index");
 		}
 		else { 
-			return DECLINED;
+			return $self->{mp}->DECLINED;
 		}
 	}
 
@@ -112,8 +129,8 @@ sub handle ($$) {
    	$run->{'filename'} =~ s/\.tmpl$//o;
    	$run->{'uri'}      =~ s/\.tmpl$//o;
 
-	unless (-e "$run->{'filename'}.tmpl") { return DECLINED;  }
-	unless (-r "$run->{'filename'}.tmpl") { return FORBIDDEN; }
+	unless (-e "$run->{'filename'}.tmpl") { return $self->{mp}->DECLINED;  }
+	unless (-r "$run->{'filename'}.tmpl") { return $self->{mp}->FORBIDDEN; }
 
 	########################################
 	# We now know we have a valid file that we need to handle
@@ -129,10 +146,10 @@ sub handle ($$) {
 	}
 
 	if ($host->{"DEAD"}) {
-		return 503;
+		return $self->{mp}->SERVER_ERROR;
 	}
 
-	$host->{'site_root'} = $r->dir_config("SiteRoot") || "/";
+	$host->{'site_root'} = $self->{mp}->site_root;
 	if ($host->{'site_root'} ne "/") {
 		$host->{'site_root'} =~ s:/$::;
 		$run->{'uri'} =~ s/^$host->{'site_root'}//;
@@ -152,36 +169,35 @@ sub handle ($$) {
 		$host->{'dbh'} = DBI->connect_cached(@{$_});
 		last if $host->{'dbh'};
 	
-		$self->display_host_error($r,
+		return $self->display_host_error(
 			"========================================================\n" .
 			"DB CONNECT FAILED\n" .
 			"$DBI::errstr\n" .
 			"========================================================\n"
 		);
-		return OK;
 	}
 
 	####################
 	# Attach session
 	####################
-	$run->{'session'} = $self->attach_session($r,$host);
+	$run->{'session'} = $self->attach_session($host);
 	$debug->mark("session attachment");
 
 	if ($run->{'uri'} eq "logout") {
 		# handle logout
-		$r->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");
+		$self->{mp}->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");
 		tied(%{$run->{'session'}})->delete();
 		$self->untie();
-		return $self->redirect($r,$host->{'site_root'}."index");
+		return $self->{mp}->redirect($host->{'site_root'}."index");
 	}
 
 	####################
 	# get paramaters 
 	####################
-	$run->{'input_params'} = $self->parse_params($r, $host);
+	$run->{'input_params'} = $self->{mp}->parse_params($host->{'upload_size_max'});
 	unless (ref($run->{'input_params'})) {
 		# something went boom
-		return $run->{'input_params'};
+		return $self->display_host_error($run->{'input_params'});
 	}
 
 	$debug->mark("parameter parsing");
@@ -189,7 +205,7 @@ sub handle ($$) {
 	####################
 	# history capture 
 	####################
-	if ($r->method eq "GET") {
+	if ($self->{mp}->is_get) {
 		$self->history_queue($run);
 		$debug->mark("history capture");
 	}
@@ -220,7 +236,7 @@ sub handle ($$) {
 	####################
 	# prepare main body contents
 	####################
-	my $return = $self->generate_html($r,$host,$run);
+	my $return = $self->generate_html($host,$run);
 
 	$self->untie();
 
@@ -229,64 +245,47 @@ sub handle ($$) {
 	return $return;
 }
 
-sub parse_params {
-	my $self = shift();
-	my $r    = shift();
-	my $host = shift();
-
-	my $apr  = Apache::Request->new($r,
-	                                POST_MAX => $host->{'upload_size_max'});
-	if ($apr->parse()) {
-		$self->display_host_error($r, "File upload has returned the following error:\n".$apr->notes('error-notes'));
-		return OK;
-	}
-
-	my %params;
-	foreach ($apr->param) {
-		my @value = $apr->param($_);
-		$params{$_} = @value > 1 ? [@value] : $value[0];
-	}
-
-	my @uploads = $apr->upload;
-	if (@uploads) {
-		$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
-	}
-
-	return \%params;
-}
-
 sub attach_session {
 	my $self = shift;
-
-	my $r    = shift;
 	my $host = shift;
 
-	# read the session id either from a note passed down by a previous module, or out of a cookie.
-	my ($cookie_val) = ($r->header_in('Cookie') =~ /$host->{'cookie_name'}=([0-9a-z]+)/);
-	my $sess_id = $r->notes('SESSION_ID') || $cookie_val;
+	my ($cookie_val) = ($self->{mp}->header_in('Cookie') =~ /$host->{'cookie_name'}=([0-9a-z]+)/);
+	my $sess_id = $cookie_val;
 
 	# my fist big complaint about Apache::Ssssion, 
 	# There's now way to validate a session id other then this eval.
 	eval {
-		tie(%session,'Apache::Session::File',$sess_id, { Directory => $host->{'session_dir'}, LockDirectory => $host->{'session_dir'} }) || die "Global data not available: $!";	
+		tie(%session,'Apache::Session::File',$sess_id, 
+			{
+				Directory     => $host->{'session_dir'},
+				LockDirectory => $host->{'session_dir'}
+			}
+		) || die "Global data not available: $!";	
 	};
 	if ($@) {
 		undef $sess_id;
-		tie(%session,'Apache::Session::File',$sess_id, { Directory => $host->{'session_dir'}, LockDirectory => $host->{'session_dir'} }) || die "Global data not available: $!";	
+		tie(%session,'Apache::Session::File',$sess_id,
+			{
+				Directory     => $host->{'session_dir'},
+				LockDirectory => $host->{'session_dir'}
+			}
+		) || die "Global data not available: $!";	
 	}
 
 	# if this was a new session, or there was an old cookie from a previous sesion,
 	# set the session cookie.
 	if (!defined($sess_id) || $sess_id ne $cookie_val) {
-		$r->err_header_out("Set-Cookie" => "$host->{'cookie_name'}=$session{_session_id}; path=/");	# err_headers get sent on both successful and errored requests
+		# err_headers get sent on both successful and errored requests
+		$self->{mp}->err_header_out("Set-Cookie" => "$host->{'cookie_name'}=$session{_session_id}; path=/");
 		$session{'timestamp'} = time;
 	}
 
 	# see if the session has expired
 	if ($host->{'session_timeout'} > 0 && $session{'timestamp'} < (time - ($host->{'session_timeout'}*60))) {
-		$r->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");  # use err header out since this is a redirect
+		# use err header out since this is a redirect
+		$self->{mp}->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");
 		tied(%session)->delete();
-		return $self->redirect($r,$host->{'site_root'}."timeout");
+		return $self->{mp}->redirect($host->{'site_root'}."timeout");
 	}
 	else {
 		$session{'timestamp'} = time;
@@ -355,7 +354,7 @@ sub resolve_conf_section {
 
 sub generate_html {
 	my $self = shift;
-	my $r    = shift;
+#	my $r    = shift;
 	my $host = shift;
 	my $run  = shift;
 
@@ -379,28 +378,25 @@ sub generate_html {
 				$return = $obj->$method(
 					{
 						"dbh"           => $host->{'dbh'},
-						"dbconn"        => $host->{'dbh'},		#DEPRECATED
-						"dir_config"    => $r->dir_config,
+						"dir_config"    => $self->{mp}->dir_config,
 						"document_root" => $host->{'template_dir'},
 						"params"        => $run->{'input_params'},
-						"parameters"    => $run->{'input_params'},	#DEPRECATED
 						"session"       => $run->{'session'},
 						"template_conf" => $run->{'template_conf'},
 						"themes"        => $host->{'themes'},
 						"uri"           => $run->{'uri'},
-						"user-agent"    => $r->header_in('User-Agent'),
-						"r"             => $r
+						"user-agent"    => $self->{mp}->header_in('User-Agent'),
+						#"r"             => $r
 					}
 				);
 			};
 			if ($@) {
 				# caught a runtime error from perl
 				if ($host->{'debug'}) {
-					$self->display_host_error($r,"Module: $_->[0] $method\n$@");
-					return OK;
+					return $self->display_host_error("Module: $_->[0] $method\n$@");
 				}
 				else {
-					return SERVER_ERROR;
+					return $self->{mp}->SERVER_ERROR;
 				}
 			}
 
@@ -411,37 +407,37 @@ sub generate_html {
 					if ($host->{'site_root'} ne "/" && $return->[1] =~ /^\//o) {
 						$return->[1] =~ s/^\//$host->{'site_root'}/;
 					}
-					return $self->redirect($r,$return->[1]);
+					return $self->{mp}->redirect($return->[1]);
 				}
 				elsif ($return->[0] eq "DISPLAY_ERROR") {     
 					my $ts = Time::HiRes::time;
 					$run->{'session'}->{"er_$ts"}->{'error'}  = $return->[1];
 					$run->{'session'}->{"er_$ts"}->{'return'} = $return->[2];
 
-					return $self->redirect($r,$host->{'site_root'}."display_error?error=$ts",1);
+					return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts",1);
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
 					if (defined($return->[1])) {
 						if ($return->[1] =~ /^\//o) {
 							$return->[1] =~ s/^/$host->{'site_root'}/;
 						}
-						return $self->redirect($r,$return->[1]);
+						return $self->{mp}->redirect($return->[1]);
 					}
 					elsif (-e $host->{'template_dir'}."/access_denied.tmpl") {
-						return $self->redirect($r,$host->{'site_root'}."access_denied");
+						return $self->{mp}->redirect($host->{'site_root'}."access_denied");
 					}
 					else {
-						return FORBIDDEN;
+						return $self->{mp}->FORBIDDEN;
 					}
 				}
 				elsif ($return->[0] eq "RAW_MODE") {
-					$r->headers_out->set(each %{$return->[3]}) if $return->[3];
-					$r->send_http_header($return->[1] || "text/html");
-					$r->print($return->[2]);
-					return OK;
+					$self->{mp}->header_out->set(each %{$return->[3]}) if $return->[3];
+					$self->{mp}->content_type($return->[1] || "text/html");
+					$self->{mp}->print($return->[2]);
+					return $self->{mp}->OK;
 				}
 				else {
-					$self->{'log'}->error("AIEEE!! $return->[0] is not a supported command");
+					$self->{mp}->error("AIEEE!! $return->[0] is not a supported command");
 					$return = {};
 				}
 			}
@@ -474,12 +470,11 @@ sub generate_html {
 
 		if (ref($return) eq "ARRAY") {
 			if ($return->[0] eq "DISPLAY_ERROR") {     
-				$self->display_host_error($r,$return->[1],1);
+				return $self->display_host_error($return->[1],1);
 			}
 			else {
-				$self->display_host_error($r,"theme handler returned an unsupported type");
+				return $self->display_host_error("theme handler returned an unsupported type");
 			}
-			return OK;
 		}
 
 		while (my ($k,$v) = each %{$return}) { $template_params->{$k} = $v; }
@@ -539,31 +534,29 @@ sub generate_html {
 	};
 	if ($@) {
 		# caught a runtime error from perl
-		$self->display_host_error($r,$@);
-		return OK;
+		return $self->display_host_error($@);
 	}
 
 	# output page
-	$r->send_http_header($run->{'template_conf'}->{'content-type'} || "text/html");
+	$self->{mp}->content_type($run->{'template_conf'}->{'content-type'} || "text/html");
 
-	$r->print($skeleton->output);
+	$self->{mp}->print($skeleton->output);
 
-	$r->rflush();
+	$self->{mp}->flush();
 
-	return OK;
+	return $self->{mp}->OK;
 }
-
 
 sub display_host_error {
 	my $self  = shift;
-	my $r     = shift;
 	my $error = shift;
 
-	$r->send_http_header("text/html");
-	$r->print("<h2>The following error was encountered while processing this request:</h2>");
-	$r->print("<pre>$error</pre>");
+	$self->{'mp'}->content_type("text/html");
+	$self->{'mp'}->print("<h2>The following error was encountered while processing this request:</h2>");
+	$self->{'mp'}->print("<pre>$error</pre>");
+	$self->{'mp'}->flush();
 
-	$r->rflush();
+	return $self->{mp}->OK;
 }
 
 sub restart { 
@@ -572,15 +565,15 @@ sub restart {
 	# wipe / initialize host information
 	$self->{'hosts'} = {};
 
-	$self->{'log'}->error("Voodoo starting...");
+	$self->{mp}->error("Voodoo starting...");
 
 	my $cf_name      = $self->{'constants'}->conf_file();
 	my $install_path = $self->{'constants'}->install_path();
 
-	$self->{'log'}->error("Scanning: $install_path");
+	$self->{mp}->error("Scanning: $install_path");
 
 	unless (opendir(DIR,$install_path)) {
-		$self->{'log'}->error("Can't open dir: $!");
+		$self->{mp}->error("Can't open dir: $!");
 		return;
 	}
 
@@ -590,7 +583,7 @@ sub restart {
 		next unless -f $fp;
 		next unless -r $fp;
 
-		$self->{'log'}->error("starting host $id");
+		$self->{mp}->error("starting host $id");
 
 		my $conf = Apache::Voodoo::ServerConfig->new($id,$fp);
 
@@ -599,10 +592,10 @@ sub restart {
 			$conf->{'dbh'} = DBI->connect(@{$_});
 			last if $conf->{'dbh'};
 			
-			$self->{'log'}->error("========================================================");
-			$self->{'log'}->error("DB CONNECT FAILED FOR $id");
-			$self->{'log'}->error("$DBI::errstr");
-			$self->{'log'}->error("========================================================");
+			$self->{mp}->error("========================================================");
+			$self->{mp}->error("DB CONNECT FAILED FOR $id");
+			$self->{mp}->error("$DBI::errstr");
+			$self->{mp}->error("========================================================");
 		}
 
 		# if the database connection was invalid (or there wasn't one, this would 'die'.  
@@ -617,16 +610,16 @@ sub restart {
 		$self->{'hosts'}->{$id}->{"DEAD"} = 0;
 
 		if ($conf->{'errors'}) {
-			$self->{'log'}->error("$id has ".$conf->{'errors'}." errors");
+			$self->{mp}->error("$id has ".$conf->{'errors'}." errors");
 			if ($conf->{'halt_on_errors'}) {
-				$self->{'log'}->error(" (dropping this site)");
+				$self->{mp}->error(" (dropping this site)");
 
 				$self->{'hosts'}->{$conf->{'id'}}->{"DEAD"} = 1;
 
 				return;
 			}
 			else {
-				$self->{'log'}->error(" (loading anyway)");
+				$self->{mp}->error(" (loading anyway)");
 			}
 		}
 
@@ -648,41 +641,6 @@ sub untie {
 	my $self = shift;
 
 	untie %session;
-}
-
-sub redirect {
-	my $self     = shift;
-	my $r        = shift;
-	my $loc      = shift;
-	my $internal = shift;
-
-	if ($r->method eq "POST") {
-		$r->method_number(M_GET);
-		$r->method('GET');
-		$r->headers_in->unset('Content-length');
-
-		$r->header_out("Location" => $loc);
-		$r->status(REDIRECT);
-		$r->send_http_header;
-		return REDIRECT;
-	}
-	elsif ($internal) {
-		$self->untie();
-		$r->internal_redirect($loc);
-		return OK;
-	}
-	else {
-		$r->header_out("Location" => $loc);
-		return REDIRECT;
-	}
-}
-
-sub html_tidy {
-	my $lines = shift;
-	foreach (@{$lines}) {
-		s/^\s*/ /;
-		s/\s*$/ /;
-	}
 }
 
 1;
