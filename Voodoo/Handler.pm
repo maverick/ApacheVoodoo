@@ -99,12 +99,12 @@ sub handle_request {
 	my $id = $self->{mp}->get_app_id();
 	unless (defined($id)) {
 		$self->{mp}->error("PerlSetVar ID not present in configuration.  Giving up");
-		return $self->{mp}->SERVER_ERROR;
+		return $self->{mp}->server_error;
 	}
 
 	unless (defined($self->{'hosts'}->{$id})) {
 		$self->{mp}->error("host id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'hosts'}}));
-		return $self->{mp}->SERVER_ERROR;
+		return $self->{mp}->server_error;
 	}
 
 	# holds all vars associated with this page processing request
@@ -121,7 +121,7 @@ sub handle_request {
 			return $self->{mp}->redirect($run->{'uri'}."index");
 		}
 		else { 
-			return $self->{mp}->DECLINED;
+			return $self->{mp}->declined;
 		}
 	}
 
@@ -129,8 +129,8 @@ sub handle_request {
    	$run->{'filename'} =~ s/\.tmpl$//o;
    	$run->{'uri'}      =~ s/\.tmpl$//o;
 
-	unless (-e "$run->{'filename'}.tmpl") { return $self->{mp}->DECLINED;  }
-	unless (-r "$run->{'filename'}.tmpl") { return $self->{mp}->FORBIDDEN; }
+	unless (-e "$run->{'filename'}.tmpl") { return $self->{mp}->declined;  }
+	unless (-r "$run->{'filename'}.tmpl") { return $self->{mp}->forbidden; }
 
 	########################################
 	# We now know we have a valid file that we need to handle
@@ -146,7 +146,7 @@ sub handle_request {
 	}
 
 	if ($host->{"DEAD"}) {
-		return $self->{mp}->SERVER_ERROR;
+		return $self->{mp}->server_error;
 	}
 
 	$host->{'site_root'} = $self->{mp}->site_root;
@@ -396,7 +396,7 @@ sub generate_html {
 					return $self->display_host_error("Module: $_->[0] $method\n$@");
 				}
 				else {
-					return $self->{mp}->SERVER_ERROR;
+					return $self->{mp}->server_error;
 				}
 			}
 
@@ -427,14 +427,14 @@ sub generate_html {
 						return $self->{mp}->redirect($host->{'site_root'}."access_denied");
 					}
 					else {
-						return $self->{mp}->FORBIDDEN;
+						return $self->{mp}->forbidden;
 					}
 				}
 				elsif ($return->[0] eq "RAW_MODE") {
 					$self->{mp}->header_out->set(each %{$return->[3]}) if $return->[3];
 					$self->{mp}->content_type($return->[1] || "text/html");
 					$self->{mp}->print($return->[2]);
-					return $self->{mp}->OK;
+					return $self->{mp}->ok;
 				}
 				else {
 					$self->{mp}->error("AIEEE!! $return->[0] is not a supported command");
@@ -544,7 +544,7 @@ sub generate_html {
 
 	$self->{mp}->flush();
 
-	return $self->{mp}->OK;
+	return $self->{mp}->ok;
 }
 
 sub display_host_error {
@@ -556,7 +556,7 @@ sub display_host_error {
 	$self->{'mp'}->print("<pre>$error</pre>");
 	$self->{'mp'}->flush();
 
-	return $self->{mp}->OK;
+	return $self->{mp}->ok;
 }
 
 sub restart { 

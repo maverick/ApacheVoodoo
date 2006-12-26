@@ -25,11 +25,10 @@ sub set_request {
 	$self->{'r'} = shift;
 }
 
-sub DECLINED     { return Apache2::Const::DECLINED();     }
-sub FORBIDDEN    { return Apache2::Const::FORBIDDEN();    }
-sub OK           { return Apache2::Const::OK();           }
-sub REDIRECT     { return Apache2::Const::REDIRECT();     }
-sub SERVER_ERROR { return Apache2::Const::SERVER_ERROR(); }
+sub declined     { return Apache2::Const::DECLINED();     }
+sub forbidden    { return Apache2::Const::FORBIDDEN();    }
+sub ok           { return Apache2::Const::OK();           }
+sub server_error { return Apache2::Const::SERVER_ERROR(); }
 
 sub content_type   { shift()->{'r'}->content_type(@_); }
 sub dir_config     { shift()->{'r'}->dir_config(@_); }

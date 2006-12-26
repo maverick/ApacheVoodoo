@@ -22,11 +22,10 @@ sub set_request {
 	$self->{'r'} = shift;
 }
 
-sub DECLINED     { return Apache::Constant::DECLINED;  }
-sub FORBIDDEN    { return Apache::Constant::FORBIDDEN; }
-sub OK           { return Apache::Constant::OK;        }
-sub REDIRECT     { return Apache::Constant::REDIRECT;  }
-sub SERVER_ERROR { return Apache::Constant::FORBIDDEN; }
+sub declined     { return Apache::Constants::DECLINED;  }
+sub forbidden    { return Apache::Constants::FORBIDDEN; }
+sub ok           { return Apache::Constants::OK;        }
+sub server_error { return Apache::Constants::FORBIDDEN; }
 
 sub content_type     { shift()->{'r'}->send_http_header(@_); }
 sub dir_config       { shift()->{'r'}->dir_config(@_); }
@@ -50,22 +49,22 @@ sub redirect {
 
         my $r = $self->{'r'};
         if ($r->method eq "POST") {
-                $r->method_number(Apache::Constant::M_GET);
+                $r->method_number(Apache::Constants::M_GET);
                 $r->method('GET');
                 $r->headers_in->unset('Content-length');
 
                 $r->header_out("Location" => $loc);
-                $r->status(Apache::Constant::REDIRECT);
+                $r->status(Apache::Constants::REDIRECT);
                 $r->send_http_header;
-                return Apache::Constant::REDIRECT;
+                return Apache::Constants::REDIRECT;
         }
         elsif ($internal) {
                 $r->internal_redirect($loc);
-                return Apache::Constant::OK;
+                return Apache::Constants::OK;
         }
         else {
                 $r->header_out("Location" => $loc);
-                return Apache::Constant::REDIRECT;
+                return Apache::Constants::REDIRECT;
         }
 }
 
@@ -106,7 +105,7 @@ sub _log {
 		$r = $self->{r};
 	}
 	else {
-		$r = Apache->server;
+		# $r = Apache->server;
 	}
 
 	if (defined($r)) {
