@@ -17,7 +17,7 @@ application's page handling modules.
 =cut ################################################################################
 package Apache::Voodoo::Handler;
 
-$VERSION = '1.22';
+$VERSION = '2.00';
 
 use strict;
 use warnings;
@@ -46,7 +46,6 @@ BEGIN {
 	}
 	else {
 		*handler = sub ($$) { shift()->handle_request(@_) };
-		# $Apache::Voodoo::Handler = Apache::Voodoo::Handler->new();
 	}
 }
 
@@ -73,7 +72,6 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 
-	print STDERR "made it past the new\n";
 	$self->{'mp'}        = Apache::Voodoo::MP->new();
 	$self->{'constants'} = Apache::Voodoo::Constants->new();
 

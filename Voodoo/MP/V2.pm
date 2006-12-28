@@ -6,16 +6,16 @@ use warnings;
 use Apache2::Const;
 use Apache2::RequestRec;
 use Apache2::RequestIO;
-use Apache2::Request;
 use Apache2::SubRequest;
+
+use Apache2::Request;
+use Apache2::Upload;;
 
 Apache2::Const->import(-compile => qw(OK REDIRECT DECLINED FORBIDDEN SERVER_ERROR M_GET));
 
 sub new {
 	my $class = shift;
 	my $self = {};
-
-	warn("Mod_perl V2 API detected");
 
 	bless $self,$class;
 	return $self;
@@ -38,9 +38,13 @@ sub filename       { shift()->{'r'}->filename(); }
 sub flush          { shift()->{'r'}->rflush(); }
 sub header_in      { shift()->{'r'}->headers_in->{shift()}; }
 sub header_out     { shift()->{'r'}->headers_out->add(@_); }
-sub print { shift()->{'r'}->print(@_); }
-sub uri            { shift()->{'r'}->uri(); }
 sub method         { shift()->{'r'}->method(@_); }
+sub print          { shift()->{'r'}->print(@_); }
+sub uri            { shift()->{'r'}->uri(); }
+
+sub is_get     { return ($_[0]->{r}->method eq "GET"); }
+sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
+sub site_root  { return $_[0]->{r}->dir_config("SiteRoot") || "/"; }
 
 sub redirect {
 	my $self = shift;
@@ -68,22 +72,11 @@ sub redirect {
 	}
 }
 
-sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
-
-sub is_get { return ($_[0]->{r}->method eq "GET"); }
-
-sub site_root { return $_[0]->{r}->dir_config("SiteRoot") || "/"; }
-
 sub parse_params {
 	my $self       = shift;
 	my $upload_max = shift;
 
-	my $apr  = Apache2::Request->new($self->{r}, POST_MAX => $upload_max);
-
-# FIXME uploading has changed in apache2
-#	if ($apr->parse()) {
-#		return "File upload has returned the following error:\n"; # .$apr->notes('error-notes');
-#  	}
+	my $apr = Apache2::Request->new($self->{r}, POST_MAX => $upload_max);
 
 	my %params;
 	foreach ($apr->param) {
@@ -91,11 +84,11 @@ sub parse_params {
 		$params{$_} = @value > 1 ? [@value] : $value[0];
    	}
 
-# FIXME uploading has changed in apache2
-#   	my @uploads = $apr->upload;
-#   	if (@uploads) {
-#		$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
-#   	}
+	$au = Apache2::Upload->new($self->{r});
+   	my @uploads = $au->upload;
+   	if (@uploads) {
+		$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
+   	}
 
    	return \%params;
 }

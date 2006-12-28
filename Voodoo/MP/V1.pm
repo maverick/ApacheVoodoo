@@ -4,14 +4,13 @@ use strict;
 use warnings;
 
 use Apache;
-use Apache::Request;
 use Apache::Constants qw(OK REDIRECT DECLINED FORBIDDEN SERVER_ERROR M_GET);
+
+use Apache::Request;
 
 sub new {
 	my $class = shift;
 	my $self = {};
-
-	warn("Mod_perl V1 API detected");
 
 	bless $self,$class;
 	return $self;

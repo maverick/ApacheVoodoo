@@ -13,7 +13,9 @@ lib/Apache/Voodoo/Install/Updater.pm
 lib/Apache/Voodoo/Loader.pm
 lib/Apache/Voodoo/Loader/Dynamic.pm
 lib/Apache/Voodoo/Loader/Static.pm
-lib/Apache/Voodoo/Log.pm
+lib/Apache/Voodoo/MP.pm
+lib/Apache/Voodoo/MP/V1.pm
+lib/Apache/Voodoo/MP/V2.pm
 lib/Apache/Voodoo/Pager.pm
 lib/Apache/Voodoo/ServerConfig.pm
 lib/Apache/Voodoo/Table.pm

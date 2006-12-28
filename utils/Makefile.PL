@@ -1,10 +1,7 @@
 use 5.008000;
 use ExtUtils::MakeMaker;
 
-WriteMakefile(
-	NAME          => 'Apache::Voodoo',
-	VERSION_FROM  => 'lib/Apache/Voodoo/Handler.pm',
-	PREREQ_PM     => {
+my %required_modules = (
 		Apache::DBI          => 0.94,
 		Apache::Request      => 1.33,
 		Apache::Session      => 1.6,
@@ -18,7 +15,30 @@ WriteMakefile(
 		Time::HiRes          => 1.65,
 		XML::Checker::Parser => 0,
 		# Apache::Admin::Config => 0.92
-	},
+);
+
+eval {
+	require "mod_perl.pm";
+};
+if ($@) {
+	die "Can't find mod_perl.pm: $@";
+}
+
+print STDERR "mod_perl version $mod_perl::VERSION found...\n";
+if ($mod_perl::VERSION >= 1.99) {
+	print STDERR "Adding prequisites for the Version 2 API...\n";
+	$required_modules{Apache2::Request} = 0;
+}
+else {
+	print STDERR "Adding prequisites for the Version 1 API...\n";
+	$required_modules{Apache::Request} = 1.33;
+}
+
+
+WriteMakefile(
+	NAME          => 'Apache::Voodoo',
+	VERSION_FROM  => 'lib/Apache/Voodoo/Handler.pm',
+	PREREQ_PM     => \%required_modules,
 	(
 		$] >= 5.008 ?
 		(ABSTRACT_FROM => 'lib/Apache/Voodoo.pod', # retrieve abstract from module
