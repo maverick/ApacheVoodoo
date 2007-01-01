@@ -9,7 +9,7 @@ use Apache2::RequestIO;
 use Apache2::SubRequest;
 
 use Apache2::Request;
-use Apache2::Upload;;
+use Apache2::Upload;
 
 Apache2::Const->import(-compile => qw(OK REDIRECT DECLINED FORBIDDEN SERVER_ERROR M_GET));
 
@@ -84,8 +84,7 @@ sub parse_params {
 		$params{$_} = @value > 1 ? [@value] : $value[0];
    	}
 
-	$au = Apache2::Upload->new($self->{r});
-   	my @uploads = $au->upload;
+   	my @uploads = $apr->upload;
    	if (@uploads) {
 		$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
    	}
