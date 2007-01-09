@@ -203,7 +203,7 @@ sub handle_request {
 	####################
 	# history capture 
 	####################
-	if ($self->{mp}->is_get) {
+	if ($self->{mp}->is_get && !$run->{input_params}->{is_ajax}) {
 		$self->history_queue($run);
 		$debug->mark("history capture");
 	}

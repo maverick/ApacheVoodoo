@@ -296,8 +296,8 @@ sub _parse_xml {
 		'SkipInsignifWS' => 1
 	);
 
-	my $dtdpath = $INC{'Apache/Voodoo/Install.pm'};
-	$dtdpath =~ s/Install\.pm$//;
+	my $dtdpath = $INC{'Apache/Voodoo/Install/Updater.pm'};
+	$dtdpath =~ s/Install\/Updater\.pm$//;
 
 	$parser->set_sgml_search_path($dtdpath);
 
