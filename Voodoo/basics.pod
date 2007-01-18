@@ -25,7 +25,7 @@ The first thing we need to do is modify Apache's configuration file to load Vood
 
   <Directory /data/apache/sites/my_app/html>
     SetHandler perl-script
-    PerlHandler $Apache::Voodoo::Handler->handle
+    PerlHandler Apache::Voodoo::Handler
     PerlSetVar ID my_app
 
     Options Indexes Includes FollowSymLinks
@@ -49,7 +49,7 @@ apache configuration file...IE. not within a <directory> or <virtual> block.
 
 Tells Apache that a mod_perl is going to be use for this directory or virtual host
 	
-=item PerlHandler $Apache::Voodoo::Handler->handle
+=item PerlHandler Apache::Voodoo::Handler
 	
 Tells Apache what method to call to handle requests for this directory
 
@@ -298,7 +298,7 @@ This allows you to create static content without having to make a module that ba
 
 The interesting side effect of rule two is that you can't make page handling methods that have a _ in them.
 They would never match the criteria of rule two.  This allows you to make methods that have no 
-way of accidentally being mapped to a URL...just add an underscore to them.
+way of accidentally being mapped to a URL by simply add an underscore to them.
 
 =head2 Examples
 
