@@ -2,7 +2,7 @@ Apache::Voodoo
 ==============
 
 Apache Voodoo, or just Voodoo for short is a web based application framework
-for Apache 1.3 and mod_perl.  It's goal is to handle all the repetitious and 
+for Apache 1.3, Apache 2 and mod_perl.  It's goal is to handle all the repetitious and 
 sometimes tricky/difficult mod_perl stuff for you.  By nature, it enforces
 a clean division of presentation (HTML), logic (your Perl code), and 
 Apache/mod_perl.
