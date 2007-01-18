@@ -20,7 +20,6 @@ package Apache::Voodoo::Handler;
 $VERSION = '2.00';
 
 use strict;
-use warnings;
 
 use Apache::DBI;	
 use Apache::Session::File;
@@ -88,7 +87,6 @@ sub handle_request {
 	my $r    = shift;
 
 	unless (ref($self)) {
-		print STDERR "self is a string; replacing\n";
 		$self = $self_init;
 	};
 
@@ -429,7 +427,7 @@ sub generate_html {
 					}
 				}
 				elsif ($return->[0] eq "RAW_MODE") {
-					$self->{mp}->header_out->set(each %{$return->[3]}) if $return->[3];
+					$self->{mp}->header_out(each %{$return->[3]}) if $return->[3];
 					$self->{mp}->content_type($return->[1] || "text/html");
 					$self->{mp}->print($return->[2]);
 					return $self->{mp}->ok;
