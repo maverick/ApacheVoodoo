@@ -3,7 +3,6 @@ use ExtUtils::MakeMaker;
 
 my %required_modules = (
 		Apache::DBI          => 0.94,
-		Apache::Request      => 1.33,
 		Apache::Session      => 1.6,
 		Config::General      => 2.27,
 		Digest::MD5          => 2.36,
@@ -18,10 +17,16 @@ my %required_modules = (
 );
 
 eval {
-	require "mod_perl.pm";
+	require "mod_perl2.pm";
 };
 if ($@) {
-	die "Can't find mod_perl.pm: $@";
+	eval {
+		require "mod_perl.pm";
+	};
+
+	if ($@) {
+		die "Can't find mod_perl.pm or mod_perl2.pm.  Do you have mod_perl installed?";
+	}
 }
 
 print STDERR "mod_perl version $mod_perl::VERSION found...\n";
