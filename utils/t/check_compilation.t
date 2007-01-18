@@ -1,5 +1,4 @@
 use Test::More tests => 22;
-use mod_perl;
 
 use_ok('Apache::Voodoo');
 use_ok('Apache::Voodoo::Constants');
@@ -23,6 +22,18 @@ use_ok('Apache::Voodoo::Theme');
 use_ok('Apache::Voodoo::ValidURL');
 use_ok('Apache::Voodoo::Zombie');
 
+eval {
+	require "mod_perl2.pm";
+};
+if ($@) {
+	eval {
+		require "mod_perl.pm";
+	};
+
+	if ($@) {
+		die "Can't find mod_perl.pm or mod_perl2.pm.  Do you have mod_perl installed?";
+	}
+}
 
 if ($mod_perl::VERSION >= 1.99) {
 	use_ok('Apache::Voodoo::MP::V2');
