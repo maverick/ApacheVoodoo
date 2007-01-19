@@ -85,9 +85,15 @@ sub parse_params {
    	}
 
    	my @uploads = $apr->upload;
-   	if (@uploads) {
-		$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
+   	if ($#uploads == 0) {
+		$params{'__voodoo_file_upload__'} = $apr->upload($uploads[0]);
    	}
+	elsif ($#uploads > 0) {
+		foreach (@uploads) {
+			push(@{$params{'__voodoo_file_upload__'}},$apr->upload($_));
+		}
+	}
+
 
    	return \%params;
 }

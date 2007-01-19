@@ -1,3 +1,7 @@
+2.01 - 1/19/2007
+================
+Fixed glitch in upload handling under Apache 2, updated docs.
+
 2.00 - 1/18/2007
 ================
 Added support for Apache 2
