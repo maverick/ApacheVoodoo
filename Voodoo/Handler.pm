@@ -201,7 +201,7 @@ sub handle_request {
 	####################
 	# history capture 
 	####################
-	if ($self->{mp}->is_get && !$run->{input_params}->{is_ajax}) {
+	if ($self->{mp}->is_get && !$run->{input_params}->{ajax_mode}) {
 		$self->history_queue($run);
 		$debug->mark("history capture");
 	}
@@ -382,7 +382,7 @@ sub generate_html {
 						"themes"        => $host->{'themes'},
 						"uri"           => $run->{'uri'},
 						"user-agent"    => $self->{mp}->header_in('User-Agent'),
-						#"r"             => $r
+						"r"             => $self->{mp}->{r}
 					}
 				);
 			};

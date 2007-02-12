@@ -600,21 +600,34 @@ sub list {
 	# figure out tables to join against
 	my @list;
 	foreach ($self->{'pkey'}, @{$self->{'columns'}}) {
-		push(@list,"$self->{'table'}.$_");
+		if ($_ =~ /\./) {
+			push(@list,$_);
+		}
+		else {
+			push(@list,"$self->{'table'}.$_");
+		}
 	}
 
-	if(ref($additional_constraint)) {
-		if(defined($additional_constraint->{'additional_column'})) {
+	if (ref($additional_constraint)) {
+		if (defined($additional_constraint->{'additional_column'})) {
 			push(@list, $additional_constraint->{'additional_column'});
 		}
 	}
 
 	# figure out tables to join against
 	my @joins;
-	foreach my $join (@{$self->{'references'}}) {
-		push(@joins,"LEFT JOIN $join->{'table'} ON $self->{'table'}.$join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
-		foreach (@{$join->{'columns'}}) {
-			push(@list,"$join->{'table'}.$_");
+	if ($self->{references}) {
+		foreach my $join ( sort { ($a->{fkey} =~ /\./) <=> ($b->{fkey} =~ /\./) } @{$self->{'references'}}) {
+			if ($join->{fkey} =~ /\./) {
+				push(@joins,"LEFT JOIN $join->{'table'} ON $join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
+			}
+			else {
+				push(@joins,"LEFT JOIN $join->{'table'} ON $self->{'table'}.$join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
+			}
+
+			foreach (@{$join->{'columns'}}) {
+				push(@list,"$join->{'table'}.$_");
+			}
 		}
 	}
 
