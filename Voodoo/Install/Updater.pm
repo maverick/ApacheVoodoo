@@ -354,7 +354,11 @@ sub _execute_commands {
 
 			if ($type eq "shell") {
 				$self->debug("        SHELL: ", $data);
-				$self->{'pretend'} || (system($data) && die "Shell command failed: $!");
+				unless ($self->{pretend}) {
+					if (system($data)) {
+						$self->{ignore} or die "Shell command failed: $!";
+					}
+				}
 			}
 			elsif ($type eq "sql") {
 				$self->_execute_sql($data);
@@ -404,7 +408,10 @@ sub _execute_sql {
 				next if ($query =~ /^[\s;]*$/);        # an empty query turns a do into a don't
 				next if ($query =~ /^(UN)?LOCK /i);    # do yacks on these too
 
-				$dbh->do($query) || die "sql source failed $query: " . DBI->errstr;
+				unless ($dbh->do($query)) {
+					$self->{ignore} or die "sql source failed $query: " . DBI->errstr;
+				}
+
 				$query = '';
 				$c = getc SQL;
 			}
@@ -439,7 +446,9 @@ sub _execute_sql {
 		close(SQL);
 	}
 	else {
-		$dbh->do($data) || die "sql failed: DBI->errstr";
+		unless ($dbh->do($data)) {
+			$self->{ignore} or die "sql failed: DBI->errstr";
+		}
 	}
 }
 

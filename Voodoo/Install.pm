@@ -75,8 +75,8 @@ sub make_symlink {
 		my @ts = stat($source);
 		if ($ss[1] != $ts[1]) {
 			# inode's are different.
-			$pretend || unlink($target) || die "Can't remove bogus link: $!";
-			$pretend || symlink($source,$target) || die "Can't create symlink: $!";
+			$pretend || unlink($target)          || $self->{ignore} || die "Can't remove bogus link: $!";
+			$pretend || symlink($source,$target) || $self->{ignore} || die "Can't create symlink: $!";
 			$self->debug(": invalid, fixed");
 		}
 		else {
@@ -92,13 +92,13 @@ sub make_symlink {
 		foreach my $d (@p) {
 			$p .= '/'.$d;
 			unless (-e $p && -d $p) {
-				$pretend || mkdir ($p,0755) || die "Can't create directory: $!";
+				$pretend || mkdir ($p,0755) || $self->{ignore} || die "Can't create directory: $!";
 			}
 		}
 
 		$pretend || unlink($target);	# in case it was there.
 
-		$pretend || symlink($source,$target) || die "Can't create symlink: $!";
+		$pretend || symlink($source,$target) || $self->{ignore} || die "Can't create symlink: $!";
 		$self->debug(": missing, created");
 	}
 }
@@ -118,12 +118,12 @@ sub make_writeable_dirs {
 			$self->debug(": ok");
 		}
 		else {
-			$pretend || mkdir($dir,770) or die "Can't create directory $dir: $!";
+			$pretend || mkdir($dir,770) || $self->{ignore} || die "Can't create directory $dir: $!";
 			$self->debug(": created");
 		}
 		$self->info("- Making sure the $dir directory is writable by apache");
-		$pretend || chown($uid,$gid,$dir) or die "Can't chown directory: $!";
-		$pretend || chmod(0770,$dir)      or die "Can't chmod directory: $!";
+		$pretend || chown($uid,$gid,$dir) || $self->{ignore} || die "Can't chown directory: $!";
+		$pretend || chmod(0770,$dir)      || $self->{ignore} || die "Can't chmod directory: $!";
 		$self->debug(": ok");
 	}
 }
@@ -142,15 +142,18 @@ sub make_writeable_files {
 			$self->debug(": ok");
 		}
 		else {
-			$pretend || (system("touch $file") && die "Can't create file: $!");
+			$pretend || (system("touch $file") && ($self->{ignore} || die "Can't create file: $!"));
 			$self->debug(": created");
 		}
 		$self->info("- Making sure the $file directory is writable by apache");
-		$pretend || chown($uid,$gid,$file) or die "Can't chown file: $!";
-		$pretend || chmod(0600,$file)      or die "Can't chmod file: $!";
+		$pretend || chown($uid,$gid,$file) || $self->{ignore} || die "Can't chown file: $!";
+		$pretend || chmod(0600,$file)      || $self->{ignore} || die "Can't chmod file: $!";
 		$self->debug(": ok");
 	}
 }
+
+# In a pine box somewhere De Morgan is either spinning violently, or applauding.  We're not 
+# sure which.
 
 1;
 =pod ################################################################################

@@ -10,7 +10,7 @@
 ####################################################################################
 package Apache::Voodoo;
 
-$VERSION = '2.00';
+$VERSION = '2.01';
 
 use strict;
 use Data::Dumper;
@@ -77,6 +77,21 @@ sub access_denied {
 	return [ 'ACCESS_DENIED' , shift ];
 }
 
+sub is_redirect      { return $_[0]->_is_a_redirect($_[1],'REDIRECTED');    }
+sub is_display_error { return $_[0]->_is_a_redirect($_[1],'DISPLAY_ERROR'); }
+sub is_access_denied { return $_[0]->_is_a_redirect($_[1],'ACCESS_DENIED'); }
+
+sub _is_a_redirect {
+	shift;
+	my $r = shift;
+	my $t = shift;
+	if (ref($r) eq "ARRAY" && $r->[0] eq $t) {
+		return $r->[1];
+	}
+	else {
+		return 0;
+	}
+}
 
 sub history {
 	my $self = shift;

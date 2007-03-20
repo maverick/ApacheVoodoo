@@ -28,6 +28,7 @@ $| = 1;
 my $pretend = 0;
 my $help    = 0;
 my $verbose = 0;
+my $ignore_errors = 0;
 my ($dbhost,$dbname,$dbuser,$dbpass,$dbroot);
 
 GetOptions(
@@ -38,7 +39,8 @@ GetOptions(
 	'dbname|n:s'  => \$dbname,
 	'dbuser|u:s'  => \$dbuser,
 	'dbpass|p:s'  => \$dbpass,
-	'dbroot|r:s'  => \$dbroot
+	'dbroot|r:s'  => \$dbroot,
+	'ignore'      => \$ignore_errors
 );
 
 show_usage() if $help;
@@ -67,7 +69,8 @@ if ($command eq "install") {
 		'dbname'       => $dbname,
 		'dbpass'       => $dbpass,
 		'dbroot'       => $dbroot,
-		'distribution' => $target
+		'distribution' => $target,
+		'ignore'       => $ignore_errors
 	);
 
 	$distro->do_install();
@@ -75,10 +78,11 @@ if ($command eq "install") {
 	$app_name = $distro->app_name();
 
 	my $updater = Apache::Voodoo::Install::Updater->new(
-			dbroot   => $dbroot,
-			app_name => $app_name,
-			verbose  => $verbose,
-			pretend  => $pretend
+			'dbroot'   => $dbroot,
+			'app_name' => $app_name,
+			'verbose'  => $verbose,
+			'pretend'  => $pretend,
+			'ignore'   => $ignore_errors
 	);
 
 	if ($distro->existing()) {
@@ -104,10 +108,11 @@ elsif ($command =~ /^(update|mark_updates_applied)$/) {
 	$app_name = $target;
 
 	my $updater = Apache::Voodoo::Install::Updater->new(
-			dbroot   => $dbroot,
-			app_name => $app_name,
-			verbose  => $verbose,
-			pretend  => $pretend
+			'dbroot'   => $dbroot,
+			'app_name' => $app_name,
+			'verbose'  => $verbose,
+			'pretend'  => $pretend,
+			'ignore'   => $ignore_errors
 	);
 
 	if ($command eq "update") {
@@ -171,9 +176,10 @@ sub do_post {
 	}
 
 	my $post = Apache::Voodoo::Install::Post->new(
-		app_name => $app_name,
-		verbose  => $verbose,
-		pretend  => $pretend
+		'app_name' => $app_name,
+		'verbose'  => $verbose,
+		'pretend'  => $pretend,
+		'ignore'   => $ignore_errors
 	);
 
 	$post->do_setup_checks();
@@ -195,6 +201,11 @@ sub show_usage {
 	print "    -u --dbuser  Override database username in conf files\n";
 	print "    -p --dbpass  Override database password in conf files\n";
 	print "    -r --dbroot  Database root password\n";
+	print "\n";
+	print "Expert Options: (Useful in a development environment; dangerous in a production environment.\n";
+	print "    --ignore             Causes errors in the update command files to be ignored\n";
+	print "    mark_updates_applied Makes the system believe all the update have been applied,\n";
+	print "                         doesn't acutally process them.\n";
 	print "\n";
 	exit;
 }
