@@ -78,7 +78,7 @@ sub paginate {
 	my %output;
 
 	if ($res_count > $count) {
-		my $url_params = "count=$count&" . join('&', map { $_ .'='. $params->{$_} } @{$self->{'persist'}});
+		my $url_params = "count=$count&amp;" . join('&amp;', map { $_ .'='. $params->{$_} } @{$self->{'persist'}});
 
 		$output{'MODE_PARAMS'} = $url_params;
 
@@ -87,11 +87,11 @@ sub paginate {
 		if ($res_count < $self->{'limit'} && $showall) {
 			$output{'SHOW_MODE'} = 1;
 			$output{'SHOW_ALL'} = 1;
-			$output{'MODE_PARAMS'} .= "&showall=0";
+			$output{'MODE_PARAMS'} .= "&amp;showall=0";
 		}
 		else {
 			if ($res_count < $self->{'limit'}) {
-				$output{'MODE_PARAMS'} .= "&showall=1";
+				$output{'MODE_PARAMS'} .= "&amp;showall=1";
 				$output{'SHOW_MODE'} = 1;
 			}
 
@@ -122,7 +122,7 @@ sub paginate {
 							'NOT_ME'     => (($x + 1) == $page)?0:1,
 							'PAGE'       => ($x + 1),
 							'NOT_LAST'   => 1,
-							'URL_PARAMS' => $url_params . '&page='. ($x + 1)
+							'URL_PARAMS' => $url_params . '&amp;page='. ($x + 1)
 						}
 					);
 				}
@@ -135,19 +135,19 @@ sub paginate {
 
 				# setup the 'more link'
 				if ($end != $numpages) {
-					$output{'MORE_URL_PARAMS'} =     $url_params . '&page=' . ($end + 1);
+					$output{'MORE_URL_PARAMS'} =     $url_params . '&amp;page=' . ($end + 1);
 				}
 
 				# setup the preivous link
 				if ($page > 1) {
 					$output{'HAS_PREVIOUS'} = 1;
-					$output{'PREVIOUS_URL_PARAMS'} = $url_params . '&page=' . ($page - 1);
+					$output{'PREVIOUS_URL_PARAMS'} = $url_params . '&amp;page=' . ($page - 1);
 				}
 
 				# setup the next link
 				if ($page * $count < $res_count) {
 					$output{'HAS_NEXT'} = 1;
-					$output{'NEXT_URL_PARAMS'} =     $url_params . '&page=' . ($page + 1);
+					$output{'NEXT_URL_PARAMS'} =     $url_params . '&amp;page=' . ($page + 1);
 				}
 			}
 		}

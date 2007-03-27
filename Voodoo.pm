@@ -177,7 +177,7 @@ sub mkurlparams {
 		}
 	}
 
-	return join("&",@return);
+	return join("&amp;",@return);
 }
 
 sub prep_select {
