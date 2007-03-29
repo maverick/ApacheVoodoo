@@ -645,8 +645,8 @@ sub list {
 		# 7-18-2001 added lower to make case insensitive for Postgres
 		$select_stmt .= " WHERE $limit LIKE LOWER(\"$pattern%\") ";
 
-	# FIXME!!!
-		if(ref($additional_constraint)) {
+		# FIXME!!!
+		if (ref($additional_constraint)) {
 			if(defined($additional_constraint->{'additional_constraint'})) {
 				$select_stmt .= "AND ".$additional_constraint->{'additional_constraint'};
 			}
@@ -921,6 +921,9 @@ sub _process_params {
 			 unless ($v{$_->{'name'}} =~ /$re/) {
 				 $errors{'BAD_'.$_->{'name'}} = 1;
 			 }
+		}
+		else {
+			$v{$_->{'name'}} =~ s/"/\&quot;/g;
 		}
 	}
 
