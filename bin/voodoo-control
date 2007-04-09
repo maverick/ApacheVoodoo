@@ -32,7 +32,6 @@ my $ignore_errors = 0;
 my ($dbhost,$dbname,$dbuser,$dbpass,$dbroot);
 
 GetOptions(
-	'help'        => \$help,
 	'pretend'     => \$pretend,
 	'verbose|v:s' => \$verbose,
 	'dbhost|h:s'  => \$dbhost,
@@ -43,21 +42,36 @@ GetOptions(
 	'ignore'      => \$ignore_errors
 );
 
-show_usage() if $help;
+my %COMMANDS = (
+	'install'    => \&install,
+	'update'     => \&update,
+	'showconfig' => \&showconfig,
+	'setconfig'  => \&setconfig,
+	'mark_updates_applied' => \&mark_updates_applied,
+	
+);
 
-my ($command,$target) = @ARGV;
-my $app_name;
+my $command = shift @ARGV;
 
-if ($command eq "install") {
+if (defined($COMMANDS{$command})) {
+	$COMMANDS{$command}->();
+}
+else {
+	show_usage();
+}
+
+sub install {
 	# use these on demand.  This has two benefits.
 	# a) We don't spend time using in stuff we don't need.
-	# b) This program will still run even if these fail to load because of bad config data.
-	#    This allows this program to be used to fix the broken config
+	# b) This program will still run even if these fail to load because of bad configuration.
+	# c) This allows this program to be used to fix the broken configuration.
 	eval "
 		use Apache::Voodoo::Install::Distribution;
 		use Apache::Voodoo::Install::Updater;
 	";
 	die $@ if ($@);
+
+	my $target = shift @ARGV;
 
 	################################################################################
 	# make sure this file exists and that the name follows the correct format
@@ -75,7 +89,7 @@ if ($command eq "install") {
 
 	$distro->do_install();
 
-	$app_name = $distro->app_name();
+	my $app_name = $distro->app_name();
 
 	my $updater = Apache::Voodoo::Install::Updater->new(
 			'dbroot'   => $dbroot,
@@ -92,20 +106,17 @@ if ($command eq "install") {
 		$updater->do_new_install();
 	}
 }
-elsif ($command =~ /^(update|mark_updates_applied)$/) {
-	unless ($target =~ /^[a-z]\w*$/i) {
+
+sub update {
+	my $app_name = shift @ARGV;
+
+	unless ($app_name =~ /^[a-z]\w*$/i) {
 		print "Invalid application name.  Valid names must begin with a letter and only contain letters, numbers and _\n";
 		exit;
 	}
 
-	# use these on demand.  This has two benefits.
-	# a) We don't spend time using in stuff we don't need.
-	# b) This program will still run even if these fail to load because of bad config data.
-	#    This allows this program to be used to fix the broken config
 	eval "use Apache::Voodoo::Install::Updater;";
 	die $@ if ($@);
-
-	$app_name = $target;
 
 	my $updater = Apache::Voodoo::Install::Updater->new(
 			'dbroot'   => $dbroot,
@@ -115,15 +126,32 @@ elsif ($command =~ /^(update|mark_updates_applied)$/) {
 			'ignore'   => $ignore_errors
 	);
 
-	if ($command eq "update") {
-		$updater->do_update();
-		do_post($app_name,$verbose,$pretend);
-	}
-	else {
-		$updater->mark_updates_applied();
-	}
+	$updater->do_update();
+	do_post($app_name,$verbose,$pretend);
 }
-elsif ($command eq "showconfig") {
+
+sub mark_updates_applied {
+	my $app_name = shift @ARGV;
+	unless ($app_name =~ /^[a-z]\w*$/i) {
+		print "Invalid application name.  Valid names must begin with a letter and only contain letters, numbers and _\n";
+		exit;
+	}
+
+	eval "use Apache::Voodoo::Install::Updater;";
+	die $@ if ($@);
+
+	my $updater = Apache::Voodoo::Install::Updater->new(
+			'dbroot'   => $dbroot,
+			'app_name' => $app_name,
+			'verbose'  => $verbose,
+			'pretend'  => $pretend,
+			'ignore'   => $ignore_errors
+	);
+
+	$updater->mark_updates_applied();
+}
+
+sub showconfig {
 	eval "use Apache::Voodoo::Constants;";
 	if ($@) { die $@; }
 
@@ -143,7 +171,8 @@ elsif ($command eq "showconfig") {
 	print "Config settings stored in: ", $INC{'Apache/Voodoo/MyConfig.pm'},"\n";
 	exit 0;	
 }
-elsif ($command eq "setconfig") {
+
+sub setconfig {
 	my $cnf = {};
 
 	eval "use Apache::Voodoo::MyConfig;";
@@ -160,9 +189,6 @@ elsif ($command eq "setconfig") {
 	my $cfg = Apache::Voodoo::Install::Config->new(%{$cnf});
 
 	$cfg->do_config_setup($pretend);
-}
-else {
-	show_usage();
 }
 
 sub do_post {
