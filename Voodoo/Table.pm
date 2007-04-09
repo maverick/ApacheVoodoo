@@ -916,13 +916,15 @@ sub _process_params {
 				}
 			}
 		}
-		elsif(defined($_->{'regexp'})) {
+		elsif (defined($_->{'regexp'})) {
 			 my $re = $_->{'regexp'};
 			 unless ($v{$_->{'name'}} =~ /$re/) {
 				 $errors{'BAD_'.$_->{'name'}} = 1;
 			 }
 		}
-		else {
+		elsif ($_->{length} > 0) {
+			# If there was a length restriction, than this data
+			# isn't in a text area and needs to have it's " HTML entitified
 			$v{$_->{'name'}} =~ s/"/\&quot;/g;
 		}
 	}
