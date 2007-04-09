@@ -25,21 +25,17 @@ use Data::Dumper;
 # turn off buffered output
 $| = 1;
 
-my $pretend = 0;
-my $help    = 0;
-my $verbose = 0;
-my $ignore_errors = 0;
-my ($dbhost,$dbname,$dbuser,$dbpass,$dbroot);
-
+my %options = ();
 GetOptions(
-	'pretend'     => \$pretend,
-	'verbose|v:s' => \$verbose,
-	'dbhost|h:s'  => \$dbhost,
-	'dbname|n:s'  => \$dbname,
-	'dbuser|u:s'  => \$dbuser,
-	'dbpass|p:s'  => \$dbpass,
-	'dbroot|r:s'  => \$dbroot,
-	'ignore'      => \$ignore_errors
+	\%options,
+	'pretend!',
+	'ignore!',
+	'verbose|v!',
+	'dbhost|h:s',
+	'dbname|n:s',
+	'dbuser|u:s',
+	'dbpass|p:s',
+	'dbroot|r:s',
 );
 
 my %COMMANDS = (
@@ -48,19 +44,22 @@ my %COMMANDS = (
 	'showconfig' => \&showconfig,
 	'setconfig'  => \&setconfig,
 	'mark_updates_applied' => \&mark_updates_applied,
-	
 );
 
 my $command = shift @ARGV;
 
 if (defined($COMMANDS{$command})) {
-	$COMMANDS{$command}->();
+	$COMMANDS{$command}->(%options);
 }
 else {
 	show_usage();
 }
 
 sub install {
+	my %options = @_;
+
+	my $target = shift @ARGV;
+
 	# use these on demand.  This has two benefits.
 	# a) We don't spend time using in stuff we don't need.
 	# b) This program will still run even if these fail to load because of bad configuration.
@@ -71,33 +70,16 @@ sub install {
 	";
 	die $@ if ($@);
 
-	my $target = shift @ARGV;
-
 	################################################################################
 	# make sure this file exists and that the name follows the correct format
 	################################################################################
-	my $distro = Apache::Voodoo::Install::Distribution->new(
-		'verbose'      => $verbose,
-		'pretend'      => $pretend,
-		'dbhost'       => $dbhost,
-		'dbname'       => $dbname,
-		'dbpass'       => $dbpass,
-		'dbroot'       => $dbroot,
-		'distribution' => $target,
-		'ignore'       => $ignore_errors
-	);
+	my $distro = Apache::Voodoo::Install::Distribution->new('distribution' => $target, %options);
 
 	$distro->do_install();
 
 	my $app_name = $distro->app_name();
 
-	my $updater = Apache::Voodoo::Install::Updater->new(
-			'dbroot'   => $dbroot,
-			'app_name' => $app_name,
-			'verbose'  => $verbose,
-			'pretend'  => $pretend,
-			'ignore'   => $ignore_errors
-	);
+	my $updater = Apache::Voodoo::Install::Updater->new('app_name' => $app_name, %options);
 
 	if ($distro->existing()) {
 		$updater->do_update();
@@ -108,6 +90,8 @@ sub install {
 }
 
 sub update {
+	my %options = @_;
+
 	my $app_name = shift @ARGV;
 
 	unless ($app_name =~ /^[a-z]\w*$/i) {
@@ -118,20 +102,17 @@ sub update {
 	eval "use Apache::Voodoo::Install::Updater;";
 	die $@ if ($@);
 
-	my $updater = Apache::Voodoo::Install::Updater->new(
-			'dbroot'   => $dbroot,
-			'app_name' => $app_name,
-			'verbose'  => $verbose,
-			'pretend'  => $pretend,
-			'ignore'   => $ignore_errors
-	);
+	my $updater = Apache::Voodoo::Install::Updater->new('app_name' => $app_name, %options);
 
 	$updater->do_update();
-	do_post($app_name,$verbose,$pretend);
+	do_post(app_name => $app_name, %options);
 }
 
 sub mark_updates_applied {
+	my %options = @_;
+
 	my $app_name = shift @ARGV;
+
 	unless ($app_name =~ /^[a-z]\w*$/i) {
 		print "Invalid application name.  Valid names must begin with a letter and only contain letters, numbers and _\n";
 		exit;
@@ -140,13 +121,7 @@ sub mark_updates_applied {
 	eval "use Apache::Voodoo::Install::Updater;";
 	die $@ if ($@);
 
-	my $updater = Apache::Voodoo::Install::Updater->new(
-			'dbroot'   => $dbroot,
-			'app_name' => $app_name,
-			'verbose'  => $verbose,
-			'pretend'  => $pretend,
-			'ignore'   => $ignore_errors
-	);
+	my $updater = Apache::Voodoo::Install::Updater->new('app_name' => $app_name, %options);
 
 	$updater->mark_updates_applied();
 }
@@ -173,6 +148,8 @@ sub showconfig {
 }
 
 sub setconfig {
+	my %options = @_;
+
 	my $cnf = {};
 
 	eval "use Apache::Voodoo::MyConfig;";
@@ -188,11 +165,11 @@ sub setconfig {
 
 	my $cfg = Apache::Voodoo::Install::Config->new(%{$cnf});
 
-	$cfg->do_config_setup($pretend);
+	$cfg->do_config_setup($options{pretend});
 }
 
 sub do_post {
-	my ($app_name,$verbose,$pretend) = @_;
+	my %options = @_;
 
 	eval "
 		use Apache::Voodoo::Install::Post;
@@ -201,12 +178,7 @@ sub do_post {
 		die $@;
 	}
 
-	my $post = Apache::Voodoo::Install::Post->new(
-		'app_name' => $app_name,
-		'verbose'  => $verbose,
-		'pretend'  => $pretend,
-		'ignore'   => $ignore_errors
-	);
+	my $post = Apache::Voodoo::Install::Post->new(%options);
 
 	$post->do_setup_checks();
 }
