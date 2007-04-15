@@ -67,7 +67,7 @@ sub do_new_install { $_[0]->_do_all(1); }
 sub mark_updates_applied {
 	my $self = shift;
 
-	my %conf = ParseConfig($self->{'conf_file'});
+	my %conf = Config::General::ParseConfig($self->{'conf_file'});
 
 	$self->mesg("- Connection to database");
 	$self->{'dbh'} = DBI->connect($conf{'database'}->{'connect'},'root',$self->{'dbroot'}) || die DBI->errstr;
@@ -83,7 +83,7 @@ sub _do_all {
 	my $self = shift;
 	my $new  = shift;
 
-	my %conf = ParseConfig($self->{'conf_file'});
+	my %conf = Config::General::ParseConfig($self->{'conf_file'});
 
 	if ($new) {
 		$self->mesg("- Creating database");

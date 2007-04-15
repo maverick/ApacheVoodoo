@@ -1,6 +1,6 @@
 #!/usr/bin/perl -I /data/apache/lib/perl
 
-=pod ####################################################################################
+=pod ###########################################################################
 
 =head1 NAME
 
@@ -14,7 +14,7 @@ $Id: Handler.pm 2597 2005-09-15 16:33:41Z medwards $
 
 FIXME: Add documentation
 
-=cut ####################################################################################
+=cut ###########################################################################
 
 use strict;
 use warnings;
@@ -25,12 +25,17 @@ use Data::Dumper;
 # turn off buffered output
 $| = 1;
 
-my %options = ();
+my %options = (
+	'verbose' => 0,
+	'ignore'  => 0,
+	'pretend' => 0
+);
+
 GetOptions(
 	\%options,
 	'pretend!',
 	'ignore!',
-	'verbose|v!',
+	'verbose|v:i',
 	'dbhost|h:s',
 	'dbname|n:s',
 	'dbuser|u:s',
@@ -43,7 +48,10 @@ my %COMMANDS = (
 	'update'     => \&update,
 	'showconfig' => \&showconfig,
 	'setconfig'  => \&setconfig,
-	'mark_updates_applied' => \&mark_updates_applied,
+	'newapp'     => \&newapp,
+	'newmodule'  => \&newmodule,
+	'probetable' => \&probetable,
+	'markupdatesapplied' => \&markupdatesapplied,
 );
 
 my $command = shift @ARGV;
@@ -64,11 +72,8 @@ sub install {
 	# a) We don't spend time using in stuff we don't need.
 	# b) This program will still run even if these fail to load because of bad configuration.
 	# c) This allows this program to be used to fix the broken configuration.
-	eval "
-		use Apache::Voodoo::Install::Distribution;
-		use Apache::Voodoo::Install::Updater;
-	";
-	die $@ if ($@);
+	load_mod("Apache::Voodoo::Install::Distribution");
+	load_mod("Apache::Voodoo::Install::Updater");
 
 	################################################################################
 	# make sure this file exists and that the name follows the correct format
@@ -93,14 +98,9 @@ sub update {
 	my %options = @_;
 
 	my $app_name = shift @ARGV;
+	assert_app_name($app_name);
 
-	unless ($app_name =~ /^[a-z]\w*$/i) {
-		print "Invalid application name.  Valid names must begin with a letter and only contain letters, numbers and _\n";
-		exit;
-	}
-
-	eval "use Apache::Voodoo::Install::Updater;";
-	die $@ if ($@);
+	load_mod("Apache::Voodoo::Install::Updater");
 
 	my $updater = Apache::Voodoo::Install::Updater->new('app_name' => $app_name, %options);
 
@@ -108,18 +108,13 @@ sub update {
 	do_post(app_name => $app_name, %options);
 }
 
-sub mark_updates_applied {
+sub markupdatesapplied {
 	my %options = @_;
 
 	my $app_name = shift @ARGV;
+	assert_app_name($app_name);
 
-	unless ($app_name =~ /^[a-z]\w*$/i) {
-		print "Invalid application name.  Valid names must begin with a letter and only contain letters, numbers and _\n";
-		exit;
-	}
-
-	eval "use Apache::Voodoo::Install::Updater;";
-	die $@ if ($@);
+	load_mod("Apache::Voodoo::Install::Updater");
 
 	my $updater = Apache::Voodoo::Install::Updater->new('app_name' => $app_name, %options);
 
@@ -127,8 +122,7 @@ sub mark_updates_applied {
 }
 
 sub showconfig {
-	eval "use Apache::Voodoo::Constants;";
-	if ($@) { die $@; }
+	load_mod("Apache::Voodoo::Constants");
 
 	my $cnf = Apache::Voodoo::Constants->new();
 
@@ -160,23 +154,98 @@ sub setconfig {
 		}
 	}
 
-	eval "use Apache::Voodoo::Install::Config;";
-	die $@ if ($@);
+	load_mod("Apache::Voodoo::Install::Config");
 
 	my $cfg = Apache::Voodoo::Install::Config->new(%{$cnf});
 
 	$cfg->do_config_setup($options{pretend});
 }
 
+sub newapp {
+	my %options = @_;
+
+	my $app_name = shift @ARGV;
+	assert_app_name($app_name);
+
+	load_mod("Apache::Voodoo::Scaffold::NewApplication");
+
+	my $newapp = Apache::Voodoo::Scaffold::NewApplication->new('app_name' => $app_name, %options);
+
+	if ($newapp->already_exists()) {
+		print "An application with this name already exists.\n";
+		print "Are you sure you want to replace it with a new blank application?\n";
+		print "[y/N]?";
+		my $answer = <STDIN>;
+		if ($answer =~ /^y/) {
+			$newapp->delete_existing();
+		}
+		else {
+			exit;
+		}
+	}
+	$newapp->create();
+}
+
+sub newmodule {
+	my %options = @_;
+
+	my $app_name = shift @ARGV;
+	assert_app_name($app_name);
+
+	my $mod_name = shift @ARGV;
+	assert_mod_name($mod_name);
+
+	load_mod("Apache::Voodoo::Scaffold::NewModule");
+
+	my $newmod = Apache::Voodoo::Scaffold::NewModule->new('app_name' => $app_name, mod_name => $mod_name, %options);
+
+	if ($newmod->already_exists()) {
+		print "An module with this name already exists.\n";
+		print "Are you sure you want to replace it with a new blank module?\n";
+		print "[y/N]?";
+		my $answer = <STDIN>;
+		if ($answer =~ /^y/) {
+			$newmod->delete_existing();
+		}
+		else {
+			exit;
+		}
+	}
+	$newmod->create();
+}
+
+sub probetable {
+	my %options = @_;
+
+	my $app_name = shift @ARGV;
+	assert_app_name($app_name);
+
+	my $mod_name = shift @ARGV;
+	assert_mod_name($mod_name);
+
+	load_mod("Apache::Voodoo::Scaffold::NewModule");
+
+	my $newmod = Apache::Voodoo::Scaffold::NewModule->new('app_name' => $app_name, mod_name => $mod_name, %options);
+
+	if ($newmod->already_exists()) {
+		print "An module with this name already exists.\n";
+		print "Are you sure you want to replace it with a new blank module?\n";
+		print "[y/N]?";
+		my $answer = <STDIN>;
+		if ($answer =~ /^y/) {
+			$newmod->delete_existing();
+		}
+		else {
+			exit;
+		}
+	}
+	$newmod->create();
+}
+
 sub do_post {
 	my %options = @_;
 
-	eval "
-		use Apache::Voodoo::Install::Post;
-	";
-	if ($@) {
-		die $@;
-	}
+	load_mod("Apache::Voodoo::Install::Post");
 
 	my $post = Apache::Voodoo::Install::Post->new(%options);
 
@@ -199,13 +268,36 @@ sub show_usage {
 	print "    -u --dbuser  Override database username in conf files\n";
 	print "    -p --dbpass  Override database password in conf files\n";
 	print "    -r --dbroot  Database root password\n";
+	print "    -v number    Increase verbosity \n";
 	print "\n";
 	print "Expert Options: (Useful in a development environment; dangerous in a production environment.\n";
-	print "    --ignore             Causes errors in the update command files to be ignored\n";
-	print "    mark_updates_applied Makes the system believe all the update have been applied,\n";
-	print "                         doesn't acutally process them.\n";
+	print "    --ignore           Causes errors in the update command files to be ignored\n";
+	print "    markupdatesapplied Makes the system believe all the update have been applied,\n";
+	print "                       doesn't acutally process them.\n";
 	print "\n";
 	exit;
+}
+
+sub load_mod {
+	my $mod = shift;
+	eval "use $mod;";
+	if ($@) { die $@; }
+}
+
+sub assert_app_name {
+	my $app_name = shift;
+	unless ($app_name =~ /^[a-z]\w*$/i) {
+		print "Invalid application name.  Valid names must begin with a letter and only contain letters, numbers and _\n";
+		exit;
+	}
+}
+
+sub assert_mod_name {
+	my $mod_name = shift;
+	unless ($mod_name =~ /^[a-z]\w*(::[a-z]\w*)*$/i) {
+		print "Invalid module name.  Modules must follow Perl's module naming convention\n";
+		exit;
+	}
 }
 
 =pod ################################################################################
