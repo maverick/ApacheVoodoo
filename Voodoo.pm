@@ -107,20 +107,11 @@ sub tardis {
 
 	my %targets = map { $_ => 1 } @_;
 
-	my $uri = '/'.$p->{'uri'};
 	my $history = $p->{'session'}->{'history'};
 
-	my $find_uri=1;
 	for (my $i=0; $i <= $#{$history}; $i++) {
-		if ($find_uri) {
-			if ($uri eq $history->[$i]->{'uri'}) {
-				$find_uri = 0;
-			}
-		}
-		else {
-			if ($targets{$history->[$i]->{'uri'}}) {
-				return $self->redirect($self->history($p->{'session'},$i));
-			}
+		if ($targets{$history->[$i]->{'uri'}}) {
+			return $self->redirect($self->history($p->{'session'},$i));
 		}
 	}
 
