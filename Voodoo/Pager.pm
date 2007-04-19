@@ -96,23 +96,26 @@ sub paginate {
 			}
 
 			# setup the page list
-			my $numpages = ($res_count / $count);
+			my $numpages = ceil($res_count / $count);
 			$output{'PAGE_NUMBER'}  = $page;
-			$output{'NUMBER_PAGES'} = ceil($numpages);
+			$output{'NUMBER_PAGES'} = $numpages;
 
 			if ($numpages > 1) {
 				# setup sliding window of page numbers
-				my $start = 0;
+				my $start  = 0;
 				my $window = $self->{'window'};
-				my $end   = $window;
+				my $end    = $window;
+
 				if ($page >= $window) {
-					$start = $page - ($window / 2) - 1;
-					$end   = $page + ($window / 2);
+					$end = $page + ceil($window / 2) - 1;
+
+					if ($end > $numpages) {
+						$end = $numpages;
+					}
+
+					$start = $end - $window;
 				}
 
-				if ($end > $numpages) {
-					$end = $numpages;
-				}
 
 				$output{'PAGES'} = [];
 				for (my $x = $start; $x < $end; $x++) {
