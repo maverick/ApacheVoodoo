@@ -53,7 +53,7 @@ sub set_configuration {
 	$self->{'count'} = $c{'count'}   || 40;
 
 	$c{'window'} =~ s/\D//g;
-	$self->{'window'} = $c{'window'} || 15;
+	$self->{'window'} = $c{'window'} || 10;
 
 	$c{'limit'} =~ s/\D//g;
 	$self->{'limit'} = $c{'limit'}   || 500;
@@ -109,13 +109,12 @@ sub paginate {
 				if ($page >= $window) {
 					$end = $page + ceil($window / 2) - 1;
 
-					if ($end > $numpages) {
-						$end = $numpages;
-					}
-
 					$start = $end - $window;
 				}
 
+				if ($end > $numpages) {
+					$end = $numpages;
+				}
 
 				$output{'PAGES'} = [];
 				for (my $x = $start; $x < $end; $x++) {
