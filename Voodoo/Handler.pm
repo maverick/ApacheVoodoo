@@ -317,7 +317,7 @@ sub history_queue {
 		$session->{'history'}->[0]->{'params'} = $self->mkurlparams($params);
 	}
 
-	if (scalar(@{$session->{'history'}}) > 10) {
+	if (scalar(@{$session->{'history'}}) > 20) {
 		# keep the queue at 10 items
 		pop @{$session->{'history'}};
 	}
@@ -490,8 +490,10 @@ sub generate_html {
 		my $template = HTML::Template->new(
 			'filename'          => $host->{'template_dir'}."/".$run->{'uri'}.".tmpl",
 			'path'              => [ $host->{'template_dir'} ],
-			'shared_cache'      => $host->{'shared_cache'},
-			'ipc_max_size'      => $host->{'ipc_max_size'},
+			# 'shared_cache'      => $host->{'shared_cache'},
+			#'ipc_max_size'      => $host->{'ipc_max_size'},
+			'file_cache' => 1,
+			'file_cache_dir' => '/tmp/htmltemplate',
 			'loop_context_vars' => $host->{'context_vars'},
 			'global_vars'       => 1,
 			'die_on_bad_params' => 0,
@@ -513,8 +515,10 @@ sub generate_html {
 		$skeleton = HTML::Template->new(
 			'filename'          => $host->{'template_dir'}."/$skeleton_file.tmpl",
 			'path'              => [ $host->{'template_dir'} ],
-			'shared_cache'      => $host->{'shared_cache'},
-			'ipc_max_size'      => $host->{'ipc_max_size'},
+			#'shared_cache'      => $host->{'shared_cache'},
+			#'ipc_max_size'      => $host->{'ipc_max_size'},
+			'file_cache' => 1,
+			'file_cache_dir' => '/tmp/htmltemplate',
 			'loop_context_vars' => $host->{'context_vars'},
 			'global_vars'       => 1,
 			'die_on_bad_params' => 0,
