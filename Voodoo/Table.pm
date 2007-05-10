@@ -52,6 +52,7 @@ sub set_configuration {
 		"varchar" => { 
 			'length' => 1,   # required
 			'valid'  => 0,   # optionsl
+			'regexp' => 0
 		},
 		'unsigned_int' => {
 			'max' => 1,     
