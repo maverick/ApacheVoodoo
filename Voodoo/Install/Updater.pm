@@ -447,7 +447,7 @@ sub _execute_sql {
 	}
 	else {
 		unless ($dbh->do($data)) {
-			$self->{ignore} or die "sql failed: DBI->errstr";
+			$self->{ignore} or die "sql failed: DBI->errstr\n\n$data";
 		}
 	}
 }
