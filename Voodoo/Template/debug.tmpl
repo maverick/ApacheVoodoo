@@ -1,6 +1,7 @@
 <!-- $Id$ -->
 <TMPL_IF NAME="DEBUG">
-<script language="Javascript" type="text/javascript" >
+<script language="Javascript" type="text/javascript">
+<!-- 
 var __YourBrowserIsBroken__ = (navigator.userAgent.toLowerCase().indexOf("msie") != -1);
 function vd_toggle (obj, topLevel) {
 	obj.parentNode.className = (obj.parentNode.className == "vdOpen") ? 'vdClosed' : 'vdOpen';
@@ -25,6 +26,7 @@ function vd_toggle (obj, topLevel) {
 	
 	return false;
 }
+-->
 </script>
 
 <style type="text/css" media="all">
@@ -108,7 +110,7 @@ div.voodooDebug .vdDepth14 { margin-left: 24em; white-space: pre; }
 div.voodooDebug .vdDepth15 { margin-left: 26em; white-space: pre; }
 </style>
 
-<div class=voodooDebug>
+<div class="voodooDebug">
 	<div class="vdClosed">
 		<span onClick="vd_toggle(this,1);">Debug</span>
 		<div class="vdContent">
@@ -119,9 +121,9 @@ div.voodooDebug .vdDepth15 { margin-left: 26em; white-space: pre; }
 					<table>
 					<TMPL_LOOP vd_timing>
 					<tr>
-						<td align=right><tmpl_var time></td>
-						<td align=right><tmpl_var percent></td>
-						<td align=left ><tmpl_var message></td>
+						<td align="right"><tmpl_var time></td>
+						<td align="right"><tmpl_var percent></td>
+						<td align="left" ><tmpl_var message></td>
 					</tr>
 					</TMPL_LOOP>
 					</table>

@@ -139,37 +139,11 @@ sub report {
 		]
 		);
 
-		my @debug;
-		my @last;
-		foreach (@{$self->{'debug'}}) {
-			my ($stack,$mesg) = @{$_};
-	
-			my $i=0;
-			my $match = 1;
-			my ($x,$y,@stack) = split(/~/,$stack);
-			foreach (@stack) {
-				unless ($match && $_ eq $last[$i]) {
-					$match=1;
-					push(@debug,{
-						'depth' => $i,
-						'name'  => $_
-					});
-				}
-				$i++;
-			}
-	
-			@last = @stack;
-	
-			push(@debug, {
-					'depth' => ($#stack+1),
-					'name'  => $mesg
-			});
-		}
 
 		# either dumper, or the param passing to template is a little weird.
 		# if you inline the calls to dumper, it doesn't work.
 		my %h;
-		$h{'vd_debug'}    = \@debug;
+		$h{'vd_debug'}    = $self->_process_debug();
 		$h{'vd_template'} = Dumper($data{'params'});
 		$h{'vd_session'}  = Dumper($data{'session'});
 		$h{'vd_conf'}     = Dumper($data{'conf'});
@@ -178,6 +152,38 @@ sub report {
 	}
 
 	return $self->{'template'}->output;
+}
+
+sub _process_debug {
+	my $self = shift;
+
+	my @debug = ();
+	my @last  = ();
+	foreach (@{$self->{'debug'}}) {
+		my ($stack,$mesg) = @{$_};
+
+		my $i=0;
+		my $match = 1;
+		my ($x,$y,@stack) = split(/~/,$stack);
+		foreach (@stack) {
+			unless ($match && $_ eq $last[$i]) {
+				$match=1;
+				push(@debug,{
+					'depth' => $i,
+					'name'  => $_
+				});
+			}
+			$i++;
+		}
+
+		@last = @stack;
+
+		push(@debug, {
+				'depth' => ($#stack+1),
+				'name'  => $mesg
+		});
+	}
+	return \@debug;
 }
 
 1;

@@ -37,15 +37,15 @@ sub debug {
 
 	# sometimes Voodoo modules are called from outside Apache
 	# (most common case are cronjobs) 
-	if (defined($Apache::Voodoo::Handler::debug)) {
+	if (ref($Apache::Voodoo::Handler::debug)) {
 		$Apache::Voodoo::Handler::debug->debug(@_);
 	}
 	else {
 		if (ref($_[0])) {
-			print Dumper @_;
+			print STDERR Dumper @_;
 		}
 		else {
-			print join("\n",@_),"\n";
+			print STDERR join("\n",@_),"\n";
 		}
 	}
 }
