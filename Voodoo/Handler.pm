@@ -317,7 +317,7 @@ sub history_queue {
 		$session->{'history'}->[0]->{'params'} = $self->mkurlparams($params);
 	}
 
-	if (scalar(@{$session->{'history'}}) > 20) {
+	if (scalar(@{$session->{'history'}}) > 30) {
 		# keep the queue at 10 items
 		pop @{$session->{'history'}};
 	}
