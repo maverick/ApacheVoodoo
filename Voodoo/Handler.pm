@@ -377,13 +377,15 @@ sub generate_html {
 				$return = $obj->$method(
 					{
 						"dbh"           => $host->{'dbh'},
-						"dir_config"    => $self->{mp}->dir_config,
 						"document_root" => $host->{'template_dir'},
 						"params"        => $run->{'input_params'},
 						"session"       => $run->{'session'},
 						"template_conf" => $run->{'template_conf'},
 						"themes"        => $host->{'themes'},
 						"uri"           => $run->{'uri'},
+						"mp"            => $self->{mp},
+						# these are deprecated.  In the future get them from $p->{mp}
+						"dir_config"    => $self->{mp}->dir_config,
 						"user-agent"    => $self->{mp}->header_in('User-Agent'),
 						"r"             => $self->{mp}->{r}
 					}
