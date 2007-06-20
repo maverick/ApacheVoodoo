@@ -31,7 +31,7 @@ sub new {
 	$self->{'conf_file'} = shift;
 
 	if (defined($self->{'id'}) && defined($self->{'conf_file'})) {
-		$self->load();
+		$self->load_config();
 	}
 	else {
 		$self->{'errors'} = "ID and configuration file paths are requried parameters";
@@ -40,11 +40,8 @@ sub new {
 	return $self;
 }
 
-sub load {
+sub load_modules {
 	my $self = shift;
-
-	# load the configuration file.
-	$self->load_config();
 
 	# get the list of modules we're going to use
 	foreach (keys %{$self->{'modules'}}) {
@@ -275,7 +272,7 @@ sub load_module {
 
 sub debug { 
 	my $self = shift;
-	return;
+
 	return unless $self->{'debug'};
 
 	if (ref($_[0])) {

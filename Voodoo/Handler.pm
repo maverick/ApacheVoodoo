@@ -28,7 +28,6 @@ use HTML::Template;
 use Time::HiRes;
 
 use Data::Dumper;
-$Data::Dumper::Terse = 1;
 
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
@@ -591,6 +590,7 @@ sub restart {
 		$self->{mp}->error("starting host $id");
 
 		my $conf = Apache::Voodoo::ServerConfig->new($id,$fp);
+		$conf->load_modules();
 
 		# check to see if we can get a database connection
 		foreach (@{$conf->{'dbs'}}) {

@@ -21,9 +21,13 @@ package Apache::Voodoo::Debug;
 $VERSION = '1.21';
 
 use strict;
+
 use Time::HiRes;
 use HTML::Template;
 use Data::Dumper;
+
+$Data::Dumper::Terse = 1;
+$Data::Dumper::Sortkeys = sub { [ sort keys %{$_[0]} ] };
 
 sub new {
 	my $class = shift;
