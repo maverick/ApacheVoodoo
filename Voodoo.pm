@@ -86,7 +86,7 @@ sub _is_a_redirect {
 	my $r = shift;
 	my $t = shift;
 	if (ref($r) eq "ARRAY" && $r->[0] eq $t) {
-		return $r->[1];
+		return $r->[1] or 1;
 	}
 	else {
 		return 0;
@@ -196,7 +196,7 @@ sub prep_select {
 
 sub safe_text {
 	# return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*\'\!]*$/;
-	return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*]*$/;
+	return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\!\*]*$/;
 }
 
 sub sanitize_text {
@@ -204,7 +204,7 @@ sub sanitize_text {
 	my $text = shift;
 
 	# return $_[1] =~ /^[\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*\'\!]*$/;
-	$text =~ s/[^\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\*]/ /g;
+	$text =~ s/[^\w\s\.\,\/\[\]\{\}\+\=\-\(\)\:\;\&\?\!\*]/ /g;
 	return $text;
 }
 
