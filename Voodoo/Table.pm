@@ -886,47 +886,52 @@ sub _process_params {
 	##############
 	# varchar
 	##############
-	foreach(@{$self->{'varchars'}}) {
-		if ($_->{'length'} > 0 && length($v{$_->{'name'}}) > $_->{'length'}) {
-			$errors{'BIG_'.$_->{'name'}} = 1;
+	foreach my $varchar (@{$self->{'varchars'}}) {
+		if ($varchar->{'length'} > 0 && length($v{$varchar->{'name'}}) > $varchar->{'length'}) {
+			$errors{'BIG_'.$varchar->{'name'}} = 1;
 		}
-		elsif (defined($_->{'valid'})) {
-			if ($_->{'valid'} eq "email" && length($v{$_->{'name'}}) > 0) {
-				my $c = $_;
+		elsif (defined($varchar->{'valid'})) {
+			if ($varchar->{'valid'} eq "email" && length($v{$varchar->{'name'}}) > 0) {
+				# Net::DNS does something *REMARKABLY STUPID* with $_.  No matter what you do it *ALWAYS* overwrites
+				# the value of $_ with the IP of the DNS server that responsed to the lookup request.  This localization
+				# of $_ keeps Net::DNS for pissing in everybody else's pool.
+				local $_;
+
 				my $addr;
 
 				eval {
-					$addr = Email::Valid->address('-address' => $v{$c->{'name'}},
+					$addr = Email::Valid->address('-address' => $v{$varchar->{'name'}},
 					                              '-mxcheck' => 1, 
 											      '-fqdn'    => 1 );
 				};
 				if ($@) {
-					warn "Email::Valid produced and exception: $@";
-					$errors{'BAD_'.$c->{'name'}} = 1;
+					$self->debug("Email::Valid produced an exception: $@");
+					warn "Email::Valid produced an exception: $@";
+					$errors{'BAD_'.$varchar->{'name'}} = 1;
 				}
 				elsif(!defined($addr)) {
-					$errors{'BAD_'.$c->{'name'}} = 1;
+					$errors{'BAD_'.$varchar->{'name'}} = 1;
 				}
 				else {
-					$v{$c->{'name'}} = $addr;
+					$v{$varchar->{'name'}} = $addr;
 				}
 			}
-			elsif($_->{'valid'} eq "url") {
-				if (length($v{$_->{'name'}}) && Apache::Voodoo::ValidURL::valid_url($v{$_->{'name'}}) == 0) {
-					$errors{'BAD_'.$_->{'name'}} = 1;
+			elsif($varchar->{'valid'} eq "url") {
+				if (length($v{$varchar->{'name'}}) && Apache::Voodoo::ValidURL::valid_url($v{$varchar->{'name'}}) == 0) {
+					$errors{'BAD_'.$varchar->{'name'}} = 1;
 				}
 			}
 		}
-		elsif (defined($_->{'regexp'})) {
-			 my $re = $_->{'regexp'};
-			 unless ($v{$_->{'name'}} =~ /$re/) {
-				 $errors{'BAD_'.$_->{'name'}} = 1;
+		elsif (defined($varchar->{'regexp'})) {
+			 my $re = $varchar->{'regexp'};
+			 unless ($v{$varchar->{'name'}} =~ /$re/) {
+				 $errors{'BAD_'.$varchar->{'name'}} = 1;
 			 }
 		}
-		elsif ($_->{length} > 0) {
+		elsif ($varchar->{length} > 0) {
 			# If there was a length restriction, than this data
 			# isn't in a text area and needs to have it's " HTML entitified
-			$v{$_->{'name'}} =~ s/"/\&quot;/g;
+			$v{$varchar->{'name'}} =~ s/"/\&quot;/g;
 		}
 	}
 
