@@ -37,7 +37,6 @@ DEPENDENCIES
     Email::Valid
     File::Pid
     HTML::Template
-    IPC::Shareable
     IPC::SharedCache
     Time::HiRes
     XML::Checker::Parser

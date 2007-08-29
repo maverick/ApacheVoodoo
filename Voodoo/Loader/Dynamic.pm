@@ -5,7 +5,6 @@ $VERSION = '1.21';
 
 use strict;
 use base("Apache::Voodoo::Loader");
-use IPC::Shareable;
 
 sub new {
 	my $class = shift;
@@ -16,10 +15,7 @@ sub new {
 
 	$self->refresh;
 
-	my %parents;
-	tie(%parents, 'IPC::Shareable', 'SVBC', { create  => 'yes', exclusive => 0, }) || die "IPC::Shareable tie failed: $!\n";
-
-	$self->{'parents'} = \%parents;
+	$self->{'parents'} = {};
 	foreach (eval '@{'.$self->{'module'}.'::ISA}') {
 		$self->{'parents'}->{$_} = $self->get_mtime($_);
 	}

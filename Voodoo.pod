@@ -52,7 +52,7 @@ features include:
 
 =item - Abstract templating subsystem to allow choice between HTML::Template, Template Toolkit, etc.
 
-=item - Make IPC::Shared.* usage optional
+=item - Make IPC::SharedCache usage optional
 
 =item - Documentation
 

@@ -9,7 +9,6 @@ my %required_modules = (
 		Email::Valid         => 0.15,
 		File::Pid            => 0,
 		HTML::Template       => 2.7,
-		IPC::Shareable       => 0.6,
 		IPC::SharedCache     => 1.3,
 		Time::HiRes          => 1.65,
 		XML::Checker::Parser => 0,
