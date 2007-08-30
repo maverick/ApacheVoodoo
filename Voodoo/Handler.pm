@@ -27,8 +27,6 @@ use Apache::Session::File;
 use HTML::Template;
 use Time::HiRes;
 
-use Data::Dumper;
-
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::ServerConfig;
@@ -357,18 +355,18 @@ sub generate_html {
 	my $run  = shift;
 
 	my $c=0;
-	my $t_params;
+	my $t_params = {};
 	# call each of the pre_include modules followed by our page specific module followed by our post_includes
-	foreach ( 
+	foreach my $handle ( 
 		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'pre_include'}) ),
 		$host->map_uri($run->{'uri'}),
 		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'post_include'}) )
 		) {
 
 
-		if (defined($host->{'handlers'}->{$_->[0]}) && $host->{'handlers'}->{$_->[0]}->can($_->[1])) {
-			my $obj    = $host->{'handlers'}->{$_->[0]};
-			my $method = $_->[1];
+		if (defined($host->{'handlers'}->{$handle->[0]}) && $host->{'handlers'}->{$handle->[0]}->can($handle->[1])) {
+			my $obj    = $host->{'handlers'}->{$handle->[0]};
+			my $method = $handle->[1];
 
 			my $return;
 			eval {
@@ -393,14 +391,14 @@ sub generate_html {
 			if ($@) {
 				# caught a runtime error from perl
 				if ($host->{'debug'}) {
-					return $self->display_host_error("Module: $_->[0] $method\n$@");
+					return $self->display_host_error("Module: $handle->[0] $method\n$@");
 				}
 				else {
 					return $self->{mp}->server_error;
 				}
 			}
 
-			$debug->mark("handler for ".$_->[0]." ".$_->[1]);
+			$debug->mark("handler for ".$handle->[0]." ".$handle->[1]);
 
 			if (ref($return) eq "ARRAY") {
 				if    ($return->[0] eq "REDIRECTED") {
@@ -442,9 +440,8 @@ sub generate_html {
 				}
 			}
 
-			# this benchmarks about 3 times faster than any other technique. weird but true.
-			while (my ($k,$v) = each %{$return}) {
-				$t_params->{$k} = $v;
+			foreach my $k ( keys %{$return}) {
+				$t_params->{$k} = $return->{$k};
 			}
 			$debug->mark("result packing");
 		}
@@ -452,9 +449,13 @@ sub generate_html {
 
 
 	# pack up the params. note the presidence: module overrides template_conf
-	my $template_params;
-	while (my ($k,$v) = each %{$run->{'template_conf'}}) { $template_params->{$k} = $v; }
-	while (my ($k,$v) = each %{$t_params})               { $template_params->{$k} = $v; }
+	my $template_params = {};
+	foreach my $k (keys %{$run->{'template_conf'}}) { 
+		$template_params->{$k} = $run->{'template_conf'}->{$k};
+	}
+	foreach my $k (keys %{$t_params}) { 
+		$template_params->{$k} = $t_params->{$k};
+	}
 
 	my $skeleton_file;
 	if ($host->{'use_themes'}) {

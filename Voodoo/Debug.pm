@@ -27,7 +27,7 @@ use HTML::Template;
 use Data::Dumper;
 
 $Data::Dumper::Terse = 1;
-$Data::Dumper::Sortkeys = sub { [ sort keys %{$_[0]} ] };
+$Data::Dumper::Sortkeys = 1;
 
 sub new {
 	my $class = shift;
@@ -108,8 +108,8 @@ sub debug {
 	}
 
 	my $mesg;
-	foreach (@_) {
-		$mesg .= (ref($_))? Dumper($_) : "$_\n";
+	foreach my $entry (@_) {
+		$mesg .= (ref($entry))? Dumper($entry) : "$entry\n";
 	}
 
 	push(@{$self->{'debug'}},[$stack,$mesg]);
