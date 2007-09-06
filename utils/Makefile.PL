@@ -41,7 +41,7 @@ else {
 
 WriteMakefile(
 	NAME          => 'Apache::Voodoo',
-	VERSION_FROM  => 'lib/Apache/Voodoo/Handler.pm',
+	VERSION_FROM  => 'lib/Apache/Voodoo.pm',
 	PREREQ_PM     => \%required_modules,
 	(
 		$] >= 5.008 ?
