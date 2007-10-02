@@ -349,6 +349,9 @@ sub _execute_commands {
 				next unless grep { /^$hostname$/ } split(/\s*,\s*/,$commands[$i+1]->[0]->{'onhosts'});
 			}
 
+			# Reset the current working directory back to the install path
+			chdir($install_path);
+
 			$data =~ s/^\s*//;
 			$data =~ s/\s*$//;
 
