@@ -51,7 +51,7 @@ sub new {
 	my $ac = Apache::Voodoo::Constants->new();
 	$self->{'ac'} = $ac;
 
-	$self->{'install_path'} = $ac->install_path()."/".$self->{'app_name'};
+	$self->{'install_path'} = File::Spec->catfile($ac->install_path(),$self->{'app_name'});
 
 	$self->{'conf_file'}    = File::Spec->catfile($self->{'install_path'},$ac->conf_file());
 	$self->{'conf_path'}    = File::Spec->catfile($self->{'install_path'},$ac->conf_path());
