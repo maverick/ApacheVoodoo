@@ -192,7 +192,7 @@ sub check_existing {
 sub update_conf_file {
 	my $self = shift;
 
-	my $new_conf = File::Spec::catfile($self->{'unpack_dir'},$self->{'ac'}->conf_file());
+	my $new_conf = File::Spec->catfile($self->{'unpack_dir'},$self->{'ac'}->conf_file());
 
 	my $config = Config::General->new($new_conf);
 	my %cdata = $config->getall();
