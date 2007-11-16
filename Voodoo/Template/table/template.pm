@@ -10,8 +10,6 @@ $Id$
 
 package %%PACKAGE%%::%%TABLE%%;
 
-$VERSION = '1.21';
-
 use base ("Apache::Voodoo");
 use strict;
 

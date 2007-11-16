@@ -8,8 +8,6 @@ package Apache::Voodoo::ValidURL;
 # was the part I really needed.
 #
 
-$VERSION = '1.21';
-
 use strict;
 
 # Be paranoid about using grouping!

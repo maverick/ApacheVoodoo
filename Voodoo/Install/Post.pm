@@ -17,8 +17,6 @@ This object is used by Voodoo internally.
 =cut ###########################################################################
 package Apache::Voodoo::Install::Post;
 
-$VERSION = '1.21';
-
 use strict;
 use warnings;
 

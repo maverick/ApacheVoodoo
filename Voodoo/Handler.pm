@@ -17,8 +17,6 @@ application's page handling modules.
 =cut ################################################################################
 package Apache::Voodoo::Handler;
 
-$VERSION = '2.02';
-
 use strict;
 
 use Apache::DBI;	

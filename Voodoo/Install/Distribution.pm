@@ -16,8 +16,6 @@ by the various .xml files in an application.
 =cut ###########################################################################
 package Apache::Voodoo::Install::Distribution;
 
-$VERSION = '1.21';
-
 use strict;
 use warnings;
 
@@ -43,10 +41,10 @@ sub new {
 
 	$self->{'app_name'} = $self->{'distribution'};
 	$self->{'app_name'} =~ s/\.tar\.(bz2|gz)$//i;
-	$self->{'app_name'} =~ s/-.*$//;
+	$self->{'app_name'} =~ s/-[\d.]*$//;
 	$self->{'app_name'} =~ s/.*\///;
 
-	unless ($self->{'app_name'} =~ /^[a-z]\w*$/i) {
+	unless ($self->{'app_name'} =~ /^[a-z][\w-]*$/i) {
 		die "ERROR: Distribution file names must follow the format: AppName-Version.tar.(gz|bz2)\n";
 	}
 
@@ -55,9 +53,9 @@ sub new {
 
 	$self->{'install_path'} = $ac->install_path()."/".$self->{'app_name'};
 
-	$self->{'conf_file'}    = $self->{'install_path'}."/".$ac->conf_file();
-	$self->{'conf_path'}    = $self->{'install_path'}."/".$ac->conf_path();
-	$self->{'updates_path'} = $self->{'install_path'}."/".$ac->updates_path();
+	$self->{'conf_file'}    = File::Spec->catfile($self->{'install_path'},$ac->conf_file());
+	$self->{'conf_path'}    = File::Spec->catfile($self->{'install_path'},$ac->conf_path());
+	$self->{'updates_path'} = File::Spec->catfile($self->{'install_path'},$ac->updates_path());
 	$self->{'apache_uid'}   = $ac->apache_uid();
 	$self->{'apache_gid'}   = $ac->apache_gid();
 
@@ -92,9 +90,34 @@ sub do_install {
 	my $self = shift;
 
 	$self->unpack_distribution();
-	$self->check_existing();
-	$self->update_conf_file();
-	$self->install_files();
+	my $new_conf = File::Spec->catfile($self->{'unpack_dir'},$self->{'ac'}->conf_file());
+
+	my $pm_dir = $self->{distribution};
+	$pm_dir =~ s/(\.tar(\.gz|\.bz2)?|\.tgz)$//;
+	$pm_dir =~ s/^.*\///;
+	$pm_dir = File::Spec->catfile($self->{'unpack_dir'},$pm_dir);
+
+	if (-e $new_conf) {
+		$self->check_existing();
+		$self->update_conf_file();
+		$self->install_files();
+	}
+	elsif (-e File::Spec->catfile($pm_dir,'Makefile.PL') ||
+	       -e File::Spec->catfile($pm_dir,'Build.PL')) {
+
+		$self->info("This appears to be a standard Perl module. Calling CPAN to install it...\n");
+
+		eval {
+			use CPAN;
+			CPAN::Shell->install(File::Spec->catfile($pm_dir,"."));
+		};
+
+		exit;
+	}
+	else {
+		print "This distribution doesn't follow a format that I know how to handle.  Giving up.\n";
+		exit;
+	}
 }
 
 ################################################################################
@@ -124,13 +147,6 @@ sub unpack_distribution {
 	}
 
 	$self->{'unpack_dir'} = $unpack_dir;
-
-	my $new_conf = $self->{'unpack_dir'}."/".$self->{'ac'}->conf_file();
-
-	unless (-e $new_conf) {
-		print "ERROR: install doesn't contain a configuration file at: $new_conf\n";
-		exit;
-	}
 }
 
 ################################################################################
@@ -176,7 +192,7 @@ sub check_existing {
 sub update_conf_file {
 	my $self = shift;
 
-	my $new_conf = $self->{'unpack_dir'}."/".$self->{'ac'}->conf_file();
+	my $new_conf = File::Spec::catfile($self->{'unpack_dir'},$self->{'ac'}->conf_file());
 
 	my $config = Config::General->new($new_conf);
 	my %cdata = $config->getall();

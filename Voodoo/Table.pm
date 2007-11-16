@@ -12,8 +12,6 @@
 
 package Apache::Voodoo::Table;
 
-$VERSION = '1.21';
-
 use strict;
 
 use base("Apache::Voodoo");

@@ -17,8 +17,6 @@ user interaction is through L<Apache::Voodoo>::display_error()
 
 package Apache::Voodoo::DisplayError;
 
-$VERSION = '1.21';
-
 use strict;
 use base ("Apache::Voodoo");
 

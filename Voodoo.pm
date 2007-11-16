@@ -10,7 +10,7 @@
 ####################################################################################
 package Apache::Voodoo;
 
-$VERSION = '2.0002';
+$VERSION = "2.0.2";
 
 use strict;
 use Data::Dumper;
@@ -331,13 +331,13 @@ sub pretty_mysql_timestamp {
 }
 
 sub mysql_timestamp { 
-        my $self = shift; 
-        my $time = shift; 
+	my $self = shift; 
+	my $time = shift; 
  
-        my @p = localtime($time || time); 
+	my @p = localtime($time || time); 
  
-        $time =~ /^\d+\.(\d+)$/; 
-        return sprintf("%04d%02d%02d%02d%02d%02d",$p[5]+1900,$p[4]+1,$p[3],$p[2],$p[1],$p[0]);
+	$time =~ /^\d+\.(\d+)$/; 
+	return sprintf("%04d%02d%02d%02d%02d%02d",$p[5]+1900,$p[4]+1,$p[3],$p[2],$p[1],$p[0]);
 }
 
 sub sql_to_date {

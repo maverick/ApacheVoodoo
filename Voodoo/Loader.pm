@@ -13,8 +13,6 @@ and Loader::Dynamic
 
 package Apache::Voodoo::Loader;
 
-$VERSION = '1.21';
-
 use strict;
 use warnings;
 

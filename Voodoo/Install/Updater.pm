@@ -13,8 +13,6 @@ use directly by end users.
 =cut ###########################################################################
 package Apache::Voodoo::Install::Updater;
 
-$VERSION = '1.21';
-
 use strict;
 use warnings;
 

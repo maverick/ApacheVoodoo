@@ -15,8 +15,6 @@ This package provide an OO interface to retrive the various paths and config set
 =cut ###########################################################################
 package Apache::Voodoo::Constants;
 
-$VERSION = '1.22';
-
 use strict;
 use warnings;
 

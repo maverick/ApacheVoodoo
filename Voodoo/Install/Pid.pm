@@ -15,8 +15,6 @@ This object is used by Voodoo internally.
 =cut ###########################################################################
 package Apache::Voodoo::Install::Pid;
 
-$VERSION = '1.21';
-
 use base("Apache::Voodoo::Install");
 
 use strict;

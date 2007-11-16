@@ -13,8 +13,6 @@ This is old and crufty and not for public use
 =cut ################################################################################
 package Apache::Voodoo::Table::Probe::MySQL;
 
-$VERSION = '1.21';
-
 use DBI;
 use Data::Dumper;
 

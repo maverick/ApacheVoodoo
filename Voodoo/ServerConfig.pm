@@ -15,8 +15,6 @@ This modules is used internally by Voodoo for application setup and module loadi
 =cut ################################################################################
 package Apache::Voodoo::ServerConfig;
 
-$VERSION = '1.21';
-
 use strict;
 use Config::General;
 use Data::Dumper;
