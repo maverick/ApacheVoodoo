@@ -44,16 +44,16 @@ sub new {
 	return $self;
 }
 
-sub prefix       { return $_[0]->{PREFIX};       }
-sub install_path { return $_[0]->{INSTALL_PATH}; }
-sub session_path { return $_[0]->{SESSION_PATH}; }
-sub conf_path    { return $_[0]->{CONF_PATH};    }
-sub updates_path { return $_[0]->{UPDATES_PATH}; }
-sub conf_file    { return $_[0]->{CONF_FILE};    }
-sub tmpl_path    { return $_[0]->{TMPL_PATH};    }
-sub code_path    { return $_[0]->{CODE_PATH};    }
-sub apache_uid   { return $_[0]->{APACHE_UID};   }
 sub apache_gid   { return $_[0]->{APACHE_GID};   }
+sub apache_uid   { return $_[0]->{APACHE_UID};   }
+sub code_path    { return $_[0]->{CODE_PATH};    }
+sub conf_file    { return $_[0]->{CONF_FILE};    }
+sub conf_path    { return $_[0]->{CONF_PATH};    }
+sub install_path { return $_[0]->{INSTALL_PATH}; }
+sub prefix       { return $_[0]->{PREFIX};       }
+sub session_path { return $_[0]->{SESSION_PATH}; }
+sub tmpl_path    { return $_[0]->{TMPL_PATH};    }
+sub updates_path { return $_[0]->{UPDATES_PATH}; }
 
 1;
 
