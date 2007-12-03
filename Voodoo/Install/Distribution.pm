@@ -41,7 +41,7 @@ sub new {
 
 	$self->{'app_name'} = $self->{'distribution'};
 	$self->{'app_name'} =~ s/\.tar\.(bz2|gz)$//i;
-	$self->{'app_name'} =~ s/-[\d.]*$//;
+	$self->{'app_name'} =~ s/-[\d.]*(-beta\d+)?$//;
 	$self->{'app_name'} =~ s/.*\///;
 
 	unless ($self->{'app_name'} =~ /^[a-z][\w-]*$/i) {
