@@ -172,6 +172,19 @@ sub set_configuration {
 		$self->{'list_search'}->{$_->[1]} = 1;
 	}
 
+	if (ref($c->{'joins'}) eq "ARRAY") {
+		foreach (@{$c->{'joins'}}) {
+			push(@{$self->{'joins'}},
+				{
+					table   => $_->{table},
+					pkey    => $_->{primary_key},
+					fkey    => $_->{foreign_key},
+					columns => $_->{columns} || []
+				}
+			);
+		}
+	}
+
 	# setup the pagination options
 	$self->{'pager'}->set_configuration(
 		'count'   => 40,
@@ -630,6 +643,29 @@ sub list {
 		}
 	}
 
+	if ($self->{joins}) {
+		foreach my $join (@{$self->{joins}}) {
+			my $fkey;
+			if ($join->{fkey} =~ /\./) {
+				$fkey = $join->{fkey};
+			}
+			else {
+				$fkey = $self->{table}.'.'.$join->{fkey};
+			}
+
+			push(@joins,"LEFT JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
+
+			foreach (@{$join->{columns}}) {
+				if ($_ =~ /\./) {
+					push(@list,$_);
+				}
+				else {
+					push(@list,$join->{'table'}.".$_");
+				}
+			}
+		}
+	}
+
 	my $select_stmt = "
 		SELECT SQL_CALC_FOUND_ROWS " .
 			join(",\n",@list). "
@@ -774,6 +810,29 @@ sub view {
 		push(@joins,"LEFT JOIN $join->{'table'} ON $self->{'table'}.$join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
 		foreach (@{$join->{'columns'}}) {
 			push(@list,"$join->{'table'}.$_");
+		}
+	}
+
+	if ($self->{joins}) {
+		foreach my $join (@{$self->{joins}}) {
+			my $fkey;
+			if ($join->{fkey} =~ /\./) {
+				$fkey = $join->{fkey};
+			}
+			else {
+				$fkey = $self->{table}.'.'.$join->{fkey};
+			}
+
+			push(@joins,"LEFT JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
+
+			foreach (@{$join->{columns}}) {
+				if ($_ =~ /\./) {
+					push(@list,$_);
+				}
+				else {
+					push(@list,$join->{'table'}.".$_");
+				}
+			}
 		}
 	}
 
