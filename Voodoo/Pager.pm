@@ -136,18 +136,21 @@ sub paginate {
 				# setup the 'more link'
 				if ($end != $numpages) {
 					$output{'MORE_URL_PARAMS'} =     $url_params . '&amp;page=' . ($end + 1);
+					$output{'MORE_PAGE'} = $end+1;
 				}
 
 				# setup the preivous link
 				if ($page > 1) {
 					$output{'HAS_PREVIOUS'} = 1;
 					$output{'PREVIOUS_URL_PARAMS'} = $url_params . '&amp;page=' . ($page - 1);
+					$output{'PREV_PAGE'} = $page-1;
 				}
 
 				# setup the next link
 				if ($page * $count < $res_count) {
 					$output{'HAS_NEXT'} = 1;
 					$output{'NEXT_URL_PARAMS'} =     $url_params . '&amp;page=' . ($page + 1);
+					$output{'NEXT_PAGE'} = $page+1;
 				}
 			}
 		}
