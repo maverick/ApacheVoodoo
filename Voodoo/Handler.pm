@@ -562,13 +562,13 @@ sub restart {
 
 	foreach my $id (readdir(DIR)) {
 		next unless $id =~ /^[a-z]\w*$/i;
-		my $fp = "$install_path/$id/$cf_name";
+		my $fp = File::Spec->catfile($install_path,$id,$cf_name);
 		next unless -f $fp;
 		next unless -r $fp;
 
 		$self->{mp}->error("starting host $id");
 
-		my $conf = Apache::Voodoo::ServerConfig->new($id,$fp);
+		my $conf = Apache::Voodoo::ServerConfig->new($id,$self->{'constants'});
 		$conf->setup();
 
 		# check to see if we can get a database connection

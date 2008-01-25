@@ -31,9 +31,15 @@ sub new {
 	bless $self, $class;
 
 	$self->{'id'}        = shift;
-	$self->{'conf_file'} = shift;
+	$self->{'constants'} = shift || Apache::Voodoo::Constants->new();
 
-	if (defined($self->{'id'}) && defined($self->{'conf_file'})) {
+	if (defined($self->{'id'})) {
+		$self->{'conf_file'} = File::Spec->catfile(
+			$self->{constants}->install_path(),
+			$self->{'id'},
+			$self->{constants}->conf_file()
+		);
+
 		$self->load_config();
 	}
 	else {
@@ -82,9 +88,9 @@ sub load_config {
 	$self->{'cookie_name'}     = $conf{'cookie_name'}     || uc($self->{'id'}). "_SID";
 	$self->{'shared_cache'}    = $conf{'shared_cache'}    || 0;
 	$self->{'ipc_max_size'}    = $conf{'ipc_max_size'}    || 0;
-	$self->{'context_vars'}    = $conf{'context_vars'}    || 0;
-	$self->{'template_conf'}   = $conf{'template_conf'}   || {};
-	$self->{'template_opts'}   = $conf{'template_opts'}   || {};
+
+	$self->{'template_conf'} = $conf{'template_conf'} || {};
+	$self->{'template_opts'} = $conf{'template_opts'} || {};
 
 	if (defined($conf{'devel_mode'})) {
 		if ($conf{'devel_mode'}) {

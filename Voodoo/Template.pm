@@ -32,8 +32,10 @@ sub new {
 	$self->{'template_dir'}  = $config->{'template_dir'};
 	$self->{'template_opts'} = $config->{'template_opts'};
 
-	$self->{'template_opts'}->{'global_vars'} = 1;
 	$self->{'template_opts'}->{'die_on_bad_params'} = 0;
+	$self->{'template_opts'}->{'global_vars'}       = 1;
+	$self->{'template_opts'}->{'loop_context_vars'} = 1;
+
 	$self->{'template_opts'}->{'path'} = [ $config->{'template_dir'} ];
 
 	bless ($self,$class);
@@ -45,7 +47,7 @@ sub template {
 	my $self     = shift;
 	my $template = shift;
 
-	my $self->{template} = HTML::Template->new(
+	$self->{template} = HTML::Template->new(
 		'filename' => File::Spec->catfile($self->{'template_dir'},$template.".tmpl"),
 		%{$self->{'template_opts'}}
 	);

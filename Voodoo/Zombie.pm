@@ -51,7 +51,6 @@ sub AUTOLOAD {
 		$link =~ s/([^\/]+)$/$method."_".$1/e;
 	}
 
-	$self->debug("ZOMBIE: $self->{'module'} $method");
 	return $self->display_error($error,"/$link");
 }
 
