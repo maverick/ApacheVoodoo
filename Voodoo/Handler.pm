@@ -22,7 +22,6 @@ use strict;
 use Apache::DBI;	
 use Apache::Session::File;
 
-use HTML::Template;
 use Time::HiRes;
 
 use Apache::Voodoo::MP;
@@ -484,45 +483,24 @@ sub generate_html {
 		$skeleton_file = $run->{'template_conf'}->{'skeleton'} || 'skeleton';
 	}
 
-	my $skeleton;
 	eval {
 		# load the template
-		my $template = HTML::Template->new(
-			'filename'          => $host->{'template_dir'}."/".$run->{'uri'}.".tmpl",
-			'path'              => [ $host->{'template_dir'} ],
-			# 'shared_cache'      => $host->{'shared_cache'},
-			#'ipc_max_size'      => $host->{'ipc_max_size'},
-			'file_cache' => 1,
-			'file_cache_dir' => '/tmp/htmltemplate',
-			'loop_context_vars' => $host->{'context_vars'},
-			'global_vars'       => 1,
-			'die_on_bad_params' => 0,
-		);
-
+		$host->{'template_engine'}->template($run->{'uri'});
 		$debug->mark("template open");
 
 		$template_params->{'SITE_ROOT'} = $host->{'site_root'};
 
 		# pack up the params
-		$template->param($template_params);
+		$host->{'template_engine'}->params($template_params);
 
 		# generate the main body contents
-		$template_params->{'_MAIN_BODY_'} = $template->output;
+		$template_params->{'_MAIN_BODY_'} = $host->{'template_engine'}->output();
 		
 		$debug->mark("main body content");
 
 		# load the skeleton template
-		$skeleton = HTML::Template->new(
-			'filename'          => $host->{'template_dir'}."/$skeleton_file.tmpl",
-			'path'              => [ $host->{'template_dir'} ],
-			#'shared_cache'      => $host->{'shared_cache'},
-			#'ipc_max_size'      => $host->{'ipc_max_size'},
-			'file_cache' => 1,
-			'file_cache_dir' => '/tmp/htmltemplate',
-			'loop_context_vars' => $host->{'context_vars'},
-			'global_vars'       => 1,
-			'die_on_bad_params' => 0,
-		);
+		$host->{'template_engine'}->template($skeleton_file);
+
 		$debug->mark("skeleton open");
 
 		# generate the debugging report
@@ -533,7 +511,7 @@ sub generate_html {
 		);
 
 		# pack everything into the skeleton
-		$skeleton->param($template_params);
+		$host->{'template_engine'}->params($template_params);
 	};
 	if ($@) {
 		# caught a runtime error from perl
@@ -543,7 +521,9 @@ sub generate_html {
 	# output page
 	$self->{mp}->content_type($run->{'template_conf'}->{'content-type'} || "text/html");
 
-	$self->{mp}->print($skeleton->output);
+	$self->{mp}->print($host->{'template_engine'}->output());
+
+	$host->{'template_engine'}->finish();
 
 	$self->{mp}->flush();
 
@@ -589,7 +569,7 @@ sub restart {
 		$self->{mp}->error("starting host $id");
 
 		my $conf = Apache::Voodoo::ServerConfig->new($id,$fp);
-		$conf->load_modules();
+		$conf->setup();
 
 		# check to see if we can get a database connection
 		foreach (@{$conf->{'dbs'}}) {

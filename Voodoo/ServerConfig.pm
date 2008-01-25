@@ -16,8 +16,13 @@ This modules is used internally by Voodoo for application setup and module loadi
 package Apache::Voodoo::ServerConfig;
 
 use strict;
+use warnings;
+
 use Config::General;
 use Data::Dumper;
+
+use Apache::Voodoo::Constants;
+use Apache::Voodoo::Template;
 
 sub new {
 	my $class = shift;
@@ -38,7 +43,7 @@ sub new {
 	return $self;
 }
 
-sub load_modules {
+sub setup {
 	my $self = shift;
 
 	# get the list of modules we're going to use
@@ -49,6 +54,8 @@ sub load_modules {
 	foreach (keys %{$self->{'includes'}}) {
 		$self->prep_include($_);
 	}
+
+	$self->prep_template_engine();
 
 	unless($self->{'dynamic_loading'}) {
 		delete $self->{'modules'};
@@ -77,6 +84,7 @@ sub load_config {
 	$self->{'ipc_max_size'}    = $conf{'ipc_max_size'}    || 0;
 	$self->{'context_vars'}    = $conf{'context_vars'}    || 0;
 	$self->{'template_conf'}   = $conf{'template_conf'}   || {};
+	$self->{'template_opts'}   = $conf{'template_opts'}   || {};
 
 	if (defined($conf{'devel_mode'})) {
 		if ($conf{'devel_mode'}) {
@@ -182,6 +190,19 @@ sub prep_include {
 	$self->{'handlers'}->{$module} = $obj;
 }
 
+sub prep_template_engine { 
+	my $self = shift;
+
+	$self->{'template_engine'} = Apache::Voodoo::Template->new({
+		template_dir  => File::Spec->catfile(
+			$self->{'constants'}->install_path(),
+			$self->{'id'},
+			$self->{'constants'}->tmpl_path()
+		),
+		template_opts => $self->{'template_opts'}
+	});
+}
+
 sub map_uri {
 	my $self = shift;
 	my $uri  = shift;
@@ -243,6 +264,8 @@ sub refresh {
 			$self->debug("Removing old include: $_");
 			delete $self->{'handlers'}->{$_};
 		}
+
+		$self->prep_template_engine();
 	}
 }
 
