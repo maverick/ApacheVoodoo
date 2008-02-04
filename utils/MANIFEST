@@ -20,6 +20,7 @@ lib/Apache/Voodoo/Pager.pm
 lib/Apache/Voodoo/ServerConfig.pm
 lib/Apache/Voodoo/Table.pm
 lib/Apache/Voodoo/Table.pod
+lib/Apache/Voodoo/Template.pm
 lib/Apache/Voodoo/Template/debug.tmpl
 lib/Apache/Voodoo/Theme.pm
 lib/Apache/Voodoo/ValidURL.pm
