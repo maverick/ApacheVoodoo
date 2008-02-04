@@ -166,7 +166,7 @@ sub check_existing {
 		my %old_cdata = $old_config->getall();
 
 		# save old (maybe customized?) config variables
-		foreach ('session_dir','devel_mode','shared_cache','ipc_max_size', 'debug','devel_mode','cookie_name','database') {
+		foreach ('session_dir','devel_mode','debug','devel_mode','cookie_name','database') {
 			$self->{'old_conf_data'}->{$_} = $old_cdata{$_};
 		}
 

@@ -27,7 +27,7 @@ use Digest::MD5;
 use Sys::Hostname;
 use XML::Checker::Parser;
 use File::Find;
-use Config::General;
+use Config::General qw(ParseConfig);
 
 # make CPAN download dependancies
 $CPAN::Config->{'prerequisites_policy'} = 'follow';
@@ -65,7 +65,7 @@ sub do_new_install { $_[0]->_do_all(1); }
 sub mark_updates_applied {
 	my $self = shift;
 
-	my %conf = Config::General::ParseConfig($self->{'conf_file'});
+	my %conf = ParseConfig($self->{'conf_file'});
 
 	$self->mesg("- Connection to database");
 	$self->{'dbh'} = DBI->connect($conf{'database'}->{'connect'},'root',$self->{'dbroot'}) || die DBI->errstr;
@@ -81,7 +81,7 @@ sub _do_all {
 	my $self = shift;
 	my $new  = shift;
 
-	my %conf = Config::General::ParseConfig($self->{'conf_file'});
+	my %conf = ParseConfig($self->{'conf_file'});
 
 	if ($new) {
 		$self->mesg("- Creating database");

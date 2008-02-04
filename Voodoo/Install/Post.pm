@@ -24,7 +24,7 @@ use base("Apache::Voodoo::Install");
 
 use Apache::Voodoo::Constants;
 
-use Config::General 'ParseConfig';
+use Config::General qw(ParseConfig);
 
 sub new {
 	my $class = shift;
