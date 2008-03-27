@@ -71,21 +71,28 @@ sub parse_params {
 	my $self       = shift;
 	my $upload_max = shift;
 
-	my $apr  = Apache::Request->new($self->{r}, POST_MAX => $upload_max);
-	if ($apr->parse()) {
-		return "File upload has returned the following error:\n".$apr->notes('error-notes');
-   	}
-
 	my %params;
+
+	my $apr  = Apache::Request->new($self->{r}, POST_MAX => $upload_max);
+
 	foreach ($apr->param) {
 		my @value = $apr->param($_);
 		$params{$_} = @value > 1 ? [@value] : $value[0];
    	}
 
-   	my @uploads = $apr->upload;
-   	if (@uploads) {
-		$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
+	# make sure our internal special params don't show up in the parameter list.
+	delete $params{'__voodoo_file_upload__'};
+	delete $params{'__voodoo_upload_error__'};
+
+	if ($apr->parse()) {
+		$params{'__voodoo_upload_error__'} = $apr->notes('error-notes');
    	}
+	else {
+		my @uploads = $apr->upload;
+		if (@uploads) {
+			$params{'__voodoo_file_upload__'} = @uploads > 1 ? [@uploads] : $uploads[0];
+		}
+	}
 
    	return \%params;
 }

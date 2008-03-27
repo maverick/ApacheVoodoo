@@ -78,7 +78,7 @@ sub parse_params {
 	my $self       = shift;
 	my $upload_max = shift;
 
-	my $apr = Apache2::Request->new($self->{r}, POST_MAX => $upload_max);
+	my $apr = Apache2::Request->new($self->{r}); #, POST_MAX => $upload_max);
 
 	my %params;
 	foreach ($apr->param) {
@@ -86,16 +86,31 @@ sub parse_params {
 		$params{$_} = @value > 1 ? [@value] : $value[0];
    	}
 
-   	my @uploads = $apr->upload;
-   	if ($#uploads == 0) {
-		$params{'__voodoo_file_upload__'} = $apr->upload($uploads[0]);
-   	}
-	elsif ($#uploads > 0) {
-		foreach (@uploads) {
-			push(@{$params{'__voodoo_file_upload__'}},$apr->upload($_));
+	# make sure our internal special params don't show up in the parameter list.
+	delete $params{'__voodoo_file_upload__'};
+	delete $params{'__voodoo_upload_error__'};
+
+	my @uploads = $apr->upload;
+	if ($#uploads == 0) {
+		my $u = $apr->upload($uploads[0]);
+		if ($u->size() > $upload_max) {
+			$params{'__voodoo_upload_error__'} = "File size exceeds $upload_max bytes.";
+		}
+		else {
+			$params{'__voodoo_file_upload__'} = $u;
 		}
 	}
-
+	elsif ($#uploads > 0) {
+		foreach (@uploads) {
+			my $u = $apr->upload($_);
+			if ($u->size() > $upload_max) {
+				$params{'__voodoo_upload_error__'} = "File size exceeds $upload_max bytes.";
+			}
+			else {
+				push(@{$params{'__voodoo_file_upload__'}},$u);
+			}
+		}
+	}
 
    	return \%params;
 }
