@@ -78,7 +78,7 @@ sub parse_params {
 	my $self       = shift;
 	my $upload_max = shift;
 
-	my $apr = Apache2::Request->new($self->{r}); #, POST_MAX => $upload_max);
+	my $apr = Apache2::Request->new($self->{r}, POST_MAX => $upload_max*5);
 
 	my %params;
 	foreach ($apr->param) {
