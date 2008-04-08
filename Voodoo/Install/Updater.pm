@@ -160,7 +160,8 @@ sub _find_updates {
 					push(@updates,$file);
 				}
 			},
-			no_chdir => 1
+			no_chdir => 1,
+			follow   => 1
 		},
 		$self->{'updates_path'}
 	);
