@@ -34,7 +34,7 @@ use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VE
 			  
 # setup primary hook to mod_perl depending on which version we're running
 BEGIN {
-	if (MP2) {
+	if (1) {
 		*handler = sub : method { shift()->handle_request(@_) };
 	}
 	else {
@@ -178,7 +178,8 @@ sub handle_request {
 		$self->{mp}->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");
 		tied(%{$run->{'session'}})->delete();
 		$self->untie();
-		return $self->{mp}->redirect($host->{'site_root'}."index");
+		return $self->{mp}->redirect($host->{'logout_target'});
+#		return $self->{mp}->redirect($host->{'site_root'}."index");
 	}
 
 	####################
