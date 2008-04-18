@@ -92,6 +92,8 @@ sub load_config {
 	$self->{'template_conf'} = $conf{'template_conf'} || {};
 	$self->{'template_opts'} = $conf{'template_opts'} || {};
 
+	$self->{'logout_target'} = $conf{'logout_target'} || $self->{'site_root'} . "index";
+
 	if (defined($conf{'devel_mode'})) {
 		if ($conf{'devel_mode'}) {
 			$self->{'debug'} = 1;
