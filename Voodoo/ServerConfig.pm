@@ -162,6 +162,7 @@ sub load_config {
 	if (defined($conf{'themes'}) && $conf{'themes'}->{'use_themes'} == 1) {
 		$self->{'use_themes'} = 1;
 		$self->{'themes'}->{'__default__'} = $conf{'themes'}->{'default'};
+		$self->{'themes'}->{'__userset__'} = $conf{'themes'}->{'user_can_choose'};
 		my $has_one = 0;
 		foreach (@{$conf{'themes'}->{'theme'}}) {
 			$self->{'themes'}->{$_->{'name'}} = $_->{'dir'};
