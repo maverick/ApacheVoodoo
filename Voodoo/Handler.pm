@@ -19,7 +19,7 @@ package Apache::Voodoo::Handler;
 
 use strict;
 
-use Apache::DBI;	
+use DBI;
 use Apache::Session::File;
 
 use Time::HiRes;
@@ -413,16 +413,28 @@ sub generate_html {
 					return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts",1);
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
-					if (defined($return->[1])) {
-						if ($return->[1] =~ /^\//o) {
-							$return->[1] =~ s/^/$host->{'site_root'}/;
+					if (defined($return->[2])) {
+						# using the user supplied destination page
+						if ($return->[2] =~ /^\//o) {
+							$return->[2] =~ s/^/$host->{'site_root'}/;
 						}
-						return $self->{mp}->redirect($return->[1]);
+
+						if (defined($return->[1])) {
+							$return->[2] .= "?error=".$return->[1];
+						}
+						return $self->{mp}->redirect($return->[2]);
 					}
 					elsif (-e $host->{'template_dir'}."/access_denied.tmpl") {
-						return $self->{mp}->redirect($host->{'site_root'}."access_denied");
+						# using the default destination page
+						if (defined($return->[1])) {
+							return $self->{mp}->redirect($host->{'site_root'}."access_denied?error=".$return->[1]);
+						}
+						else {
+							return $self->{mp}->redirect($host->{'site_root'}."access_denied");
+						}
 					}
 					else {
+						# fall back on ye olde apache forbidden
 						return $self->{mp}->forbidden;
 					}
 				}

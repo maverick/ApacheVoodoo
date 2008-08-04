@@ -137,16 +137,21 @@ block.  Messages can be turn on or off globally using the DEBUG option of the co
 
 =over 4
 
-=item access_denied( [ $uri ] )
+=item access_denied( [ $error ], [ $uri ] )
 
-This method is used to indicate to the Handler that the user is not allowed
-to access the URI requested.  If the optional parameter is not supplied the standard 
-Apache 403 (Forbidden) is returned to the user.
+By default it redirects to /access_denied which should contain some appropriate
+access denied message.  If there is a handler associated with that page, the optional 
+$error parameter can by used to proved the handling module with some additional information.
+The second parameter can be used to have the user redirected somewhere else besides the default
+location.  If the second param is not used and the access_denied template does not exist,
+then the standard Apache 403 (Forbidden) is returned to the user.
 
  usage:
     return $self->access_denied;
         or
-    return $self->access_denied($url_for_access_denied_message);
+    return $self->access_denied('need_user_privilege');
+		or
+    return $self->access_denied('need_user_privilege', '/user/access_denied');
 
 =item display_error($error,$uri)
 
