@@ -74,7 +74,7 @@ sub display_error {
 
 sub access_denied {
 	shift;
-	return [ 'ACCESS_DENIED' , shift ];
+	return [ 'ACCESS_DENIED' , shift, shift ];
 }
 
 sub is_redirect      { return $_[0]->_is_a_redirect($_[1],'REDIRECTED');    }
