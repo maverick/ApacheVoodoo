@@ -5,6 +5,8 @@ cp -r * /tmp/voodoo_dist
 
 cp -r ../Voodoo* /tmp/voodoo_dist/lib/Apache
 cp -r ../bin /tmp/voodoo_dist/bin
+cp -r ../t /tmp/voodoo_dist/t
+
 
 cd /tmp/voodoo_dist
 

@@ -16,7 +16,6 @@ The first thing we need to do is modify Apache's configuration file to load Vood
 =head2 Example Configuration
 
   # load these at server start (optional, slightly quicker startup time)
-  PerlModule Apache::DBI
   PerlModule Apache::Session
   PerlModule HTML::Template
 
