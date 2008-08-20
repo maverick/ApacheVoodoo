@@ -19,10 +19,12 @@ use strict;
 use warnings;
 
 use Config::General;
-use Data::Dumper;
 
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Template;
+use Apache::Voodoo::Session;
+
+use Data::Dumper;
 
 sub new {
 	my $class = shift;
@@ -82,9 +84,9 @@ sub load_config {
 
 	$self->{'base_package'} = $conf{'base_package'} || $self->{'id'};
 
-	$self->{'session_dir'}     = $conf{'session_dir'};
-	$self->{'upload_size_max'} = $conf{'upload_size_max'} || 5242880;
+
 	$self->{'session_timeout'} = $conf{'session_timeout'} || 0;
+	$self->{'upload_size_max'} = $conf{'upload_size_max'} || 5242880;
 	$self->{'cookie_name'}     = $conf{'cookie_name'}     || uc($self->{'id'}). "_SID";
 	$self->{'shared_cache'}    = $conf{'shared_cache'}    || 0;
 	$self->{'ipc_max_size'}    = $conf{'ipc_max_size'}    || 0;
@@ -137,6 +139,24 @@ sub load_config {
 							  } @{$db} 
 						 ];
 	}
+
+	if (defined($conf{'session_table'})) {
+		if ($self->{'dbs'}) {
+			$self->{'session_handler'} = Apache::Voodoo::Session->new('MySQL',$conf{'session_table'});
+		}
+		else {
+			print STDERR "You have sessions configured to be stored in the database but no database configuration.\n";
+			$self->{'errors'}++;
+		}
+	}
+	elsif (defined($conf{'session_dir'})) {
+		$self->{'session_handler'} = Apache::Voodoo::Session->new('File',$conf{'session_dir'});
+	}
+	else {
+		print STDERR "You do not have a session storage mechanism defined.\n";
+		$self->{'errors'}++;
+	}
+
 
 	$self->{'modules'}  = $conf{'modules'}  || {};
 	$self->{'includes'} = $conf{'includes'} || {};

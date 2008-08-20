@@ -27,22 +27,17 @@ sub attach {
 	my %session;
 	my $obj;
 
+	my $c = {
+		Directory     => $self->{'session_dir'},
+		LockDirectory => $self->{'session_dir'}
+	};
+
 	eval {
-		$obj = tie(%session,'Apache::Session::File',$id, 
-			{
-				Directory     => $self->{'session_dir'},
-				LockDirectory => $self->{'session_dir'}
-			}
-		) || die "Global data not available: $!";	
+		$obj = tie(%session,'Apache::Session::File',$id, $c) || die "Global data not available: $!";	
 	};
 	if ($@) {
 		undef $id;
-		$obj = tie(%session,'Apache::Session::File',$id,
-			{
-				Directory     => $self->{'session_dir'},
-				LockDirectory => $self->{'session_dir'}
-			}
-		) || die "Global data not available: $!";	
+		$obj = tie(%session,'Apache::Session::File',$id, $c) || die "Global data not available: $!";	
 	}
 
 	return Apache::Voodoo::Session::Instance->new($obj,\%session);
