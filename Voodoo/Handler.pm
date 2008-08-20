@@ -18,9 +18,9 @@ application's page handling modules.
 package Apache::Voodoo::Handler;
 
 use strict;
+use warnings;
 
 use DBI;
-use Apache::Session::File;
 
 use Time::HiRes;
 
@@ -48,12 +48,6 @@ BEGIN {
 # Thus we're left with leaving a global $self haning around long enough to copy
 # replace the first arg to our handler with it.
 my $self_init = Apache::Voodoo::Handler->new();
-
-# untie does something weird, bad and wrong.  
-# The *ONLY* way to properly untie is with the *ORIGINAL* variable that was tied too.
-# Thus, this is a global variable so that we can get to it from elsewhere in the code.
-# *barf*
-my %session;
 
 # Debugging object.  I don't like using an 'our' variable, but it is just too much
 # of a pain to pass this thing around to everywhere it needs to go. So, I just tell
@@ -170,14 +164,15 @@ sub handle_request {
 	####################
 	# Attach session
 	####################
-	$run->{'session'} = $self->attach_session($host);
+	$run->{session_handler} = $self->attach_session($host);
+	$run->{session} = $run->{session_handler}->session;
+
 	$debug->mark("session attachment");
 
 	if ($run->{'uri'} eq "logout") {
 		# handle logout
 		$self->{mp}->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");
-		tied(%{$run->{'session'}})->delete();
-		$self->untie();
+		$run->{'session_handler'}->destroy();
 		return $self->{mp}->redirect($host->{'logout_target'});
 #		return $self->{mp}->redirect($host->{'site_root'}."index");
 	}
@@ -232,7 +227,7 @@ sub handle_request {
 	####################
 	my $return = $self->generate_html($host,$run);
 
-	$self->untie();
+	$run->{session_handler}->disconnect();
 
 	$debug->reset();
 
@@ -243,49 +238,31 @@ sub attach_session {
 	my $self = shift;
 	my $host = shift;
 
-	my ($cookie_val) = ($self->{mp}->header_in('Cookie') =~ /$host->{'cookie_name'}=([0-9a-z]+)/);
-	my $sess_id = $cookie_val;
+	my ($session_id) = ($self->{mp}->header_in('Cookie') =~ /$host->{'cookie_name'}=([0-9a-z]+)/);
+	my $instance = $host->{session_handler}->attach($session_id,$host->{dbh});
 
-	# my fist big complaint about Apache::Ssssion, 
-	# There's now way to validate a session id other then this eval.
-	eval {
-		tie(%session,'Apache::Session::File',$sess_id, 
-			{
-				Directory     => $host->{'session_dir'},
-				LockDirectory => $host->{'session_dir'}
-			}
-		) || die "Global data not available: $!";	
-	};
-	if ($@) {
-		undef $sess_id;
-		tie(%session,'Apache::Session::File',$sess_id,
-			{
-				Directory     => $host->{'session_dir'},
-				LockDirectory => $host->{'session_dir'}
-			}
-		) || die "Global data not available: $!";	
-	}
+	my $session = $instance->session;
 
 	# if this was a new session, or there was an old cookie from a previous sesion,
 	# set the session cookie.
-	if (!defined($sess_id) || $sess_id ne $cookie_val) {
+	if (!defined($session_id) || $instance->{id} ne $session_id) {
 		# err_headers get sent on both successful and errored requests
-		$self->{mp}->err_header_out("Set-Cookie" => "$host->{'cookie_name'}=$session{_session_id}; path=/");
-		$session{'timestamp'} = time;
+		$self->{mp}->err_header_out("Set-Cookie" => "$host->{'cookie_name'}=$instance->{id}; path=/");
+		$session->{'timestamp'} = time;
 	}
 
 	# see if the session has expired
-	if ($host->{'session_timeout'} > 0 && $session{'timestamp'} < (time - ($host->{'session_timeout'}*60))) {
+	if ($host->{'session_timeout'} > 0 && $session->{'timestamp'} < (time - ($host->{'session_timeout'}*60))) {
 		# use err header out since this is a redirect
 		$self->{mp}->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");
-		tied(%session)->delete();
+		$instance->destroy;
 		return $self->{mp}->redirect($host->{'site_root'}."timeout");
 	}
 	else {
-		$session{'timestamp'} = time;
+		$session->{'timestamp'} = time;
 	}
 
-	return \%session;
+	return $instance;
 }
 
 sub history_queue {
@@ -409,7 +386,7 @@ sub generate_html {
 					my $ts = Time::HiRes::time;
 					$run->{'session'}->{"er_$ts"}->{'error'}  = $return->[1];
 					$run->{'session'}->{"er_$ts"}->{'return'} = $return->[2];
-					$self->untie();
+					$run->{'session_handler'}->disconnect();
 					return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts",1);
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
@@ -632,12 +609,6 @@ sub restart {
 		}
 	}
 	closedir(DIR);
-}
-
-sub untie {
-	my $self = shift;
-
-	untie %session;
 }
 
 1;
