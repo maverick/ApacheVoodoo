@@ -1,3 +1,41 @@
+2.04 - 8/20/2008
+================
+Abstracted Session handling.  Sessions can either reside on the file system on in mysql.
+
+access_denied now accepts two additional params.  The first is appended to the url as the
+value of error.  This can be used to provide a hint to the receiving module to describe why
+access was denied.  The second param can be used to have the access_denied call redirect somewhere else.
+(based on modifications made by Mike)
+
+pretty_tiem had the wrong array members being used
+
+Per user theme selection works again.
+
+Logout target can be user configured now.
+
+Prettier handling of the maximum upload size.
+
+2.03 - 2/04/2008
+================
+Installer now handles standard Perl modules too.
+
+Added variations of the next, previous and more pages in order to make building ajaxed pagination easier.
+
+Added arbitrary join syntax to the table abstraction layer.
+
+Abstracted Template handling out of the Hander.pm
+
+2.02 - 12/3/2007
+================
+Traced down glitch in Net::DNS (used by Email::Valid), added workaround.  Submitted patch.
+
+Removed dependency on IPC::Shareable
+
+Fixed a rounding error in the window size code.  This bug was only triggered when the window size 
+was set to an odd number; and event which rarely happens.  This has allowed this bug to go 
+unnoticed for 9 years.
+
+
 2.01 - 1/19/2007
 ================
 Fixed glitch in upload handling under Apache 2, updated docs.

@@ -18,6 +18,10 @@ lib/Apache/Voodoo/MP/V1.pm
 lib/Apache/Voodoo/MP/V2.pm
 lib/Apache/Voodoo/Pager.pm
 lib/Apache/Voodoo/ServerConfig.pm
+lib/Apache/Voodoo/Session/Instance.pm
+lib/Apache/Voodoo/Session/File.pm
+lib/Apache/Voodoo/Session/MySQL.pm
+lib/Apache/Voodoo/Session.pm
 lib/Apache/Voodoo/Table.pm
 lib/Apache/Voodoo/Table.pod
 lib/Apache/Voodoo/Template.pm
