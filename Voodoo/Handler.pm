@@ -18,7 +18,6 @@ application's page handling modules.
 package Apache::Voodoo::Handler;
 
 use strict;
-use warnings;
 
 use DBI;
 
