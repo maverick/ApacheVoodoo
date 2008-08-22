@@ -10,7 +10,7 @@
 ####################################################################################
 package Apache::Voodoo;
 
-$VERSION = ('$HeadURL$' =~ m!([^/]+)(?:/[^/]+)\$!)[0];
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
 
 use strict;
 use Data::Dumper;
