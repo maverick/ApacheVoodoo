@@ -13,6 +13,8 @@ This is old and crufty and not for public use
 =cut ################################################################################
 package Apache::Voodoo::Table::Probe::MySQL;
 
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+
 use DBI;
 use Data::Dumper;
 

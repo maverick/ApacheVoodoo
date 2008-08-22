@@ -15,6 +15,8 @@ This object is used by Voodoo internally.
 =cut ###########################################################################
 package Apache::Voodoo::Install::Pid;
 
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+
 use base("Apache::Voodoo::Install");
 
 use strict;

@@ -1,5 +1,7 @@
 package Apache::Voodoo::ValidURL;
 
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+
 #
 # I saw this code fragment somewhere ages ago, I can't remember where.
 # So, I can't attribute it to the proper author.  sorry!

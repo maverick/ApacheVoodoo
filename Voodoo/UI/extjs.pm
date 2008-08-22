@@ -1,5 +1,7 @@
 package Apache::Voodoo::Data::UI::extjs;
 
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+
 use strict;
 use warnings;
 

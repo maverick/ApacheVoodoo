@@ -18,6 +18,8 @@ methods from L<Apache::Voodoo>.
 =cut ###########################################################################
 package Apache::Voodoo::Debug;
 
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+
 use strict;
 
 use Time::HiRes;

@@ -9,8 +9,9 @@
 # $Id$
 #
 ####################################################################################
+package Apache::Voodoo::Storage::Config;
 
-package Apache::Voodoo::Data::Config;
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
 
 use strict;
 
@@ -193,10 +194,36 @@ sub set_configuration {
 	}
 }
 
-sub get_ui {
+sub has_error {
 	my $self = shift;
 
+	return scalar(@{$self->{errors}});
+}
+
+sub errors {
+	my $self = shift;
+
+	return $self->{errors};
+}
+
+sub ui {
+	my $self = shift;
+
+	if ($_[0]) {
+		$self->{ui} = $_[0];
+	}
+
 	return $self->{ui};
+}
+
+sub table {
+	my $self = shift;
+
+	if ($_[0]) {
+		$self->{table} = $_[0];
+	}
+
+	return $self->{table};
 }
 
 1;

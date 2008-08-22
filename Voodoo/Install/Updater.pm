@@ -13,6 +13,8 @@ use directly by end users.
 =cut ###########################################################################
 package Apache::Voodoo::Install::Updater;
 
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+
 use strict;
 use warnings;
 

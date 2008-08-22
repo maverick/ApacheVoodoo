@@ -10,8 +10,9 @@ Base class for each of the module loading mechanisms.  Look at Loader::Static
 and Loader::Dynamic
 
 =cut ################################################################################
-
 package Apache::Voodoo::Loader;
+
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
 
 use strict;
 use warnings;

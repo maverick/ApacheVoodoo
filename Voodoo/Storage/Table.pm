@@ -9,8 +9,9 @@
 # $Id$
 #
 ####################################################################################
+package Apache::Voodoo::Storage::Table;
 
-package Apache::Voodoo::Table;
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
 
 use strict;
 

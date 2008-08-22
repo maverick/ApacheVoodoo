@@ -11,8 +11,9 @@ This implements a post_include module that handles all the theme processing.
 ( And is going to be removed since you can do this sort of thing in CSS much better)
 
 =cut ################################################################################
-
 package Apache::Voodoo::Theme;
+
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
 
 use strict;
 

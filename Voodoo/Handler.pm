@@ -17,10 +17,11 @@ application's page handling modules.
 =cut ################################################################################
 package Apache::Voodoo::Handler;
 
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+
 use strict;
 
 use DBI;
-
 use Time::HiRes;
 
 use Apache::Voodoo::MP;

@@ -14,8 +14,9 @@ This module is internal to Voodoo. It's used to provide a generic error page.  E
 user interaction is through L<Apache::Voodoo>::display_error()
 
 =cut ################################################################################
-
 package Apache::Voodoo::DisplayError;
+
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
 
 use strict;
 use base ("Apache::Voodoo");

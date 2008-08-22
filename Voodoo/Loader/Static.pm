@@ -1,6 +1,8 @@
 # $Id$
 package Apache::Voodoo::Loader::Static;
 
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+
 use strict;
 use base("Apache::Voodoo::Loader");
 

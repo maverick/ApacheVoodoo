@@ -6,7 +6,7 @@ Apache::Voodoo::Template
 
 =head1 VERSION
 
-$Id: ServerConfig.pm 6315 2007-11-16 18:52:40Z medwards $
+$Id$
 
 =head1 SYNOPSIS
 
@@ -16,6 +16,8 @@ templating engines (Template::Toolkit, Text::Template, etc)
 
 =cut ################################################################################
 package Apache::Voodoo::Template;
+
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
 
 use strict;
 use warnings;
