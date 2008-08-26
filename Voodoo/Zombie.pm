@@ -10,7 +10,7 @@ $Id$
 
 =head1 SYNOPSIS
 
-This module is used by Apache::Voodoo::ServerConfig as a facimily replacement for a dead module
+This module is used by Apache::Voodoo::Application as a facimily replacement for a dead module
 when either devel_mode or debug is 1 in the application's voodoo.conf.  Any calls to this module
 displays an error message via L<Apache::Voodoo::DisplayError> describing what blew up and
 where.  This is a development tool...you shouldn't have any Zombies in your production server :)

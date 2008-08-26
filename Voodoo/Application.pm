@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::ServerConfig
+Apache::Voodoo::Application
 
 =head1 VERSION
 
@@ -13,7 +13,7 @@ $Id$
 This modules is used internally by Voodoo for application setup and module loading/reloading.
 
 =cut ################################################################################
-package Apache::Voodoo::ServerConfig;
+package Apache::Voodoo::Application;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
 

@@ -15,7 +15,7 @@ use_ok('Apache::Voodoo::Loader::Dynamic');
 use_ok('Apache::Voodoo::Loader::Static');
 use_ok('Apache::Voodoo::MP');
 use_ok('Apache::Voodoo::Pager');
-use_ok('Apache::Voodoo::ServerConfig');
+use_ok('Apache::Voodoo::Application');
 use_ok('Apache::Voodoo::Table');
 use_ok('Apache::Voodoo::Theme');
 use_ok('Apache::Voodoo::ValidURL');

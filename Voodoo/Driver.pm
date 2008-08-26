@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use DBI;
-use Apache::Voodoo::ServerConfig;
+use Apache::Voodoo::Application;
 use Apache::Voodoo::Constants;
 
 sub new {
@@ -25,7 +25,7 @@ sub new {
 		$self->{constants}->conf_file()
 	);
 
-	$self->{serverconfig} = Apache::Voodoo::ServerConfig->new($self->{id},$conf);
+	$self->{application} = Apache::Voodoo::Application->new($self->{id},$conf);
 
 	return $self;
 }
@@ -46,8 +46,8 @@ sub make_call_hash {
 		"document_root" => join('/',$self->{constants}->install_path(),$self->{id},$self->{constants}->tmpl_path()),
 		"params"        => {},
 		"session"       => {},
-		"template_conf" => $self->{'serverconfig'}->{'template_conf'},
-		"themes"        => $self->{'serverconfig'}->{'themes'}
+		"template_conf" => $self->{'application'}->{'template_conf'},
+		"themes"        => $self->{'application'}->{'themes'}
 	};
 }
 
@@ -56,7 +56,7 @@ sub _db_connect {
 
 	return if ($self->{'dbh'});
 
-	foreach (@{$self->{'serverconfig'}->{'dbs'}}) {
+	foreach (@{$self->{'application'}->{'dbs'}}) {
 		$self->{'dbh'} = DBI->connect(@{$_});
 		last if $self->{'dbh'};
 			

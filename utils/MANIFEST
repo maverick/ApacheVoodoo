@@ -1,5 +1,6 @@
 lib/Apache/Voodoo.pm
 lib/Apache/Voodoo.pod
+lib/Apache/Voodoo/Application.pm
 lib/Apache/Voodoo/Constants.pm
 lib/Apache/Voodoo/Debug.pm
 lib/Apache/Voodoo/DisplayError.pm
@@ -17,7 +18,6 @@ lib/Apache/Voodoo/MP.pm
 lib/Apache/Voodoo/MP/V1.pm
 lib/Apache/Voodoo/MP/V2.pm
 lib/Apache/Voodoo/Pager.pm
-lib/Apache/Voodoo/ServerConfig.pm
 lib/Apache/Voodoo/Session/Instance.pm
 lib/Apache/Voodoo/Session/File.pm
 lib/Apache/Voodoo/Session/MySQL.pm

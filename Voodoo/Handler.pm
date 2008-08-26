@@ -26,7 +26,7 @@ use Time::HiRes;
 
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
-use Apache::Voodoo::ServerConfig;
+use Apache::Voodoo::Application;
 use Apache::Voodoo::Debug;
 use Apache::Voodoo::DisplayError;
 
@@ -86,8 +86,8 @@ sub handle_request {
 		return $self->{mp}->server_error;
 	}
 
-	unless (defined($self->{'hosts'}->{$id})) {
-		$self->{mp}->error("host id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'hosts'}}));
+	unless (defined($self->{'apps'}->{$id})) {
+		$self->{mp}->error("application id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'apps'}}));
 		return $self->{mp}->server_error;
 	}
 
@@ -123,23 +123,23 @@ sub handle_request {
 	$debug->mark("Start");
 
 	# local copy of currently processing host, save a few reference lookups (and a bunch o' typing)
-	my $host = $self->{'hosts'}->{$id};
+	my $app = $self->{'apps'}->{$id};
 
-	if ($host->{'dynamic_loading'}) {
-		$host->refresh;
+	if ($app->{'dynamic_loading'}) {
+		$app->refresh;
 	}
 
-	if ($host->{"DEAD"}) {
+	if ($app->{"DEAD"}) {
 		return $self->{mp}->server_error;
 	}
 
-	$host->{'site_root'} = $self->{mp}->site_root;
-	if ($host->{'site_root'} ne "/") {
-		$host->{'site_root'} =~ s:/$::;
-		$run->{'uri'} =~ s/^$host->{'site_root'}//;
+	$app->{'site_root'} = $self->{mp}->site_root;
+	if ($app->{'site_root'} ne "/") {
+		$app->{'site_root'} =~ s:/$::;
+		$run->{'uri'} =~ s/^$app->{'site_root'}//;
 	}
 
-	($host->{'template_dir'}) = ($run->{'filename'} =~ /^(.*)$run->{'uri'}$/);
+	($app->{'template_dir'}) = ($run->{'filename'} =~ /^(.*)$run->{'uri'}$/);
 
    	# remove the beginning /
    	$run->{'uri'} =~ s/^\///o;
@@ -149,9 +149,9 @@ sub handle_request {
 	####################
 	# connect to db
 	####################
-	foreach (@{$host->{'dbs'}}) {
-		$host->{'dbh'} = DBI->connect_cached(@{$_});
-		last if $host->{'dbh'};
+	foreach (@{$app->{'dbs'}}) {
+		$app->{'dbh'} = DBI->connect_cached(@{$_});
+		last if $app->{'dbh'};
 	
 		return $self->display_host_error(
 			"========================================================\n" .
@@ -164,23 +164,23 @@ sub handle_request {
 	####################
 	# Attach session
 	####################
-	$run->{session_handler} = $self->attach_session($host);
+	$run->{session_handler} = $self->attach_session($app);
 	$run->{session} = $run->{session_handler}->session;
 
 	$debug->mark("session attachment");
 
 	if ($run->{'uri'} eq "logout") {
 		# handle logout
-		$self->{mp}->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");
+		$self->{mp}->err_header_out("Set-Cookie" => $app->{'cookie_name'} . "='!'; path=/");
 		$run->{'session_handler'}->destroy();
-		return $self->{mp}->redirect($host->{'logout_target'});
-#		return $self->{mp}->redirect($host->{'site_root'}."index");
+		return $self->{mp}->redirect($app->{'logout_target'});
+#		return $self->{mp}->redirect($app->{'site_root'}."index");
 	}
 
 	####################
 	# get paramaters 
 	####################
-	$run->{'input_params'} = $self->{mp}->parse_params($host->{'upload_size_max'});
+	$run->{'input_params'} = $self->{mp}->parse_params($app->{'upload_size_max'});
 	unless (ref($run->{'input_params'})) {
 		# something went boom
 		return $self->display_host_error($run->{'input_params'});
@@ -204,7 +204,7 @@ sub handle_request {
 	# They can only do this if the server is already in debug mode, 
 	# it would be a security issue otherwise.
 	####################
-	my $debug_enabled = $host->{'debug'};
+	my $debug_enabled = $app->{'debug'};
 	if ($debug_enabled) {
 		if (defined($run->{'input_params'}->{'DEBUG'})) {
 			$run->{'session'}->{'DEBUG'} = ($run->{'input_params'}->{'DEBUG'} =~ /^(on|1)$/i)?1:0;
@@ -219,13 +219,13 @@ sub handle_request {
 	####################
 	# Get configuation for this template or section
 	####################
-	$run->{'template_conf'} = $self->resolve_conf_section($host,$run);
+	$run->{'template_conf'} = $self->resolve_conf_section($app,$run);
 	$debug->mark("config section resolution");
 
 	####################
 	# prepare main body contents
 	####################
-	my $return = $self->generate_html($host,$run);
+	my $return = $self->generate_html($app,$run);
 
 	$run->{session_handler}->disconnect();
 
@@ -236,10 +236,10 @@ sub handle_request {
 
 sub attach_session {
 	my $self = shift;
-	my $host = shift;
+	my $app  = shift;
 
-	my ($session_id) = ($self->{mp}->header_in('Cookie') =~ /$host->{'cookie_name'}=([0-9a-z]+)/);
-	my $instance = $host->{session_handler}->attach($session_id,$host->{dbh});
+	my ($session_id) = ($self->{mp}->header_in('Cookie') =~ /$app->{'cookie_name'}=([0-9a-z]+)/);
+	my $instance = $app->{session_handler}->attach($session_id,$app->{dbh});
 
 	my $session = $instance->session;
 
@@ -247,16 +247,16 @@ sub attach_session {
 	# set the session cookie.
 	if (!defined($session_id) || $instance->{id} ne $session_id) {
 		# err_headers get sent on both successful and errored requests
-		$self->{mp}->err_header_out("Set-Cookie" => "$host->{'cookie_name'}=$instance->{id}; path=/");
+		$self->{mp}->err_header_out("Set-Cookie" => "$app->{'cookie_name'}=$instance->{id}; path=/");
 		$session->{'timestamp'} = time;
 	}
 
 	# see if the session has expired
-	if ($host->{'session_timeout'} > 0 && $session->{'timestamp'} < (time - ($host->{'session_timeout'}*60))) {
+	if ($app->{'session_timeout'} > 0 && $session->{'timestamp'} < (time - ($app->{'session_timeout'}*60))) {
 		# use err header out since this is a redirect
-		$self->{mp}->err_header_out("Set-Cookie" => $host->{'cookie_name'} . "='!'; path=/");
+		$self->{mp}->err_header_out("Set-Cookie" => $app->{'cookie_name'} . "='!'; path=/");
 		$instance->destroy;
-		return $self->{mp}->redirect($host->{'site_root'}."timeout");
+		return $self->{mp}->redirect($app->{'site_root'}."timeout");
 	}
 	else {
 		$session->{'timestamp'} = time;
@@ -304,29 +304,29 @@ sub mkurlparams {
 
 sub resolve_conf_section {
 	my $self = shift;
-	my $host = shift;
+	my $app  = shift;
 	my $run  = shift;
 
-	if (exists($host->{'template_conf'}->{$run->{'uri'}})) {
+	if (exists($app->{'template_conf'}->{$run->{'uri'}})) {
 		# one specific to this page
-		return $host->{'template_conf'}->{$run->{'uri'}};
+		return $app->{'template_conf'}->{$run->{'uri'}};
 	}
 
-	foreach (sort { length($b) <=> length($a) } keys %{$host->{'template_conf'}}) {
+	foreach (sort { length($b) <=> length($a) } keys %{$app->{'template_conf'}}) {
 		if ($run->{'uri'} =~ /^$_$/) {
 			# match by uri regexp
-			return $host->{'template_conf'}->{$_};
+			return $app->{'template_conf'}->{$_};
 		}
 	}
 
 	# not one, return the default
-	return $host->{'template_conf'}->{'default'};
+	return $app->{'template_conf'}->{'default'};
 }
 
 sub generate_html {
 	my $self = shift;
 #	my $r    = shift;
-	my $host = shift;
+	my $app  = shift;
 	my $run  = shift;
 
 	my $c=0;
@@ -334,13 +334,13 @@ sub generate_html {
 	# call each of the pre_include modules followed by our page specific module followed by our post_includes
 	foreach my $handle ( 
 		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'pre_include'}) ),
-		$host->map_uri($run->{'uri'}),
+		$app->map_uri($run->{'uri'}),
 		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'post_include'}) )
 		) {
 
 
-		if (defined($host->{'handlers'}->{$handle->[0]}) && $host->{'handlers'}->{$handle->[0]}->can($handle->[1])) {
-			my $obj    = $host->{'handlers'}->{$handle->[0]};
+		if (defined($app->{'handlers'}->{$handle->[0]}) && $app->{'handlers'}->{$handle->[0]}->can($handle->[1])) {
+			my $obj    = $app->{'handlers'}->{$handle->[0]};
 			my $method = $handle->[1];
 
 			my $return;
@@ -348,12 +348,12 @@ sub generate_html {
 
 				$return = $obj->$method(
 					{
-						"dbh"           => $host->{'dbh'},
-						"document_root" => $host->{'template_dir'},
+						"dbh"           => $app->{'dbh'},
+						"document_root" => $app->{'template_dir'},
 						"params"        => $run->{'input_params'},
 						"session"       => $run->{'session'},
 						"template_conf" => $run->{'template_conf'},
-						"themes"        => $host->{'themes'},
+						"themes"        => $app->{'themes'},
 						"uri"           => $run->{'uri'},
 						"mp"            => $self->{mp},
 						# these are deprecated.  In the future get them from $p->{mp}
@@ -365,7 +365,7 @@ sub generate_html {
 			};
 			if ($@) {
 				# caught a runtime error from perl
-				if ($host->{'debug'}) {
+				if ($app->{'debug'}) {
 					return $self->display_host_error("Module: $handle->[0] $method\n$@");
 				}
 				else {
@@ -377,8 +377,8 @@ sub generate_html {
 
 			if (ref($return) eq "ARRAY") {
 				if    ($return->[0] eq "REDIRECTED") {
-					if ($host->{'site_root'} ne "/" && $return->[1] =~ /^\//o) {
-						$return->[1] =~ s/^\//$host->{'site_root'}/;
+					if ($app->{'site_root'} ne "/" && $return->[1] =~ /^\//o) {
+						$return->[1] =~ s/^\//$app->{'site_root'}/;
 					}
 					return $self->{mp}->redirect($return->[1]);
 				}
@@ -390,15 +390,15 @@ sub generate_html {
 					# internal redirects have always been touchy, removing for now until I can
 					# figure out why it's being a pain now.
 					#$run->{'session_handler'}->disconnect();
-					#return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts",1);
+					#return $self->{mp}->redirect($app->{'site_root'}."display_error?error=$ts",1);
 
-					return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts");
+					return $self->{mp}->redirect($app->{'site_root'}."display_error?error=$ts");
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
 					if (defined($return->[2])) {
 						# using the user supplied destination page
 						if ($return->[2] =~ /^\//o) {
-							$return->[2] =~ s/^/$host->{'site_root'}/;
+							$return->[2] =~ s/^/$app->{'site_root'}/;
 						}
 
 						if (defined($return->[1])) {
@@ -406,13 +406,13 @@ sub generate_html {
 						}
 						return $self->{mp}->redirect($return->[2]);
 					}
-					elsif (-e $host->{'template_dir'}."/access_denied.tmpl") {
+					elsif (-e $app->{'template_dir'}."/access_denied.tmpl") {
 						# using the default destination page
 						if (defined($return->[1])) {
-							return $self->{mp}->redirect($host->{'site_root'}."access_denied?error=".$return->[1]);
+							return $self->{mp}->redirect($app->{'site_root'}."access_denied?error=".$return->[1]);
 						}
 						else {
-							return $self->{mp}->redirect($host->{'site_root'}."access_denied");
+							return $self->{mp}->redirect($app->{'site_root'}."access_denied");
 						}
 					}
 					else {
@@ -450,12 +450,12 @@ sub generate_html {
 	}
 
 	my $skeleton_file;
-	if ($host->{'use_themes'}) {
+	if ($app->{'use_themes'}) {
 		# time to do the theme processing stuff.
 		my $return = $self->{'theme_handler'}->handle(
 			{
-				"document_root" => $host->{'template_dir'},
-				"themes"        => $host->{'themes'},
+				"document_root" => $app->{'template_dir'},
+				"themes"        => $app->{'themes'},
 				"session"       => $run->{'session'},
 				"uri"           => $run->{'uri'},
 			}
@@ -480,21 +480,21 @@ sub generate_html {
 
 	eval {
 		# load the template
-		$host->{'template_engine'}->template($run->{'uri'});
+		$app->{'template_engine'}->template($run->{'uri'});
 		$debug->mark("template open");
 
-		$template_params->{'SITE_ROOT'} = $host->{'site_root'};
+		$template_params->{'SITE_ROOT'} = $app->{'site_root'};
 
 		# pack up the params
-		$host->{'template_engine'}->params($template_params);
+		$app->{'template_engine'}->params($template_params);
 
 		# generate the main body contents
-		$template_params->{'_MAIN_BODY_'} = $host->{'template_engine'}->output();
+		$template_params->{'_MAIN_BODY_'} = $app->{'template_engine'}->output();
 		
 		$debug->mark("main body content");
 
 		# load the skeleton template
-		$host->{'template_engine'}->template($skeleton_file);
+		$app->{'template_engine'}->template($skeleton_file);
 
 		$debug->mark("skeleton open");
 
@@ -506,7 +506,7 @@ sub generate_html {
 		);
 
 		# pack everything into the skeleton
-		$host->{'template_engine'}->params($template_params);
+		$app->{'template_engine'}->params($template_params);
 	};
 	if ($@) {
 		# caught a runtime error from perl
@@ -516,9 +516,9 @@ sub generate_html {
 	# output page
 	$self->{mp}->content_type($run->{'template_conf'}->{'content-type'} || "text/html");
 
-	$self->{mp}->print($host->{'template_engine'}->output());
+	$self->{mp}->print($app->{'template_engine'}->output());
 
-	$host->{'template_engine'}->finish();
+	$app->{'template_engine'}->finish();
 
 	$self->{mp}->flush();
 
@@ -541,7 +541,7 @@ sub restart {
 	my $self = shift;
 
 	# wipe / initialize host information
-	$self->{'hosts'} = {};
+	$self->{'apps'} = {};
 
 	$self->{mp}->error("Voodoo starting...");
 
@@ -563,13 +563,13 @@ sub restart {
 
 		$self->{mp}->error("starting host $id");
 
-		my $conf = Apache::Voodoo::ServerConfig->new($id,$self->{'constants'});
-		$conf->setup();
+		my $app = Apache::Voodoo::Application->new($id,$self->{'constants'});
+		$app->setup();
 
 		# check to see if we can get a database connection
-		foreach (@{$conf->{'dbs'}}) {
-			$conf->{'dbh'} = DBI->connect(@{$_});
-			last if $conf->{'dbh'};
+		foreach (@{$app->{'dbs'}}) {
+			$app->{'dbh'} = DBI->connect(@{$_});
+			last if $app->{'dbh'};
 			
 			$self->{mp}->error("========================================================");
 			$self->{mp}->error("DB CONNECT FAILED FOR $id");
@@ -580,20 +580,20 @@ sub restart {
 		# if the database connection was invalid (or there wasn't one, this would 'die'.  
 		# eval wrap is to trap and trow away this possible error ('cause we don't care)
 		eval {
-			$conf->{'dbh'}->disconnect;
+			$app->{'dbh'}->disconnect;
 		};
 
-		$self->{'hosts'}->{$id} = $conf;
+		$self->{'apps'}->{$id} = $app;
 		
 		# notifiy of start errors
-		$self->{'hosts'}->{$id}->{"DEAD"} = 0;
+		$self->{'apps'}->{$id}->{"DEAD"} = 0;
 
-		if ($conf->{'errors'}) {
-			$self->{mp}->error("$id has ".$conf->{'errors'}." errors");
-			if ($conf->{'halt_on_errors'}) {
+		if ($app->{'errors'}) {
+			$self->{mp}->error("$id has ".$app->{'errors'}." errors");
+			if ($app->{'halt_on_errors'}) {
 				$self->{mp}->error(" (dropping this site)");
 
-				$self->{'hosts'}->{$conf->{'id'}}->{"DEAD"} = 1;
+				$self->{'apps'}->{$app->{'id'}}->{"DEAD"} = 1;
 
 				return;
 			}
@@ -603,11 +603,11 @@ sub restart {
 		}
 
 		# ick..this feels wrong...don't know of a cleaner way yet.
-		unless (defined($conf->{'handlers'}->{'display_error'})) {
-			$conf->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
+		unless (defined($app->{'handlers'}->{'display_error'})) {
+			$app->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
 		}
 
-		if ($conf->{'use_themes'} && !defined($self->{'theme_handler'})) {
+		if ($app->{'use_themes'} && !defined($self->{'theme_handler'})) {
 			# we're using themes and the theme handler hasn't been initialized yet
 			require "Apache/Voodoo/Theme.pm";
 			$self->{'theme_handler'} = Apache::Voodoo::Theme->new();
