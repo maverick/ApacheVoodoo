@@ -386,8 +386,13 @@ sub generate_html {
 					my $ts = Time::HiRes::time;
 					$run->{'session'}->{"er_$ts"}->{'error'}  = $return->[1];
 					$run->{'session'}->{"er_$ts"}->{'return'} = $return->[2];
-					$run->{'session_handler'}->disconnect();
-					return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts",1);
+
+					# internal redirects have always been touchy, removing for now until I can
+					# figure out why it's being a pain now.
+					#$run->{'session_handler'}->disconnect();
+					#return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts",1);
+
+					return $self->{mp}->redirect($host->{'site_root'}."display_error?error=$ts");
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
 					if (defined($return->[2])) {
