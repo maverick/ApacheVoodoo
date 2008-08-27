@@ -13,7 +13,7 @@ This implements a post_include module that handles all the theme processing.
 =cut ################################################################################
 package Apache::Voodoo::Theme;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
 
 use strict;
 

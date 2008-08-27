@@ -12,7 +12,7 @@ and Loader::Dynamic
 =cut ################################################################################
 package Apache::Voodoo::Loader;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
 
 use strict;
 use warnings;
