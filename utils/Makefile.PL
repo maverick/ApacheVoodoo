@@ -4,16 +4,17 @@ use ExtUtils::MakeMaker;
 my %required_modules = (
 		# voodoo-control uses CPAN under the hood to do some of it's work which is why it's listed here.
 		CPAN	             => 1.9205,	
-		Apache::DBI          => 0.94,
 		Apache::Session      => 1.6,
 		Config::General      => 2.27,
 		Digest::MD5          => 2.36,
 		Email::Valid         => 0.15,
-		File::Pid            => 0,
+		File::Pid            => 1.01,
 		HTML::Template       => 2.7,
 		IPC::SharedCache     => 1.3,
 		Time::HiRes          => 1.65,
 		XML::Checker::Parser => 0,
+		Proc::Daemon         => 0.03,
+		IO::Socket::SIPC     => 0.07,
 		# Apache::Admin::Config => 0.92
 );
 

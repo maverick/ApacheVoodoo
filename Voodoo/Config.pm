@@ -46,6 +46,21 @@ my %COLUMN_TYPES = (
 	'bit'       => {}
 );
 
+my %X_TYPES = (
+	"email" => {
+	},
+	"address" => {
+	},
+	"password" => {
+	},
+	"url" => {
+	},
+	"monthyear" => {
+	},
+	"monthyear" => {
+	}
+);
+
 sub new {
 	my $class = shift;
 
@@ -97,6 +112,11 @@ sub set_configuration {
 
 		unless (defined($COLUMN_TYPES{$conf->{'type'}})) {
 			push(@errors,"don't know how to handle type $conf->{'type'} for column $name");
+			next;
+		}
+
+		if (defined($conf->{'xtype'}) && !defined($X_TYPES{$conf->{'xtype'}})) {
+			push(@errors,"don't know how to handle extended type $conf->{'xtype'} for column $name");
 			next;
 		}
 		

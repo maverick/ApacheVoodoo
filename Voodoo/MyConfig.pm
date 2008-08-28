@@ -22,7 +22,9 @@ $CONFIG = {
   'UPDATES_PATH' => 'etc/updates',
   'CONF_PATH' => 'etc',
   'CONF_FILE' => 'etc/voodoo.conf',
-  'CODE_PATH' => 'code'
+  'CODE_PATH' => 'code',
+  'SOCKET_FILE' => '/tmp/apachevoodoo.sock',
+  'PID_FILE' => '/tmp/apachevoodoo.pid'
 };
 
 1;

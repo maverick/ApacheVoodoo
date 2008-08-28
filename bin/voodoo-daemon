@@ -1,0 +1,60 @@
+#!/usr/bin/perl -I /data/apache/lib/perl
+
+use strict;
+use warnings;
+
+use Proc::Daemon;
+use IO::Socket::UNIX;
+use IO::Socket::SIPC;
+
+use Apache::Voodoo::Constants;
+use File::Pid;
+
+use Data::Dumper;
+
+my $ac = Apache::Voodoo::Constants->new();
+
+my $pid = File::Pid->new({'file' => $ac->pid_file()});
+my $id = $pid->running;
+if ($id) {
+	print "Already Running ($id)\n";
+	exit;
+}
+
+# Daemon! I envoke thee!
+Proc::Daemon::Init;
+
+$pid->pid = $$;
+unless ($pid->write) {
+	die "Couldn't write pid: $!";
+}
+
+my $sf = $ac->socket_file();
+unlink ($sf);
+
+my $socket = IO::Socket::SIPC->new(
+	socket_handler => 'IO::Socket::UNIX'
+);
+
+$socket->connect(
+	Type => SOCK_STREAM,
+	Local => $sf,
+	Listen => 1
+);
+
+while (1) {
+	my $io = $socket->accept();
+	unless (fork) {
+		close STDIN;
+		close STDOUT;
+		print STDERR "forked $$\n";
+		my $data;
+		while ($data = $io->read()) {
+			print STDERR "$$", Dumper($data);
+		}
+		$io->disconnect;
+		print STDERR "exiting $$\n";
+		close STDERR;
+		exit 0;
+	}
+}
