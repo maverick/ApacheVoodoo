@@ -10,11 +10,12 @@ my %required_modules = (
 		Email::Valid         => 0.15,
 		File::Pid            => 1.01,
 		HTML::Template       => 2.7,
+		IO::Socket::SIPC     => 0.07,
 		IPC::SharedCache     => 1.3,
+		Proc::Daemon         => 0.03,
+		Proc::UID            => 0.05,
 		Time::HiRes          => 1.65,
 		XML::Checker::Parser => 0,
-		Proc::Daemon         => 0.03,
-		IO::Socket::SIPC     => 0.07,
 		# Apache::Admin::Config => 0.92
 );
 

@@ -11,9 +11,10 @@ use Apache2::RequestIO;
 use Apache2::SubRequest;
 use Apache2::RequestUtil;
 
-
 use Apache2::Request;
 use Apache2::Upload;
+
+use Time::HiRes;
 
 Apache2::Const->import(-compile => qw(OK REDIRECT DECLINED FORBIDDEN SERVER_ERROR M_GET));
 
@@ -49,6 +50,7 @@ sub uri            { shift()->{'r'}->uri(); }
 sub is_get     { return ($_[0]->{r}->method eq "GET"); }
 sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
 sub site_root  { return $_[0]->{r}->dir_config("SiteRoot") || "/"; }
+sub request_id { return Time::HiRes::time; }
 
 sub redirect {
 	my $self = shift;

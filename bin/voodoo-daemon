@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Proc::Daemon;
+use Proc::UID;
 use IO::Socket::UNIX;
 use IO::Socket::SIPC;
 
@@ -21,40 +22,46 @@ if ($id) {
 	exit;
 }
 
-# Daemon! I envoke thee!
-Proc::Daemon::Init;
+my $sf = $ac->socket_file();
+unlink ($sf);
 
-$pid->pid = $$;
+# Daemon! I envoke thee!
+#Proc::Daemon::Init;
+
+$pid->pid($$);
 unless ($pid->write) {
 	die "Couldn't write pid: $!";
 }
 
-my $sf = $ac->socket_file();
-unlink ($sf);
+Proc::UID::drop_gid_perm($ac->apache_gid);
+Proc::UID::drop_uid_perm($ac->apache_uid);
 
 my $socket = IO::Socket::SIPC->new(
 	socket_handler => 'IO::Socket::UNIX'
 );
 
 $socket->connect(
-	Type => SOCK_STREAM,
-	Local => $sf,
+	Type   => SOCK_STREAM,
+	Local  => $sf,
 	Listen => 1
 );
 
+chmod(0660,$sf);
+chown($ac->apache_uid,$ac->apache_gid,$sf);
+
 while (1) {
 	my $io = $socket->accept();
-	unless (fork) {
-		close STDIN;
-		close STDOUT;
-		print STDERR "forked $$\n";
+#	unless (fork) {
+#		close STDIN;
+#		close STDOUT;
+#		print STDERR "forked $$\n";
 		my $data;
 		while ($data = $io->read()) {
-			print STDERR "$$", Dumper($data);
+			print STDERR "==$$==\n", Dumper($data);
 		}
-		$io->disconnect;
-		print STDERR "exiting $$\n";
-		close STDERR;
-		exit 0;
-	}
+#		$io->disconnect;
+#		print STDERR "exiting $$\n";
+#		close STDERR;
+#		exit 0;
+#	}
 }

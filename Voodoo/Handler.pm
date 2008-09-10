@@ -52,7 +52,7 @@ my $self_init = Apache::Voodoo::Handler->new();
 # Debugging object.  I don't like using an 'our' variable, but it is just too much
 # of a pain to pass this thing around to everywhere it needs to go. So, I just tell
 # myself that this is STDERR on god's own steroids so I can sleep at night.
-our $debug = Apache::Voodoo::Debug->new();
+our $debug;
 
 sub new {
 	my $class = shift;
@@ -61,6 +61,8 @@ sub new {
 
 	$self->{'mp'}        = Apache::Voodoo::MP->new();
 	$self->{'constants'} = Apache::Voodoo::Constants->new();
+
+	$debug = Apache::Voodoo::Debug->new($self->{'constants'});
 
 	if (exists $ENV{'MOD_PERL'}) {
 		# let's us do a compile check outside of mod_perl
@@ -119,7 +121,7 @@ sub handle_request {
 	########################################
 	# We now know we have a valid file that we need to handle
 	########################################
-	$debug->reset();
+	$debug->init($id,$self->{mp}->request_id());
 	$debug->mark("Start");
 
 	# local copy of currently processing host, save a few reference lookups (and a bunch o' typing)
@@ -140,6 +142,7 @@ sub handle_request {
 	}
 
 	($app->{'template_dir'}) = ($run->{'filename'} =~ /^(.*)$run->{'uri'}$/);
+	$debug->uri($run->{'uri'});
 
    	# remove the beginning /
    	$run->{'uri'} =~ s/^\///o;
@@ -187,6 +190,7 @@ sub handle_request {
 	}
 
 	$debug->mark("parameter parsing");
+	$debug->params($run->{'input_params'});
 
 	####################
 	# history capture 
@@ -200,36 +204,20 @@ sub handle_request {
 	}
 
 	####################
-	# see if the user has switched debugging on or off 
-	# They can only do this if the server is already in debug mode, 
-	# it would be a security issue otherwise.
-	####################
-	my $debug_enabled = $app->{'debug'};
-	if ($debug_enabled) {
-		if (defined($run->{'input_params'}->{'DEBUG'})) {
-			$run->{'session'}->{'DEBUG'} = ($run->{'input_params'}->{'DEBUG'} =~ /^(on|1)$/i)?1:0;
-		}
-
-		if (defined($run->{'session'}->{'DEBUG'})) {
-			$debug_enabled = $run->{'session'}->{'DEBUG'};
-		}
-	}
-	$debug->enable($debug_enabled);
-
-	####################
 	# Get configuation for this template or section
 	####################
 	$run->{'template_conf'} = $self->resolve_conf_section($app,$run);
+
 	$debug->mark("config section resolution");
+	$debug->template_conf($run->{'template_conf'});
 
 	####################
 	# prepare main body contents
 	####################
 	my $return = $self->generate_html($app,$run);
 
+	$debug->session($run->{session});
 	$run->{session_handler}->disconnect();
-
-	$debug->reset();
 
 	return $return;
 }
@@ -498,12 +486,12 @@ sub generate_html {
 
 		$debug->mark("skeleton open");
 
-		# generate the debugging report
-		$template_params->{'_DEBUG_'} = $debug->report(
-			'params'  => $t_params,
-			'conf'    => $run->{'template_conf'},
-			'session' => $run->{'session'}
-		);
+#		# generate the debugging report
+#		$template_params->{'_DEBUG_'} = $debug->report(
+#			'params'  => $t_params,
+#			'conf'    => $run->{'template_conf'},
+#			'session' => $run->{'session'}
+#		);
 
 		# pack everything into the skeleton
 		$app->{'template_engine'}->params($template_params);

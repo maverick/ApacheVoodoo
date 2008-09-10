@@ -23,9 +23,10 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
 use strict;
 
 use Time::HiRes;
-use HTML::Template;
-use Data::Dumper;
+use IO::Socket::SIPC;
+use IO::Socket::UNIX;
 
+use Data::Dumper;
 $Data::Dumper::Terse = 1;
 $Data::Dumper::Sortkeys = 1;
 
@@ -33,67 +34,69 @@ sub new {
 	my $class = shift;
 
 	my $self = {};
+	$self->{ac} = shift;
 
 	bless($self,$class);
-
-	my $file = $INC{"Apache/Voodoo/Debug.pm"};
-
-	$file =~ s/Debug.pm/Template\/debug.tmpl/;
-
-	$self->{'template'} = HTML::Template->new(
-		'filename' => $file,
-		'die_on_bad_params' => 0,
-		'shared_cache' => 1
-	);
-
-	$self->reset();
 
 	return $self;
 }
 
-sub reset {
+sub init {
 	my $self = shift;
 
-	$self->{'enabled'} = 1;
+	$self->{id}->{app_id}     = shift;
+	$self->{id}->{request_id} = shift;
 
-	undef $self->{'debug'};
-	undef $self->{'timer'};
+#	if (shift) {
+        $self->{'enable'}->{'debug'}         = 1;
+        $self->{'enable'}->{'mark'}          = 1;
+        $self->{'enable'}->{'params'}        = 1;
+        $self->{'enable'}->{'template_conf'} = 1;
+        $self->{'enable'}->{'return_data'}   = 1;
+        $self->{'enable'}->{'headers'}       = 1;
+        $self->{'enable'}->{'session'}       = 1;
+#	}
 
-	$self->{'template'}->clear_params();
+	if (grep {$_} values %{$self->{enable}}) {
+		$self->{'socket'} = IO::Socket::SIPC->new(
+			socket_handler => 'IO::Socket::UNIX'
+		);
+
+		my $ok = $self->{'socket'}->connect(
+			Type => SOCK_STREAM,
+			Peer => $self->{ac}->socket_file()
+		);
+
+		# doesn't make any sense to log stuff without the uri too.
+		$self->{'enable'}->{'uri'} = 1;
+
+		unless ($ok){
+			warn "Failed to open socket.  Debug info will be lost. $!\n";
+			undef $self->{enable};
+		}
+	}
 }
 
-sub enable {
-	my $self = shift;
-        my $set  = shift;
-
-	$self->{'enabled'} = (defined $set)?$set:1;
-}
-
-sub disable {
+sub shutdown {
 	my $self = shift;
 
-	$self->{'enabled'} = 0;
-}
+	undef $self->{'enable'};
 
-sub mark {
-	my $self = shift;
-
-	return unless $self->{'enabled'};
-
-	push(@{$self->{'timer'}},[Time::HiRes::time,shift]);
+	if (ref($self->{'socket'})) {
+		$self->{'socket'}->disconnect();
+	}
 }
 
 sub debug {
 	my $self = shift;
 
-	return unless $self->{'enabled'};
+	return unless $self->{'enable'}->{'debug'};
 
 	# trace the execution stack.
 	# caller($i+1)[3] has the method that called
 	# caller($i)[2]   has the line number that method was called from
 	my $i=0;
-	my $header;
-	my $stack;
+	my @stack;
 	while (my $method = (caller($i+1))[3]) {
 		if ($method =~ /^Apache\:\:Voodoo/) {
 			$i++;
@@ -101,20 +104,79 @@ sub debug {
 		}
 
 		my $line = (caller($i++))[2];
-
-		$header ||= "$method $line";
-
-		$stack = "$method~$line~$stack" unless $line == 0;
+		push(@stack,[$method,$line]) unless $line == 0;
 	}
 
-	my $mesg;
-	foreach my $entry (@_) {
-		$mesg .= (ref($entry))? Dumper($entry) : "$entry\n";
-	}
+	$self->{'socket'}->send({
+		type  => 'debug',
+		id    => $self->{id},
+		stack => \@stack,
+		data  => Dumper(@_)
+	});
+}
 
-	push(@{$self->{'debug'}},[$stack,$mesg]);
+sub mark {
+	my $self = shift;
 
-	print STDERR "$header\n$mesg\n";
+	return unless $self->{'enable'}->{'mark'};
+
+	$self->{'socket'}->send({
+		type => 'mark',
+		id   => $self->{id},
+		timestamp => Time::HiRes::time,
+		data => shift
+	});
+}
+
+sub return_data {
+	my $self = shift;
+
+	return unless $self->{'enable'}->{'return_data'};
+
+	$self->{'socket'}->send({
+		type    => 'return_data',
+		id      => $self->{id},
+		handler => shift,
+		data    => shift
+	});
+}
+
+sub uri {
+	my $self = shift;
+	$self->_log('uri',@_);
+}
+
+sub params {
+	my $self = shift;
+	$self->_log('params',@_);
+}
+
+sub session {
+	my $self = shift;
+	$self->_log('session',Dumper(@_));
+}
+
+sub template_conf {
+	my $self = shift;
+	$self->_log('template_conf',@_);
+}
+
+sub headers {
+	my $self = shift;
+	$self->_log('headers',@_);
+}
+
+sub _log {
+	my $self = shift;
+	my $type = shift;
+	
+	return unless $self->{'enable'}->{$type};
+
+	$self->{'socket'}->send({
+		type => $type,
+		id   => $self->{id},
+		data => shift
+	});
 }
 
 sub report {
