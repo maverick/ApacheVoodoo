@@ -3,15 +3,16 @@
 use strict;
 use warnings;
 
+use DBI;
+use File::Pid;
 use Proc::Daemon;
 use Proc::UID;
 use IO::Socket::UNIX;
 use IO::Socket::SIPC;
 
-use Apache::Voodoo::Constants;
-use File::Pid;
-
 use Data::Dumper;
+
+use Apache::Voodoo::Constants;
 
 my $ac = Apache::Voodoo::Constants->new();
 
@@ -44,10 +45,21 @@ $socket->connect(
 	Type   => SOCK_STREAM,
 	Local  => $sf,
 	Listen => 1
-);
+) || die "Can't open socket: $!";
 
 chmod(0660,$sf);
 chown($ac->apache_uid,$ac->apache_gid,$sf);
+
+my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
+my @db = DBI->installed_drivers();
+print "Using $db[0] for storage\n";
+
+eval {
+	require "Apache::Voodoo::Debug::$db[0].pm";
+};
+if ($@) {
+	die "$db[0] is not supported: $!";
+}
 
 while (1) {
 	my $io = $socket->accept();

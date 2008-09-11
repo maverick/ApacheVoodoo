@@ -1,25 +1,17 @@
-=pod ###########################################################################
-Factory that creates the requested form ui driver type.
-=cut ###########################################################################
-package Apache::Voodoo::Data::UI;
+package Apache::Voodoo::Debug::common;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL: svn://localhost/Voodoo/core/Voodoo/Driver.pm $' =~ m!(\d+\.\d+)!)[0]||0);
 
 use strict;
 use warnings;
 
 sub new {
-	my $class  = shift;
-	my $config = shift;
+	my $class = shift;
+	my $self = {};
 
-	my $obj = "Apache::Voodoo::Data::UI::".$config->ui();
-	my $file = $obj;
+	bless $self,$class;
 
-	$file =~ s/::/\//g;
-	$file .= ".pm";
-
-	require $file;
-	return $obj->new($config);
+	return $self;
 }
 
 1;

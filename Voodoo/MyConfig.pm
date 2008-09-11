@@ -24,7 +24,8 @@ $CONFIG = {
   'CONF_FILE' => 'etc/voodoo.conf',
   'CODE_PATH' => 'code',
   'SOCKET_FILE' => '/tmp/apachevoodoo.sock',
-  'PID_FILE' => '/tmp/apachevoodoo.pid'
+  'PID_FILE' => '/tmp/apachevoodoo.pid',
+  'DEBUG_DBD' => ['dbi:SQLite:dbname=/tmp/apachevoodoo.db','','']
 };
 
 1;
