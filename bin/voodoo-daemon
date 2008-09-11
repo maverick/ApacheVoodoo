@@ -9,6 +9,7 @@ use Proc::Daemon;
 use Proc::UID;
 use IO::Socket::UNIX;
 use IO::Socket::SIPC;
+use POSIX ":sys_wait_h";
 
 use Data::Dumper;
 
@@ -44,7 +45,7 @@ my $socket = IO::Socket::SIPC->new(
 $socket->connect(
 	Type   => SOCK_STREAM,
 	Local  => $sf,
-	Listen => 1
+	Listen => 1,
 ) || die "Can't open socket: $!";
 
 chmod(0660,$sf);
@@ -54,26 +55,50 @@ my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
 my @db = DBI->installed_drivers();
 print "Using $db[0] for storage\n";
 
+my $db;
 eval {
-	require "Apache::Voodoo::Debug::$db[0].pm";
+	require "Apache/Voodoo/Debug/$db[0].pm";
+	my $class = 'Apache::Voodoo::Debug::'.$db[0];
+	$db = $class->new();
 };
 if ($@) {
 	die "$db[0] is not supported: $!";
 }
 
+print Dumper $db;
+
+$SIG{CHLD} = \&reaper;
+
 while (1) {
 	my $io = $socket->accept();
-#	unless (fork) {
-#		close STDIN;
-#		close STDOUT;
-#		print STDERR "forked $$\n";
-		my $data;
-		while ($data = $io->read()) {
-			print STDERR "==$$==\n", Dumper($data);
-		}
-#		$io->disconnect;
-#		print STDERR "exiting $$\n";
-#		close STDERR;
-#		exit 0;
-#	}
+
+	# for some strange reason sometimes accept returns a dud
+	next unless (defined($io));	
+
+	my $child = fork;
+	if ($child) {
+		next;
+	}
+
+	print STDERR "forked $$\n";
+	while (defined($io)) {
+		my $data = $io->read();
+
+		last unless defined($data);
+		print STDERR "==$$== $data->{'type'}\n"; 
+		$dbh->do("INSERT INTO test(pid,type) values(?,?)",undef,$$,$data->{'type'});
+		my $res = $dbh->selectall_arrayref("SELECT count(*) FROM test");
+		print Dumper $res;
+	}
+	print STDERR "exiting $$\n";
+	exit 0;
+}
+
+sub reaper {
+	my $zombie_pid;
+	while (($zombie_pid = waitpid(-1,WNOHANG)) > 0){
+    	print STDERR  "$$ reaped $zombie_pid" . ($? ? " with exit $?" : '')."\n";
+	}
+
+	$SIG{CHLD} = \&reaper;
 }
