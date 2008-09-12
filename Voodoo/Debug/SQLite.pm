@@ -39,7 +39,7 @@ sub init_db {
 	$self->debug($tables);
 	if (grep {$_ eq 'version'} @{$tables}) {
 		my $res = $dbh->selectall_arrayref("SELECT version FROM version") || $self->db_error();
-		if (0 && $res->[0]->[0] eq $self->{version}) {
+		if ($res->[0]->[0] eq $self->{version}) {
 			return;
 		}
 	}
