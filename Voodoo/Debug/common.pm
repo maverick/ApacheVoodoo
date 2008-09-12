@@ -85,6 +85,40 @@ sub handle_request {
 		$data->{id}->{app_id}) || $self->db_error();
 }
 
+sub handle_url {
+	my $self = shift;
+	my $data = shift;
+
+	$self->{dbh}->do("
+		UPDATE request
+		SET	
+			url = ?
+		WHERE
+			request_timestamp = ? AND
+			application       = ?
+		",undef,
+		$data->{data},
+		$data->{id}->{request_id},
+		$data->{id}->{app_id}) || $self->db_error();
+}
+
+sub handle_session_id {
+	my $self = shift;
+	my $data = shift;
+
+	$self->{dbh}->do("
+		UPDATE request
+		SET	
+			session_id = ?
+		WHERE
+			request_timestamp = ? AND
+			application       = ?
+		",undef,
+		$data->{data},
+		$data->{id}->{request_id},
+		$data->{id}->{app_id}) || $self->db_error();
+}
+
 sub _create_profile {
 	my $self = shift;
 
@@ -186,7 +220,7 @@ sub _create_params {
 
 	$self->{dbh}->do("CREATE TABLE params (
 		request_id integer not null,
-		data varchar(255) not null
+		data text not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX params_request_id ON params(request_id)") || $self->db_error();
@@ -222,7 +256,7 @@ sub _create_session {
 
 	$self->{dbh}->do("CREATE TABLE session (
 		request_id integer not null,
-		data varchar(255) not null
+		data text not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX session_request_id ON session(request_id)") || $self->db_error();
@@ -256,13 +290,13 @@ sub _create_template_conf {
 
 	$self->{dbh}->do("CREATE TABLE template_conf (
 		request_id integer not null,
-		data varchar(255) not null
+		data text not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX tc_request_id ON template_conf(request_id)") || $self->db_error();
 }
 
-sub handle_session {
+sub handle_template_conf {
 	my $self = shift;
 	my $data = shift;
 

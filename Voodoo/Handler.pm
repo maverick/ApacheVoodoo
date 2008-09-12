@@ -142,7 +142,7 @@ sub handle_request {
 	}
 
 	($app->{'template_dir'}) = ($run->{'filename'} =~ /^(.*)$run->{'uri'}$/);
-	$debug->uri($run->{'uri'});
+	$debug->url($run->{'uri'});
 
    	# remove the beginning /
    	$run->{'uri'} =~ s/^\///o;
@@ -171,6 +171,7 @@ sub handle_request {
 	$run->{session} = $run->{session_handler}->session;
 
 	$debug->mark("session attachment");
+	$debug->session_id($run->{session}->{_session_id});
 
 	if ($run->{'uri'} eq "logout") {
 		# handle logout

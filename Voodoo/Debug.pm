@@ -150,7 +150,7 @@ sub return_data {
 # we always send this since is fundamental to identifying the request chain
 # regardless of what other info we log
 sub session_id { my $self = shift; $self->_always_log('session_id',@_); }
-sub uri        { my $self = shift; $self->_always_log('uri',       @_); }
+sub url        { my $self = shift; $self->_always_log('url',       @_); }
 
 # these all behave the same way.
 sub params        { my $self = shift; $self->_log('params',        @_);  }
