@@ -122,7 +122,7 @@ sub handle_request {
 	# We now know we have a valid file that we need to handle
 	########################################
 	$debug->init($id,$self->{mp}->request_id());
-	$debug->mark("Start");
+	$debug->mark("START");
 
 	# local copy of currently processing host, save a few reference lookups (and a bunch o' typing)
 	my $app = $self->{'apps'}->{$id};
@@ -219,6 +219,8 @@ sub handle_request {
 	$debug->session($run->{session});
 	$run->{session_handler}->disconnect();
 
+	$debug->mark('END');
+	$debug->shutdown();
 	return $return;
 }
 

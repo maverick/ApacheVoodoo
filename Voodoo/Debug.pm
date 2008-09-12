@@ -70,7 +70,13 @@ sub init {
 		# doesn't make any sense to log stuff without the uri too.
 		$self->{'enable'}->{'uri'} = 1;
 
-		unless ($ok){
+		if ($ok) {
+			$self->{'socket'}->send({
+				type => 'request',
+				id   => $self->{'id'}
+			});
+		}
+		else {
 			warn "Failed to open socket.  Debug info will be lost. $!\n";
 			undef $self->{enable};
 		}
@@ -121,10 +127,10 @@ sub mark {
 	return unless $self->{'enable'}->{'mark'};
 
 	$self->{'socket'}->send({
-		type => 'mark',
-		id   => $self->{id},
+		type      => 'mark',
+		id        => $self->{id},
 		timestamp => Time::HiRes::time,
-		data => shift
+		data      => shift
 	});
 }
 
@@ -137,34 +143,20 @@ sub return_data {
 		type    => 'return_data',
 		id      => $self->{id},
 		handler => shift,
-		data    => shift
+		data    => Dumper(shift)
 	});
 }
 
-sub uri {
-	my $self = shift;
-	$self->_log('uri',@_);
-}
+# we always send this since is fundamental to identifying the request chain
+# regardless of what other info we log
+sub session_id { my $self = shift; $self->_always_log('session_id',@_); }
+sub uri        { my $self = shift; $self->_always_log('uri',       @_); }
 
-sub params {
-	my $self = shift;
-	$self->_log('params',@_);
-}
-
-sub session {
-	my $self = shift;
-	$self->_log('session',Dumper(@_));
-}
-
-sub template_conf {
-	my $self = shift;
-	$self->_log('template_conf',@_);
-}
-
-sub headers {
-	my $self = shift;
-	$self->_log('headers',@_);
-}
+# these all behave the same way.
+sub params        { my $self = shift; $self->_log('params',        @_);  }
+sub template_conf { my $self = shift; $self->_log('template_conf', @_);  }
+sub headers       { my $self = shift; $self->_log('headers',       @_);  }
+sub session       { my $self = shift; $self->_log('session',Dumper(@_)); }
 
 sub _log {
 	my $self = shift;
@@ -172,6 +164,17 @@ sub _log {
 	
 	return unless $self->{'enable'}->{$type};
 
+	$self->{'socket'}->send({
+		type => $type,
+		id   => $self->{id},
+		data => shift
+	});
+}
+
+sub _always_log {
+	my $self = shift;
+	my $type = shift;
+	
 	$self->{'socket'}->send({
 		type => $type,
 		id   => $self->{id},

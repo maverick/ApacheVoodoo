@@ -599,6 +599,14 @@ sub list {
 	my $dbh    = $p->{'dbh'};
 	my $params = $p->{'params'};
 
+	$params->{'sort'}      =~ s/[^\w-]//g;
+	$params->{'last_sort'} =~ s/[^\w-]//g;
+
+	$params->{'count'}   =~ s/\D//g;
+	$params->{'page'}    =~ s/\D//g;
+	$params->{'desc'}    =~ s/\D//g;
+	$params->{'showall'} =~ s/\D//g;
+
 	my $pattern = $params->{'pattern'};
 	my $limit   = $params->{'limit'};
 
@@ -693,12 +701,21 @@ sub list {
 		if(defined($additional_constraint->{'additional_constraint'})) {
 			$select_stmt .= " WHERE ".$additional_constraint->{'additional_constraint'};
 		}
+
+		# these aren't valid, fry em
+		$pattern = undef;
+		$limit   = undef;
+
 	} elsif (length($additional_constraint)) {
 		$select_stmt .= " WHERE $additional_constraint";
+
+		# these aren't valid, fry em
+		$pattern = undef;
+		$limit   = undef;
 	}
 
 	my $n_desc = $desc;
-	if (defined($self->{'list_sort'}->{$sort})) {
+	if (defined($self->{'list_sort'}->{$sort}) && defined($self->{'list_sort'}->{$last_sort})) {
 		my $q = $self->{'list_sort'}->{$sort};
 
 		# if we're sorting on the same key as before, then we have the chance to go descending
@@ -719,6 +736,11 @@ sub list {
 
 		$select_stmt .= " ORDER BY $q";
 	}
+	else {
+		# bogus, fry it.
+		$sort      = undef;
+		$last_sort = undef;
+	}
 
 	$select_stmt .= " LIMIT $count OFFSET ". $count * ($page -1) unless $showall;
 
@@ -726,11 +748,15 @@ sub list {
 
 	my %return;
 
-	$return{'SORT_PARAMS'} = $self->mkurlparams({'limit' => $limit,
-	                                      'pattern' => $pattern,
-	                                      'showall' => $showall,
-	                                      'desc' => $n_desc,
-	                                      'last_sort' => $sort});
+	$return{'SORT_PARAMS'} = $self->mkurlparams(
+		{
+			'limit'     => $limit,
+			'pattern'   => $pattern,
+			'showall'   => $showall,
+			'desc'      => $n_desc,
+			'last_sort' => $sort
+		}
+	);
 
 	$return{'LIMIT'}   = $self->prep_select($self->{'list_search_items'},$limit);
 	$return{'PATTERN'} = $pattern;

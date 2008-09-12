@@ -9,7 +9,7 @@
 # $Id$
 #
 ####################################################################################
-package Apache::Voodoo::Storage::Config;
+package Apache::Voodoo::Config;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
 
@@ -130,7 +130,7 @@ sub set_configuration {
 			next;
 		}
 
-		push(@{$self->{'columns'}},$name);
+		push(@{$self->{'columns'}},$conf);
 
 		my %my_conf;
 		$my_conf{'name'} = $name;

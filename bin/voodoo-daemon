@@ -27,9 +27,6 @@ if ($id) {
 my $sf = $ac->socket_file();
 unlink ($sf);
 
-# Daemon! I envoke thee!
-#Proc::Daemon::Init;
-
 $pid->pid($$);
 unless ($pid->write) {
 	die "Couldn't write pid: $!";
@@ -62,10 +59,15 @@ eval {
 	$db = $class->new();
 };
 if ($@) {
-	die "$db[0] is not supported: $!";
+	die "$db[0] is not supported: $@";
 }
 
-print Dumper $db;
+$db->init_db($dbh);
+
+if ($ARGV[0] eq 'daemon') {
+	# Daemon! I envoke thee!
+	Proc::Daemon::Init;
+}
 
 $SIG{CHLD} = \&reaper;
 
@@ -86,9 +88,14 @@ while (1) {
 
 		last unless defined($data);
 		print STDERR "==$$== $data->{'type'}\n"; 
-		$dbh->do("INSERT INTO test(pid,type) values(?,?)",undef,$$,$data->{'type'});
-		my $res = $dbh->selectall_arrayref("SELECT count(*) FROM test");
-		print Dumper $res;
+
+		my $handler = 'handle_'.$data->{'type'};
+		if ($db->can($handler)) {
+			$db->$handler($data);
+		}
+		else {
+			print STDERR "==$$== message type ($data->{'type'}) isn't supported\n";
+		}
 	}
 	print STDERR "exiting $$\n";
 	exit 0;

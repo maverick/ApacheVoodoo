@@ -1,7 +1,7 @@
 =pod ###########################################################################
 Factory that creates the requested form ui driver type.
 =cut ###########################################################################
-package Apache::Voodoo::Data::UI;
+package Apache::Voodoo::UI;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
 
@@ -12,7 +12,7 @@ sub new {
 	my $class  = shift;
 	my $config = shift;
 
-	my $obj = "Apache::Voodoo::Data::UI::".$config->ui();
+	my $obj = "Apache::Voodoo::UI::".$config->ui();
 	my $file = $obj;
 
 	$file =~ s/::/\//g;

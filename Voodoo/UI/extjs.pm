@@ -1,4 +1,4 @@
-package Apache::Voodoo::Data::UI::extjs;
+package Apache::Voodoo::UI::extjs;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
 
@@ -38,6 +38,9 @@ sub set_config {
 	$self->{config} = shift;
 }
 
+sub json_true  { return $JSON::true;  }
+sub json_false { return $JSON::false; }
+
 sub handle {
 	my $self = shift;
 	my $p    = shift;
@@ -73,7 +76,7 @@ sub handle {
 	});
 
 	foreach my $c (@columns) {
-		next if ($c->{id} eq $self->{config}->{primary_key});
+		#next if ($c->{id} eq $self->{config}->{pkey});
 
 		unless (defined($c->{label})) {
 			$c->{label} = $self->_label_gen($c->{id});
