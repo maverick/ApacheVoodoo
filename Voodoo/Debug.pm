@@ -57,30 +57,38 @@ sub init {
         $self->{'enable'}->{'session'}       = 1;
 #	}
 
-	if (grep {$_} values %{$self->{enable}}) {
-		$self->{'socket'} = IO::Socket::SIPC->new(
-			socket_handler => 'IO::Socket::UNIX'
-		);
+	unless (grep {$_} values %{$self->{enable}}) {
+		# no debugging options are turned on
+		return;
+	}
 
-		my $ok = $self->{'socket'}->connect(
+	$self->{'socket'} = IO::Socket::SIPC->new(
+		socket_handler => 'IO::Socket::UNIX'
+	);
+
+	my $ok;
+	eval {
+		$ok = $self->{'socket'}->connect(
 			Type => SOCK_STREAM,
 			Peer => $self->{ac}->socket_file()
 		);
+	};
 
-		# doesn't make any sense to log stuff without the uri too.
-		$self->{'enable'}->{'uri'} = 1;
-
-		if ($ok) {
-			$self->{'socket'}->send({
-				type => 'request',
-				id   => $self->{'id'}
-			});
-		}
-		else {
-			warn "Failed to open socket.  Debug info will be lost. $!\n";
-			undef $self->{enable};
-		}
+	if ($@ || !$ok) {
+		print STDERR "Failed to open socket.  Debug info will be lost. $!\n";
+		delete $self->{enable};
+		return;
 	}
+
+	# we always send this since is fundamental to identifying the request chain
+	# regardless of what other info we log
+	$self->{'enable'}->{'uri'}        = 1;
+	$self->{'enable'}->{'session_id'} = 1;
+
+	$self->{'socket'}->send({
+		type => 'request',
+		id   => $self->{'id'}
+	});
 }
 
 sub shutdown {
@@ -147,12 +155,10 @@ sub return_data {
 	});
 }
 
-# we always send this since is fundamental to identifying the request chain
-# regardless of what other info we log
-sub session_id { my $self = shift; $self->_always_log('session_id',@_); }
-sub url        { my $self = shift; $self->_always_log('url',       @_); }
 
 # these all behave the same way.
+sub session_id    { my $self = shift; $self->_log('session_id',    @_);  }
+sub url           { my $self = shift; $self->_log('url',           @_);  }
 sub params        { my $self = shift; $self->_log('params',        @_);  }
 sub template_conf { my $self = shift; $self->_log('template_conf', @_);  }
 sub headers       { my $self = shift; $self->_log('headers',       @_);  }
@@ -164,17 +170,6 @@ sub _log {
 	
 	return unless $self->{'enable'}->{$type};
 
-	$self->{'socket'}->send({
-		type => $type,
-		id   => $self->{id},
-		data => shift
-	});
-}
-
-sub _always_log {
-	my $self = shift;
-	my $type = shift;
-	
 	$self->{'socket'}->send({
 		type => $type,
 		id   => $self->{id},
