@@ -121,8 +121,6 @@ sub handle_request {
 	########################################
 	# We now know we have a valid file that we need to handle
 	########################################
-	$debug->init($id,$self->{mp}->request_id());
-	$debug->mark("START");
 
 	# local copy of currently processing host, save a few reference lookups (and a bunch o' typing)
 	my $app = $self->{'apps'}->{$id};
@@ -131,9 +129,14 @@ sub handle_request {
 		$app->refresh;
 	}
 
+	# Get ready to start tracing what's going on
+	$debug->init($id,$self->{mp}->request_id(),$app->{debug});
+
 	if ($app->{"DEAD"}) {
 		return $self->{mp}->server_error;
 	}
+
+	$debug->mark("START");
 
 	$app->{'site_root'} = $self->{mp}->site_root;
 	if ($app->{'site_root'} ne "/") {

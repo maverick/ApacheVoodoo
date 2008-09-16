@@ -38,6 +38,8 @@ sub new {
 
 	bless($self,$class);
 
+	$self->{flags} = [ qw(debug profile params template_conf return_data headers session) ];
+
 	return $self;
 }
 
@@ -47,20 +49,24 @@ sub init {
 	$self->{id}->{app_id}     = shift;
 	$self->{id}->{request_id} = shift;
 
-#	if (shift) {
-        $self->{'enable'}->{'debug'}         = 1;
-        $self->{'enable'}->{'mark'}          = 1;
-        $self->{'enable'}->{'params'}        = 1;
-        $self->{'enable'}->{'template_conf'} = 1;
-        $self->{'enable'}->{'return_data'}   = 1;
-        $self->{'enable'}->{'headers'}       = 1;
-        $self->{'enable'}->{'session'}       = 1;
-#	}
-
-	unless (grep {$_} values %{$self->{enable}}) {
-		# no debugging options are turned on
-		return;
+	my $on = 0;
+	my $debug = shift;
+	if ($debug == 1 || (ref($debug) eq "HASH" && $debug->{all})) {
+		foreach (@{$self->{flags}}) {
+			$self->{enable}->{$_} = 1;
+		}
+		$on = 1;
 	}
+	elsif (ref($debug) eq "HASH") {
+		foreach (@{$self->{flags}}) {
+			if ($debug->{$_}) {
+				$self->{enable}->{$_} = 1;
+				$on = 1;
+			}
+		}
+	}
+
+	return unless $on;
 
 	$self->{'socket'} = IO::Socket::SIPC->new(
 		socket_handler => 'IO::Socket::UNIX'
@@ -82,7 +88,7 @@ sub init {
 
 	# we always send this since is fundamental to identifying the request chain
 	# regardless of what other info we log
-	$self->{'enable'}->{'uri'}        = 1;
+	$self->{'enable'}->{'url'}        = 1;
 	$self->{'enable'}->{'session_id'} = 1;
 
 	$self->{'socket'}->send({
@@ -132,10 +138,10 @@ sub debug {
 sub mark {
 	my $self = shift;
 
-	return unless $self->{'enable'}->{'mark'};
+	return unless $self->{'enable'}->{'profile'};
 
 	$self->{'socket'}->send({
-		type      => 'mark',
+		type      => 'profile',
 		id        => $self->{id},
 		timestamp => Time::HiRes::time,
 		data      => shift

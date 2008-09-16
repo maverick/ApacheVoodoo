@@ -132,7 +132,7 @@ sub _create_profile {
 	$self->{dbh}->do("CREATE INDEX profile_timestamp  ON profile(timestamp)")  || $self->db_error();
 }
 
-sub handle_mark {
+sub handle_profile {
 	my $self = shift;
 	my $data = shift;
 
