@@ -59,6 +59,7 @@ sub updates_path { return $_[0]->{UPDATES_PATH}; }
 sub socket_file  { return $_[0]->{SOCKET_FILE};  }
 sub pid_file     { return $_[0]->{PID_FILE};     }
 sub debug_dbd    { return $_[0]->{DEBUG_DBD};    }
+sub debug_path   { return $_[0]->{DEBUG_PATH};   }
 
 1;
 

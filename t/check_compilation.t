@@ -1,8 +1,9 @@
-use Test::More tests => 20;
+use Test::More tests => 21;
 
 use_ok('Apache::Voodoo');
 use_ok('Apache::Voodoo::Constants');
 use_ok('Apache::Voodoo::Debug');
+use_ok('Apache::Voodoo::Debug::Handler');
 use_ok('Apache::Voodoo::DisplayError');
 use_ok('Apache::Voodoo::Install');
 use_ok('Apache::Voodoo::Install::Config');
