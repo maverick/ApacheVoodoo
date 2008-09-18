@@ -49,24 +49,24 @@ sub init {
 	$self->{id}->{app_id}     = shift;
 	$self->{id}->{request_id} = shift;
 
-	my $on = 0;
+	$self->{enabled} = 0;
 	my $debug = shift;
 	if ($debug == 1 || (ref($debug) eq "HASH" && $debug->{all})) {
 		foreach (@{$self->{flags}}) {
 			$self->{enable}->{$_} = 1;
 		}
-		$on = 1;
+		$self->{enabled} = 1;
 	}
 	elsif (ref($debug) eq "HASH") {
 		foreach (@{$self->{flags}}) {
 			if ($debug->{$_}) {
 				$self->{enable}->{$_} = 1;
-				$on = 1;
+				$self->{enabled} = 1;
 			}
 		}
 	}
 
-	return unless $on;
+	return unless $self->{enabled};
 
 	$self->{'socket'} = IO::Socket::SIPC->new(
 		socket_handler => 'IO::Socket::UNIX'
@@ -83,6 +83,7 @@ sub init {
 	if ($@ || !$ok) {
 		print STDERR "Failed to open socket.  Debug info will be lost. $!\n";
 		delete $self->{enable};
+		$self->{enabled} = 0;
 		return;
 	}
 
@@ -95,6 +96,10 @@ sub init {
 		type => 'request',
 		id   => $self->{'id'}
 	});
+}
+
+sub enabled {
+	return $_[0]->{enabled};
 }
 
 sub shutdown {
@@ -157,6 +162,7 @@ sub return_data {
 		type    => 'return_data',
 		id      => $self->{id},
 		handler => shift,
+		method  => shift,
 		data    => Dumper(shift)
 	});
 }

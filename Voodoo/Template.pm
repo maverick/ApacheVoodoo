@@ -55,6 +55,16 @@ sub template {
 	);
 }
 
+sub template_abs {
+	my $self     = shift;
+	my $template = shift;
+
+	$self->{template} = HTML::Template->new(
+		'filename' => $template,
+		%{$self->{'template_opts'}}
+	);
+}
+
 sub params {
 	my $self = shift;
 

@@ -62,6 +62,10 @@ sub new {
 	$self->{'mp'}        = Apache::Voodoo::MP->new();
 	$self->{'constants'} = Apache::Voodoo::Constants->new();
 
+	$self->{debug_root} = $self->{constants}->debug_path();
+	$self->{debug_template} = $INC{"Apache/Voodoo/Handler.pm"};
+	$self->{debug_template} =~ s/Handler.pm$/Debug\/html\/debug.tmpl/;
+
 	$debug = Apache::Voodoo::Debug->new($self->{'constants'});
 
 	if (exists $ENV{'MOD_PERL'}) {
@@ -130,7 +134,9 @@ sub handle_request {
 	}
 
 	# Get ready to start tracing what's going on
-	$debug->init($id,$self->{mp}->request_id(),$app->{debug});
+	$run->{'app_id'}     = $id;
+	$run->{'request_id'} = $self->{mp}->request_id();
+	$debug->init($id,$run->{request_id},$app->{debug});
 
 	if ($app->{"DEAD"}) {
 		return $self->{mp}->server_error;
@@ -319,7 +325,6 @@ sub resolve_conf_section {
 
 sub generate_html {
 	my $self = shift;
-#	my $r    = shift;
 	my $app  = shift;
 	my $run  = shift;
 
@@ -368,6 +373,7 @@ sub generate_html {
 			}
 
 			$debug->mark("handler for ".$handle->[0]." ".$handle->[1]);
+			$debug->return_data($handle->[0],$handle->[1],$return);
 
 			if (ref($return) eq "ARRAY") {
 				if    ($return->[0] eq "REDIRECTED") {
@@ -484,20 +490,27 @@ sub generate_html {
 
 		# generate the main body contents
 		$template_params->{'_MAIN_BODY_'} = $app->{'template_engine'}->output();
-		
 		$debug->mark("main body content");
+
+		if ($debug->enabled()) {
+			$app->{'template_engine'}->template_abs($self->{'debug_template'});
+			$debug->mark("debug template open");
+
+			# pack up the params
+			$app->{'template_engine'}->params({
+				app_id     => $run->{app_id},
+				request_id => $run->{request_id},
+				session_id => $run->{session}->{_session_id},
+				debug_root => $self->{debug_root}
+			});
+
+			# generate the main body contents
+			$template_params->{'_DEBUG_'} = $app->{'template_engine'}->output();
+		}
 
 		# load the skeleton template
 		$app->{'template_engine'}->template($skeleton_file);
-
 		$debug->mark("skeleton open");
-
-#		# generate the debugging report
-#		$template_params->{'_DEBUG_'} = $debug->report(
-#			'params'  => $t_params,
-#			'conf'    => $run->{'template_conf'},
-#			'session' => $run->{'session'}
-#		);
 
 		# pack everything into the skeleton
 		$app->{'template_engine'}->params($template_params);

@@ -58,10 +58,9 @@ sub new {
 	$self->{template_dir} = $INC{"Apache/Voodoo/Debug/Handler.pm"};
 	$self->{template_dir} =~ s/Handler.pm$/html/;
 
-    $self->{template_engine} = Apache::Voodoo::Template->new({
-        template_dir => $self->{template_dir}
-    });
+    $self->{template_engine} = Apache::Voodoo::Template->new({template_dir => $self->{template_dir}});
 
+=pod
 	my $cf_name      = $self->{constants}->conf_file();
 	my $install_path = $self->{constants}->install_path();
 
@@ -81,17 +80,39 @@ sub new {
 		$self->{'apps'}->{$id} = {};
 	}
 	closedir(DIR);
+=cut
 
-	$self->{handlers} = {
-		'index' => sub { return { key => "handler for index" } }
-	};
-
-	$self->{static_files} = { 
-		"ajax.js"  => "application/x-javascript",
-		"style.js" => "text/css"
-	};
+	$self->setup_static_files();
+	$self->setup_handlers();
 
 	return $self;
+}
+
+sub setup_handlers {
+	my $self = shift;
+
+	delete $INC{'Apache::Voodoo::Debug::index'};
+	use Apache::Voodoo::Debug::index;
+
+	delete $INC{'Apache::Voodoo::Debug::request'};
+	use Apache::Voodoo::Debug::request;
+
+	my $index = new Apache::Voodoo::Debug::index;
+	my $req   = new Apache::Voodoo::Debug::request;
+
+	$self->{handlers} = {
+		'index'        => [$index,'handle'],
+		'list_request' => [$req,'list']
+	};
+}
+
+sub setup_static_files {
+	my $self = shift;
+
+	$self->{static_files} = { 
+		"ajax.js"   => "application/x-javascript",
+		"style.css" => "text/css"
+	};
 }
 
 sub handle_request {
@@ -101,6 +122,8 @@ sub handle_request {
 	unless (ref($self)) {
 		$self = $self_init;
 	};
+
+	$self->setup_handlers;
 
 	$self->{mp}->set_request($r);
 
@@ -153,9 +176,11 @@ sub generate_content {
 
 	my $return;
 	eval {
-		$return = $self->{handlers}->{$run->{uri}}->(
+		my ($obj,$method) = @{$self->{handlers}->{$run->{uri}}};
+
+		$return = $obj->$method(
 			{
-				"dbh"    => $self->{'dbh'},
+				"dbh"    => $run->{'dbh'},
 				"params" => $run->{'input_params'},
 				"mp"     => $self->{mp},
 			}
