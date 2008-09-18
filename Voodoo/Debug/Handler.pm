@@ -87,7 +87,8 @@ sub new {
 	};
 
 	$self->{static_files} = { 
-		"ajax.js" => "application/x-javascript"
+		"ajax.js"  => "application/x-javascript",
+		"style.js" => "text/css"
 	};
 
 	return $self;
@@ -224,8 +225,6 @@ sub generate_content {
 		return $self->display_host_error("Module: $self->{uri} didn't return a hash ref");
 	}
 
-	my $skeleton_file = $run->{'template_conf'}->{'skeleton'} || 'skeleton';
-
 	eval {
 		# load the template
 		$self->{'template_engine'}->template($run->{'uri'});
@@ -239,7 +238,7 @@ sub generate_content {
 		$return->{'_MAIN_BODY_'} = $self->{'template_engine'}->output();
 		
 		# load the skeleton template
-		$self->{'template_engine'}->template($skeleton_file);
+		$self->{'template_engine'}->template("skeleton");
 
 		# pack everything into the skeleton
 		$self->{'template_engine'}->params($return);
