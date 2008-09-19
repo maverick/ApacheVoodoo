@@ -18,6 +18,25 @@
     See http://www.JSON.org/js.html
 */
 
+var __YourBrowserIsBroken__=(navigator.userAgent.toLowerCase().indexOf("msie")!=-1);
+function vd_toggle (obj, topLevel) {
+	obj.parentNode.className = (obj.parentNode.className == "vdOpen") ? 'vdClosed' : 'vdOpen';
+	if (__YourBrowserIsBroken__) {
+		var selectState;
+		if (topLevel == 1) {
+			selectState = (obj.parentNode.className == "vdOpen") ? 'hidden': 'visible';
+		}
+		else {
+			selectState = 'hidden';
+		}
+		var selects = document.getElementsByTagName("SELECT");
+		for (var i = 0; i < selects.length; i++) {
+			selects[i].style.visibility = selectState;
+		}
+	}
+	return false;
+}
+
 function AjaxObject101(){this.createRequestObject=function(){try {var ro=new XMLHttpRequest();}catch(e){var ro=new ActiveXObject("Microsoft.XMLHTTP");}return ro;};this.sndReq=function(action,url,data){if(action.toUpperCase()=="POST"){this.http.open(action,url,true);this.http.setRequestHeader('Content-Type','application/x-www-form-urlencoded');this.http.onreadystatechange=this.handleResponse;this.http.send(data);}else{this.http.open(action,url+'?'+data,true);this.http.onreadystatechange=this.handleResponse;this.http.send(null);}};this.handleResponse=function(){if(me.http.readyState==4){if(typeof me.funcDone=='function'){me.funcDone();}var rawdata=me.http.responseText;
 
 	console.log(me.parse(rawdata));

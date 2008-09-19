@@ -23,6 +23,7 @@ sub create_schema {
 	$self->_create_session();
 	$self->_create_template_conf();
 	$self->_create_headers();
+	$self->_create_return_data();
 
 #	$self->_create_version();
 }
@@ -39,9 +40,9 @@ sub _create_request {
 	$self->{dbh}->do("CREATE TABLE request (
 		id ".$self->_pkey_syntax.",
 		request_timestamp varchar(64) not null,
-		application varchar(64) not null,
-		session_id varchar(64),
-		url varchar(255)
+		application       varchar(64) not null,
+		session_id        varchar(64),
+		url               varchar(255)
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX request_request_timestamp ON request(request_timestamp)") || $self->db_error();
@@ -123,9 +124,9 @@ sub _create_profile {
 	my $self = shift;
 
 	$self->{dbh}->do("CREATE TABLE profile (
-		request_id integer not null,
-		timestamp varchar(64) not null,
-		data varchar(255) not null
+		request_id integer      not null,
+		timestamp  varchar(64)  not null,
+		data       varchar(255) not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX profile_request_id ON profile(request_id)") || $self->db_error();
@@ -162,10 +163,10 @@ sub _create_debug {
 	my $self = shift;
 
 	$self->{dbh}->do("CREATE TABLE debug (
-		request_id integer not null,
-		seq integer unsigned not null,
-		stack text not null,
-		data  text not null
+		request_id integer         not null,
+		seq        integer unsigned not null,
+		stack      text             not null,
+		data       text             not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX debug_request_id ON debug(request_id)") || $self->db_error();
@@ -220,7 +221,7 @@ sub _create_params {
 
 	$self->{dbh}->do("CREATE TABLE params (
 		request_id integer not null,
-		data text not null
+		data       text    not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX params_request_id ON params(request_id)") || $self->db_error();
@@ -256,7 +257,7 @@ sub _create_session {
 
 	$self->{dbh}->do("CREATE TABLE session (
 		request_id integer not null,
-		data text not null
+		data       text    not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX session_request_id ON session(request_id)") || $self->db_error();
@@ -290,7 +291,7 @@ sub _create_template_conf {
 
 	$self->{dbh}->do("CREATE TABLE template_conf (
 		request_id integer not null,
-		data text not null
+		data       text    not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX tc_request_id ON template_conf(request_id)") || $self->db_error();
@@ -324,7 +325,7 @@ sub _create_headers {
 
 	$self->{dbh}->do("CREATE TABLE headers (
 		request_id integer not null,
-		data varchar(255) not null
+		data       text    not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX headers_request_id ON headers(request_id)") || $self->db_error();
@@ -350,6 +351,62 @@ sub handle_headers {
 			?
 		)",undef,
 		$request_id,
+		$data->{data}) || $self->db_error();
+}
+
+sub _create_return_data {
+	my $self = shift;
+
+	$self->{dbh}->do("CREATE TABLE return_data (
+		request_id integer      not null,
+		seq        integer      not null,
+		handler    varchar(128) not null,
+		method     varchar(64)  not null,
+		data       text         not null
+	)") || $self->db_error();
+
+	$self->{dbh}->do("CREATE INDEX return_request_id ON return_data(request_id)") || $self->db_error();
+	$self->{dbh}->do("CREATE INDEX return_seq        ON return_data(seq)")  || $self->db_error();
+}
+
+sub handle_return_data {
+	my $self = shift;
+	my $data = shift;
+
+	my $request_id = $self->_get_request_id($data->{id});
+	unless ($request_id) {
+		warn "no such request\n";
+		return;
+	}
+
+	my $res = $self->{dbh}->selectcol_arrayref("
+		SELECT
+			MAX(seq)
+		FROM
+			return_data
+		WHERE request_id = ?",undef,$request_id) || $self->db_error();
+
+	my $seq = (($res->[0])?$res->[0]:0) + 1;
+
+	$self->{dbh}->do("
+		INSERT INTO return_data (
+			request_id,
+			seq,
+			handler,
+			method,
+			data
+		)
+		VALUES (
+			?,
+			?,
+			?,
+			?,
+			?
+		)",undef,
+		$request_id,
+		$seq,
+		$data->{handler},
+		$data->{method},
 		$data->{data}) || $self->db_error();
 }
 
