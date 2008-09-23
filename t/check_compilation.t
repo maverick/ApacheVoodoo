@@ -1,24 +1,48 @@
-use Test::More tests => 21;
+BEGIN {
+	@list = qw(
+	Apache::Voodoo
+	Apache::Voodoo::Application
+	Apache::Voodoo::Config
+	Apache::Voodoo::Constants
+	Apache::Voodoo::Debug
+	Apache::Voodoo::Debug::SQLite
+	Apache::Voodoo::Debug::common
+	Apache::Voodoo::Debug::index
+	Apache::Voodoo::Debug::request
+	Apache::Voodoo::DisplayError
+	Apache::Voodoo::Driver
+	Apache::Voodoo::Install
+	Apache::Voodoo::Install::Config
+	Apache::Voodoo::Install::Distribution
+	Apache::Voodoo::Install::Pid
+	Apache::Voodoo::Install::Post
+	Apache::Voodoo::Install::Updater
+	Apache::Voodoo::Loader
+	Apache::Voodoo::Loader::Dynamic
+	Apache::Voodoo::Loader::Static
+	Apache::Voodoo::MP
+	Apache::Voodoo::Pager
+	Apache::Voodoo::ParamValidate
+	Apache::Voodoo::Session
+	Apache::Voodoo::Session::File
+	Apache::Voodoo::Session::Instance
+	Apache::Voodoo::Session::MySQL
+	Apache::Voodoo::Storage::Table
+	Apache::Voodoo::Table
+	Apache::Voodoo::Table::Probe
+	Apache::Voodoo::Table::Probe::MySQL
+	Apache::Voodoo::Template
+	Apache::Voodoo::Theme
+	Apache::Voodoo::UI
+	Apache::Voodoo::UI::extjs
+	Apache::Voodoo::ValidURL
+	Apache::Voodoo::Zombie
+	);
+};
 
-use_ok('Apache::Voodoo');
-use_ok('Apache::Voodoo::Constants');
-use_ok('Apache::Voodoo::Debug');
-use_ok('Apache::Voodoo::Debug::Handler');
-use_ok('Apache::Voodoo::DisplayError');
-use_ok('Apache::Voodoo::Install');
-use_ok('Apache::Voodoo::Install::Config');
-use_ok('Apache::Voodoo::Install::Distribution');
-use_ok('Apache::Voodoo::Install::Pid');
-use_ok('Apache::Voodoo::Install::Post');
-use_ok('Apache::Voodoo::Install::Updater');
-use_ok('Apache::Voodoo::Loader');
-use_ok('Apache::Voodoo::Loader::Dynamic');
-use_ok('Apache::Voodoo::Loader::Static');
-use_ok('Apache::Voodoo::MP');
-use_ok('Apache::Voodoo::Pager');
-use_ok('Apache::Voodoo::Application');
-use_ok('Apache::Voodoo::Table');
-use_ok('Apache::Voodoo::Theme');
-use_ok('Apache::Voodoo::ValidURL');
-use_ok('Apache::Voodoo::Zombie');
+use Test::More tests => scalar @list;
+
+foreach (@list) {
+	use_ok($_);
+}
 

@@ -136,13 +136,22 @@ sub handle_request {
 	$run->{uri} =~ s/^\///;
 
 	if (defined($self->{static_files}->{$run->{'uri'}})) {
-		# request for on of the static files.
+		# request for one of the static files.
+
+		my $file = File::Spec->catfile($self->{template_dir},$run->{'uri'});
+		my $mtime = (stat($file))[9];
+
+		# Handle "if not modified since" requests.
+		$r->update_mtime($mtime);
+		$r->set_last_modified;
+		my $rc = $r->meets_conditions;
+		return $rc unless $rc == $self->{mp}->ok;
 
 		# set the content type
 		$self->{mp}->content_type($self->{static_files}->{$run->{'uri'}});
 
 		# tell apache to send the underlying file
-		$r->sendfile(File::Spec->catfile($self->{template_dir},$run->{'uri'}));
+		$r->sendfile($file);
 
 		return $self->{mp}->ok;
 	}
