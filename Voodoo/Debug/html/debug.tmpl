@@ -1,62 +1,26 @@
 <!-- $Id$ -->
-<script language="Javascript" type="text/javascript" src="<TMPL_VAR DEBUG_ROOT>/ajax.js"></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<TMPL_VAR DEBUG_ROOT>/style.css">
-
-<ul>
-<li>app_id: <tmpl_var app_id>
-<li>session_id: <tmpl_var session_id>
-<li>request_id: <tmpl_var request_id>
-</ul>
+<link rel="stylesheet" type="text/css" media="screen" href="<tmpl_var debug_root>/style.css">
+<script language="Javascript" type="text/javascript" src="<tmpl_var debug_root>/ajax.js"></script>
+<script language="Javascript" type="text/javascript">
+var vdDebug = new voodooDebug({
+	"debug_root": "<tmpl_var debug_root>",
+	'app_id':     "<tmpl_var app_id>",
+	'session_id': "<tmpl_var session_id>",
+	'request_id': "<tmpl_var request_id>"
+});
+</script>
 
 <div class="voodooDebug">
 	<div class="vdClosed">
-		<span onClick="vd_toggle(this,1);">Debug</span>
+		<span onClick="vdDebug.handleSection(this,'top');">Debug</span>
 		<div class="vdContent">
-			<div class="vdClosed">
-				<span onClick="vd_toggle(this);">Generation Time</span>
-				<div class="vdContent">
-					Total Time: <TMPL_VAR generate_time>
-					<table>
-					<TMPL_LOOP vd_timing>
-					<tr>
-						<td align="right"><tmpl_var time></td>
-						<td align="right"><tmpl_var percent></td>
-						<td align="left" ><tmpl_var message></td>
-					</tr>
-					</TMPL_LOOP>
-					</table>
-				</div>
-			</div>
-			<div class="vdClosed">
-				<span onClick="vd_toggle(this);">Debug Trace</span>
-				<div class="vdContent">
-					<table>
-					<TMPL_LOOP vd_debug>
-					<tr>
-						<td><div class="vdDepth<TMPL_VAR depth>"><TMPL_VAR name></div></td>
-					</tr>
-					</TMPL_LOOP>
-					</table>
-				</div>
-			</div>
-			<div class="vdClosed">
-				<span onClick="vd_toggle(this);">Template Variables</span>
-				<div class="vdContent">
-					<pre><TMPL_VAR vd_template></pre>
-				</div>
-			</div>
-			<div class="vdClosed">
-				<span onClick="vd_toggle(this);">Session Variables</span>
-				<div class="vdContent">
-					<pre><TMPL_VAR vd_session></pre>
-				</div>
-			</div>
-			<div class="vdClosed">
-				<span onClick="vd_toggle(this);">Config Variables</span>
-				<div class="vdContent">
-					<pre><TMPL_VAR vd_conf></pre>
-				</div>
-			</div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'profile');"      >Generation Time</span   ><div id="vd_profile"       class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'debug');"        >Debug Trace</span       ><div id="vd_debug"         class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'return_data');"  >Template Variables</span><div id="vd_return_data"   class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'session');"      >Session Variables</span ><div id="vd_session"       class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'template_conf');">Config Variables</span  ><div id="vd_template_conf" class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'parameters');"   >Parameters</span        ><div id="vd_parameters"    class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'headers');"      >Request Headers</span   ><div id="vd_headers"       class="vdContent"></div></div>
 		</div>
 	</div>
 </div>

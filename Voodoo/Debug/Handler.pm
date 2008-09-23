@@ -16,6 +16,7 @@ package Apache::Voodoo::Debug::Handler;
 $VERSION = sprintf("%0.4f",('$HeadURL: svn://localhost/Voodoo/core/Voodoo/Handler.pm $' =~ m!(\d+\.\d+)!)[0]||0);
 
 use strict;
+use warnings;
 
 use DBI;
 use Time::HiRes;
@@ -91,19 +92,25 @@ sub new {
 sub setup_handlers {
 	my $self = shift;
 
-	delete $INC{'Apache::Voodoo::Debug::index'};
-	use Apache::Voodoo::Debug::index;
+	foreach (
+		'profile',
+		'debug',
+		'return_data',
+		'session',
+		'template_conf',
+		'parameters',
+		'headers') {
 
-	delete $INC{'Apache::Voodoo::Debug::request'};
-	use Apache::Voodoo::Debug::request;
+		my $m = 'Apache::Voodoo::Debug::'.$_;
+		my $f = 'Apache/Voodoo/Debug/'.$_.'.pm';
 
-	my $index = new Apache::Voodoo::Debug::index;
-	my $req   = new Apache::Voodoo::Debug::request;
+		delete $INC{$f};
+		require $f;
 
-	$self->{handlers} = {
-		'index'        => [$index,'handle'],
-		'list_request' => [$req,'list']
-	};
+		my $p = $m->new();
+
+		$self->{handlers}->{$_} = [$p,'handle'];
+	}
 }
 
 sub setup_static_files {
@@ -144,7 +151,8 @@ sub handle_request {
 		# Handle "if not modified since" requests.
 		$r->update_mtime($mtime);
 		$r->set_last_modified;
-		my $rc = $r->meets_conditions;
+		$r->meets_conditions;
+		my $rc = $self->{mp}->if_modified_since($mtime); 
 		return $rc unless $rc == $self->{mp}->ok;
 
 		# set the content type

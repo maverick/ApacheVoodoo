@@ -43,6 +43,15 @@ sub is_get     { return $_[0]->{r}->method eq "GET"; }
 sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
 sub site_root  { return $_[0]->{r}->dir_config("SiteRoot") || "/"; }
 
+sub if_modified_since {
+	my $self  = shift;
+	my $mtime = shift;
+
+	$self->{r}->update_mtime($mtime);
+	$self->{r}->set_last_modified;
+	return $self->{r}->meets_conditions;
+}
+
 sub redirect {
         my $self = shift;
         my $loc  = shift;

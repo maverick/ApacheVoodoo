@@ -34,6 +34,7 @@ div.voodooDebug div.vdOpen div.vdOpen div.vdContent {
 	overflow: -moz-scrollbars-vertical;
 	overflow-x: hidden;
 	overflow-y: auto;
+	white-space: pre;
 }
 
 div.voodooDebug span { 

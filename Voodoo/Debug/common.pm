@@ -317,7 +317,7 @@ sub handle_template_conf {
 			?
 		)",undef,
 		$request_id,
-		$data->{data}) || $self->db_error();
+		Dumper($data->{data})) || $self->db_error();
 }
 
 sub _create_headers {
@@ -351,7 +351,7 @@ sub handle_headers {
 			?
 		)",undef,
 		$request_id,
-		$data->{data}) || $self->db_error();
+		Dumper($data->{data})) || $self->db_error();
 }
 
 sub _create_return_data {
@@ -407,7 +407,7 @@ sub handle_return_data {
 		$seq,
 		$data->{handler},
 		$data->{method},
-		$data->{data}) || $self->db_error();
+		Dumper($data->{data})) || $self->db_error();
 }
 
 1;
