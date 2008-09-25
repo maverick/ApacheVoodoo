@@ -38,7 +38,7 @@ sub new {
 
 	bless($self,$class);
 
-	$self->{flags} = [ qw(debug profile params template_conf return_data headers session) ];
+	$self->{flags} = [ qw(debug profile params template_conf return_data session) ];
 
 	return $self;
 }
@@ -82,7 +82,7 @@ sub init {
 
 	if ($@ || !$ok) {
 		print STDERR "Failed to open socket.  Debug info will be lost. $!\n";
-		delete $self->{enable};
+		$self->{enable}  = undef;
 		$self->{enabled} = 0;
 		return;
 	}
@@ -173,7 +173,6 @@ sub session_id    { my $self = shift; $self->_log('session_id',    @_);  }
 sub url           { my $self = shift; $self->_log('url',           @_);  }
 sub params        { my $self = shift; $self->_log('params',        @_);  }
 sub template_conf { my $self = shift; $self->_log('template_conf', @_);  }
-sub headers       { my $self = shift; $self->_log('headers',       @_);  }
 sub session       { my $self = shift; $self->_log('session',Dumper(@_)); }
 
 sub _log {

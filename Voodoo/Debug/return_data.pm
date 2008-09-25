@@ -24,17 +24,25 @@ sub handle {
 
 	my $res = $dbh->selectall_arrayref("
 		SELECT
+			handler,
+			method,
 			data
 		FROM
 			return_data
 		WHERE
-			request_id = ?",undef,
+			request_id = ?
+		ORDER BY
+			seq",undef,
 		$id) || $self->db_error();
 
     return $self->json_return(
 		{ 
 			'key' => 'vd_return_data',
-			'value' => $res->[0]->[0]
+			'value' => [
+				map {
+					[ $_->[0].'-&gt;'.$_->[1], $_->[2] ]
+				}@{$res}
+			]
 		}
 	);
 }

@@ -22,7 +22,6 @@ sub create_schema {
 	$self->_create_params();
 	$self->_create_session();
 	$self->_create_template_conf();
-	$self->_create_headers();
 	$self->_create_return_data();
 
 #	$self->_create_version();
@@ -320,40 +319,6 @@ sub handle_template_conf {
 		Dumper($data->{data})) || $self->db_error();
 }
 
-sub _create_headers {
-	my $self = shift;
-
-	$self->{dbh}->do("CREATE TABLE headers (
-		request_id integer not null,
-		data       text    not null
-	)") || $self->db_error();
-
-	$self->{dbh}->do("CREATE INDEX headers_request_id ON headers(request_id)") || $self->db_error();
-}
-
-sub handle_headers {
-	my $self = shift;
-	my $data = shift;
-
-	my $request_id = $self->_get_request_id($data->{id});
-	unless ($request_id) {
-		warn "no such request\n";
-		return;
-	}
-
-	$self->{dbh}->do("
-		INSERT INTO headers (
-			request_id,
-			data
-		)
-		VALUES (
-			?,
-			?
-		)",undef,
-		$request_id,
-		Dumper($data->{data})) || $self->db_error();
-}
-
 sub _create_return_data {
 	my $self = shift;
 
@@ -407,7 +372,7 @@ sub handle_return_data {
 		$seq,
 		$data->{handler},
 		$data->{method},
-		Dumper($data->{data})) || $self->db_error();
+		$data->{data}) || $self->db_error();
 }
 
 1;

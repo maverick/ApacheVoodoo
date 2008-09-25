@@ -6,7 +6,7 @@ div.voodooDebug {
 	font-family: monospace;
 	font-size: 12px;
 	color: #000000;
-	background-color: #DDD;
+	background-color: #fff;
 	position: absolute;
 	top: 0px;
 	right: 0px;
@@ -60,8 +60,10 @@ div.voodooDebug td {
 	color: #000000;
 }
 
-div.voodooDebug span:before { content: "["; }
-div.voodooDebug span:after  { content: "]"; }
+div.voodooDebug dt { margin-left: 2em; cursor: pointer; }
+
+div.voodooDebug dd.vdOpen   { display: block; }
+div.voodooDebug dd.vdClosed { display: none;  }
 
 div.voodooDebug .vdDepth1  { margin-left:  2em; white-space: pre; }
 div.voodooDebug .vdDepth2  { margin-left:  4em; white-space: pre; }

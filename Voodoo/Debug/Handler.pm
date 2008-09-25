@@ -98,8 +98,7 @@ sub setup_handlers {
 		'return_data',
 		'session',
 		'template_conf',
-		'parameters',
-		'headers') {
+		'parameters') {
 
 		my $m = 'Apache::Voodoo::Debug::'.$_;
 		my $f = 'Apache/Voodoo/Debug/'.$_.'.pm';
@@ -117,6 +116,8 @@ sub setup_static_files {
 	my $self = shift;
 
 	$self->{static_files} = { 
+		"plus.gif"    => "image/gif",
+		"minus.gif"   => "image/gif",
 		"spinner.gif" => "image/gif",
 		"ajax.js"     => "application/x-javascript",
 		"style.css"   => "text/css"

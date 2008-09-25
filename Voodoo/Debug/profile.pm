@@ -26,7 +26,7 @@ sub handle {
 		SELECT
 			data
 		FROM
-			params
+			profile
 		WHERE
 			request_id = ?",undef,
 		$id) || $self->db_error();
