@@ -34,7 +34,7 @@ div.voodooDebug div.vdOpen div.vdOpen div.vdContent {
 	overflow: -moz-scrollbars-vertical;
 	overflow-x: hidden;
 	overflow-y: auto;
-	white-space: pre;
+/*	white-space: pre; */
 }
 
 div.voodooDebug span { 
@@ -61,6 +61,9 @@ div.voodooDebug td {
 }
 
 div.voodooDebug dt { margin-left: 2em; cursor: pointer; }
+
+div.voodooDebug div.vdOpen div.vdOpen div.vdContent span { white-space: pre; }
+div.voodooDebug dd { white-space: pre; }
 
 div.voodooDebug dd.vdOpen   { display: block; }
 div.voodooDebug dd.vdClosed { display: none;  }
