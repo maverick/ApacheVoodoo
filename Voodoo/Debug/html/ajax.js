@@ -25,11 +25,11 @@ function voodooDebug(opts){
 	this.request_id = opts.request_id;
 
 	this.spinner = new Image(16,16);
-	this.spinner.src = this.debug_root+"/spinner.gif";
+	this.spinner.src = this.debug_root+"/i/spinner.gif";
 	this.minus = new Image(16,16);
-	this.minus.src = this.debug_root+"/minus.gif";
+	this.minus.src = this.debug_root+"/i/minus.gif";
 	this.plus = new Image(16,16);
-	this.plus.src = this.debug_root+"/plus.gif";
+	this.plus.src = this.debug_root+"/i/plus.gif";
 
 	this.yourBrowserIsBroken=(navigator.userAgent.toLowerCase().indexOf("msie")!=-1);
 
@@ -47,20 +47,34 @@ function voodooDebug(opts){
 	this.loadDisplay = function(data) {
 		var h;
 		if (data.constructor == Array) {
-			h = '<dl>';
-			for (j=0; j < data.length; j++) {
-				console.log(j);
-				h += '<dt class="vdClosed" onClick="vdDebug.toggleDL(this);">'+
-					'<img src="'+this.debug_root+'/plus.gif" />'+
-					data[j][0].replace(/>/g,'&gt;')
-					+'</dt><dd class="vdClosed">'+
-					data[j][1].replace(/</g,'&lt;')+
-					'</dd>';
+			if (data[0].length == 2) {
+				h = '<dl>';
+				for (j=0; j < data.length; j++) {
+					console.log(j);
+					h += '<dt class="vdClosed" onClick="vdDebug.toggleDL(this);">'+
+						'<img src="'+this.debug_root+'/i/plus.gif" />'+
+						data[j][0].replace(/>/g,'&gt;')
+						+'</dt><dd class="vdClosed">'+
+						data[j][1].replace(/</g,'&lt;')+
+						'</dd>';
+				}
+				h += '</dl>';
 			}
-			h += '</dl>';
+			else {
+				h = '<table><tr><th>';
+				h += data[0].join('</th><th>');
+				h += '</th></tr>';
+
+				for (j=1; j < data.length; j++) {
+					h += '<tr><td><pre>';
+					h += data[j].join('</pre></td><td><pre>');
+					h += '</td></tr>';
+				}
+				h += "</table>";
+			}
 		}
 		else {
-			h = "<span>"+data.value+"</span>";
+			h = "<span>"+data+"</span>";
 		}
 		return h;
 	}

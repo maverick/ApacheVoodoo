@@ -1,2 +1,32 @@
-Yadda, yadda.
-<tmpl_var key>
+<tmpl_if app_id>
+	<table>
+	<tr>
+		<td>Application:</td>
+		<td><tmpl_var app_id></td>
+	</tr>
+	<tr>
+		<td>Session:</td>
+		<td><tmpl_var session_id></td>
+	</tr>
+	</table>
+
+	<table>
+	<tr>
+		<th></th>
+		<th>Time</th>
+		<th>URL</th>
+		<th>Status</th>
+	</tr>
+	<tmpl_loop requests>
+		<tr>
+			<td><a href="<tmpl_var id>">Details</a></td>
+			<td><tmpl_var time></td>
+			<td><tmpl_var time_raw></td>
+			<td><tmpl_var url></td>
+			<td><tmpl_var result></td>
+		</tr>
+	</tmpl_loop>
+	</table>
+<tmpl_else>
+	<h1>No such id</h1>
+</tmpl_if>

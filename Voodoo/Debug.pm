@@ -90,6 +90,7 @@ sub init {
 	# we always send this since is fundamental to identifying the request chain
 	# regardless of what other info we log
 	$self->{'enable'}->{'url'}        = 1;
+	$self->{'enable'}->{'result'}     = 1;
 	$self->{'enable'}->{'session_id'} = 1;
 
 	$self->{'socket'}->send({
@@ -171,6 +172,7 @@ sub return_data {
 # these all behave the same way.
 sub session_id    { my $self = shift; $self->_log('session_id',    @_);  }
 sub url           { my $self = shift; $self->_log('url',           @_);  }
+sub result        { my $self = shift; $self->_log('result',        @_);  }
 sub params        { my $self = shift; $self->_log('params',        @_);  }
 sub template_conf { my $self = shift; $self->_log('template_conf', @_);  }
 sub session       { my $self = shift; $self->_log('session',Dumper(@_)); }
@@ -186,79 +188,6 @@ sub _log {
 		id   => $self->{id},
 		data => shift
 	});
-}
-
-sub report {
-	my $self = shift;
-	my %data = @_;
-
-	push(@{$self->{'timer'}},[Time::HiRes::time,"end"]);
-
-	my $last = $#{$self->{'timer'}};
-	my $total_time = $self->{'timer'}->[$last]->[0] - $self->{'timer'}->[0]->[0];
-
-	$self->{'template'}->param('generate_time' => $total_time);
-
-	if ($self->{'enabled'}) {
-		$self->{'template'}->param('debug' => 1);
-
-		my $times = $self->{'timer'};
-		$self->{'template'}->param('vd_timing' => [
-			map {
-				{
-					'time'    => sprintf("%.5f",    $times->[$_]->[0] - $times->[$_-1]->[0]),
-					'percent' => sprintf("%5.2f%%",($times->[$_]->[0] - $times->[$_-1]->[0])/$total_time*100),
-					'message' => $times->[$_]->[1]
-				}
-			} (1 .. $last)
-		]
-		);
-
-
-		# either dumper, or the param passing to template is a little weird.
-		# if you inline the calls to dumper, it doesn't work.
-		my %h;
-		$h{'vd_debug'}    = $self->_process_debug();
-		$h{'vd_template'} = Dumper($data{'params'});
-		$h{'vd_session'}  = Dumper($data{'session'});
-		$h{'vd_conf'}     = Dumper($data{'conf'});
-
-		$self->{'template'}->param(%h);
-	}
-
-	return $self->{'template'}->output;
-}
-
-sub _process_debug {
-	my $self = shift;
-
-	my @debug = ();
-	my @last  = ();
-	foreach (@{$self->{'debug'}}) {
-		my ($stack,$mesg) = @{$_};
-
-		my $i=0;
-		my $match = 1;
-		my ($x,$y,@stack) = split(/~/,$stack);
-		foreach (@stack) {
-			unless ($match && $_ eq $last[$i]) {
-				$match=1;
-				push(@debug,{
-					'depth' => $i,
-					'name'  => $_
-				});
-			}
-			$i++;
-		}
-
-		@last = @stack;
-
-		push(@debug, {
-				'depth' => ($#stack+1),
-				'name'  => $mesg
-		});
-	}
-	return \@debug;
 }
 
 1;

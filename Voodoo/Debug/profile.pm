@@ -24,19 +24,41 @@ sub handle {
 
 	my $res = $dbh->selectall_arrayref("
 		SELECT
+			timestamp,
 			data
 		FROM
 			profile
 		WHERE
-			request_id = ?",undef,
+			request_id = ?
+		ORDER BY
+			timestamp",undef,
 		$id) || $self->db_error();
 
-	return $self->json_return(
-		{ 
-			'key' => 'vd_profile',
-			'value' => $res->[0]->[0]
-		}
-	);
+	my $return;
+	$return->{'key'} = 'vd_profile';
+
+	my $last = $#{$res};
+	if ($last > 0) {
+		my $total_time = $res->[$last]->[0] - $res->[0]->[0];
+
+		$return->{'value'} = [
+			map {
+				[
+					sprintf("%.5f",    $res->[$_]->[0] - $res->[$_-1]->[0]),
+					sprintf("%5.2f%%",($res->[$_]->[0] - $res->[$_-1]->[0])/$total_time*100),
+					$res->[$_]->[1]
+				]
+			} (1 .. $last)
+		];
+
+		unshift(@{$return->{value}}, [
+			sprintf("%.5f",$total_time),
+			'percent', 
+			'message'
+		]);
+	}
+
+	return $self->json_return($return);
 }
 
 

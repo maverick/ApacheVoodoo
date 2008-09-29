@@ -116,9 +116,9 @@ sub setup_static_files {
 	my $self = shift;
 
 	$self->{static_files} = { 
-		"plus.gif"    => "image/gif",
-		"minus.gif"   => "image/gif",
-		"spinner.gif" => "image/gif",
+		"i/plus.gif"    => "image/gif",
+		"i/minus.gif"   => "image/gif",
+		"i/spinner.gif" => "image/gif",
 		"ajax.js"     => "application/x-javascript",
 		"style.css"   => "text/css"
 	};

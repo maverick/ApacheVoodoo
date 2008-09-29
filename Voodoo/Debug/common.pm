@@ -41,7 +41,8 @@ sub _create_request {
 		request_timestamp varchar(64) not null,
 		application       varchar(64) not null,
 		session_id        varchar(64),
-		url               varchar(255)
+		url               varchar(255),
+		result            varchar(128)
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX request_request_timestamp ON request(request_timestamp)") || $self->db_error();
@@ -110,6 +111,23 @@ sub handle_session_id {
 		UPDATE request
 		SET	
 			session_id = ?
+		WHERE
+			request_timestamp = ? AND
+			application       = ?
+		",undef,
+		$data->{data},
+		$data->{id}->{request_id},
+		$data->{id}->{app_id}) || $self->db_error();
+}
+
+sub handle_result {
+	my $self = shift;
+	my $data = shift;
+
+	$self->{dbh}->do("
+		UPDATE request
+		SET	
+			result = ?
 		WHERE
 			request_timestamp = ? AND
 			application       = ?

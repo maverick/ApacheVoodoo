@@ -227,6 +227,7 @@ sub handle_request {
 	my $return = $self->generate_html($app,$run);
 
 	$debug->session($run->{session});
+	$debug->result($return);
 	$run->{session_handler}->disconnect();
 
 	$debug->mark('END');
@@ -483,7 +484,10 @@ sub generate_html {
 		$app->{'template_engine'}->template($run->{'uri'});
 		$debug->mark("template open");
 
-		$template_params->{'SITE_ROOT'} = $app->{'site_root'};
+		$template_params->{'SITE_ROOT'}  = $app->{'site_root'};
+
+		# remove once the debugging ui is complete.
+		$template_params->{'DEBUG_ROOT'} = $self->{'debug_root'};
 
 		# pack up the params
 		$app->{'template_engine'}->params($template_params);
@@ -501,7 +505,7 @@ sub generate_html {
 				app_id     => $run->{app_id},
 				request_id => $run->{request_id},
 				session_id => $run->{session}->{_session_id},
-				debug_root => $self->{debug_root}
+				debug_root => $self->{'debug_root'},
 			});
 
 			# generate the main body contents

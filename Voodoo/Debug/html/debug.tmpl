@@ -12,14 +12,15 @@ var vdDebug = new voodooDebug({
 
 <div class="voodooDebug">
 	<div class="vdClosed">
-		<span onClick="vdDebug.handleSection(this,'top');"><img src="<tmpl_var debug_root>/plus.gif" width="9"/>Debug</span>
+		<span onClick="vdDebug.handleSection(this,'top');"><img src="<tmpl_var debug_root>/i/plus.gif" width="9"/>Debug</span>
 		<div class="vdContent">
-			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'profile');"      ><img src="<tmpl_var debug_root>/plus.gif" width="9"/>Generation Time</span><div id="vd_profile"       class="vdContent"></div></div>
-			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'debug');"        ><img src="<tmpl_var debug_root>/plus.gif" width="9"/>Debug Trace</span    ><div id="vd_debug"         class="vdContent"></div></div>
-			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'return_data');"  ><img src="<tmpl_var debug_root>/plus.gif" width="9"/>Return Data</span    ><div id="vd_return_data"   class="vdContent"></div></div>
-			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'session');"      ><img src="<tmpl_var debug_root>/plus.gif" width="9"/>Session Data</span   ><div id="vd_session"       class="vdContent"></div></div>
-			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'template_conf');"><img src="<tmpl_var debug_root>/plus.gif" width="9"/>Config Data</span    ><div id="vd_template_conf" class="vdContent"></div></div>
-			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'parameters');"   ><img src="<tmpl_var debug_root>/plus.gif" width="9"/>Input Params</span   ><div id="vd_parameters"    class="vdContent"></div></div>
+			<a target="_new" href="http://debug.darkstar.nasba.int/index?app_id=<tmpl_var app_id>&session_id=<tmpl_var session_id>&request_id=<tmpl_var request_id>">Open Debug Window</a>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'profile');"      ><img src="<tmpl_var debug_root>/i/plus.gif" width="9"/>Generation Time</span><div id="vd_profile"       class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'debug');"        ><img src="<tmpl_var debug_root>/i/plus.gif" width="9"/>Debug Trace</span    ><div id="vd_debug"         class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'return_data');"  ><img src="<tmpl_var debug_root>/i/plus.gif" width="9"/>Return Data</span    ><div id="vd_return_data"   class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'session');"      ><img src="<tmpl_var debug_root>/i/plus.gif" width="9"/>Session Data</span   ><div id="vd_session"       class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'template_conf');"><img src="<tmpl_var debug_root>/i/plus.gif" width="9"/>Config Data</span    ><div id="vd_template_conf" class="vdContent"></div></div>
+			<div class="vdClosed"><span onClick="vdDebug.handleSection(this,'parameters');"   ><img src="<tmpl_var debug_root>/i/plus.gif" width="9"/>Input Params</span   ><div id="vd_parameters"    class="vdContent"></div></div>
 		</div>
 	</div>
 </div>

@@ -24,20 +24,56 @@ sub handle {
 
 	my $res = $dbh->selectall_arrayref("
 		SELECT
+			stack,
 			data
 		FROM
 			debug
 		WHERE
-			request_id = ?",undef,
+			request_id = ?
+		ORDER BY
+			seq",undef,
 		$id) || $self->db_error();
 
     return $self->json_return(
 		{ 
 			'key' => 'vd_debug',
-			'value' => $res->[0]->[0]
+			'value' => $res
 		}
 	);
 }
+
+sub _process_debug {
+	my $self = shift;
+
+	my @debug = ();
+	my @last  = ();
+	foreach (@{$self->{'debug'}}) {
+		my ($stack,$mesg) = @{$_};
+
+		my $i=0;
+		my $match = 1;
+		my ($x,$y,@stack) = split(/~/,$stack);
+		foreach (@stack) {
+			unless ($match && $_ eq $last[$i]) {
+				$match=1;
+				push(@debug,{
+					'depth' => $i,
+					'name'  => $_
+				});
+			}
+			$i++;
+		}
+
+		@last = @stack;
+
+		push(@debug, {
+				'depth' => ($#stack+1),
+				'name'  => $mesg
+		});
+	}
+	return \@debug;
+}
+
 
 
 1;

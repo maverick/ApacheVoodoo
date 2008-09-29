@@ -540,7 +540,13 @@ sub pretty_time {
 	my @p = localtime($time || time);
 
 	$time =~ /^\d+\.(\d+)$/;
-	return sprintf("%02d/%02d/%04d %02d:%02d:%02d",$p[4]+1, $p[3], $p[5]+1900, $p[2], $p[1], $p[0]) . $1;
+	my $ms = $1;
+	if ($ms) {
+		$ms .= '0' x (5-length($ms));
+
+		$ms = " " . $ms;
+	}
+	return sprintf("%02d/%02d/%04d %02d:%02d:%02d",$p[4]+1, $p[3], $p[5]+1900, $p[2], $p[1], $p[0]) . $ms;
 }
 
 

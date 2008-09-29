@@ -81,8 +81,13 @@ sub json_error {
 		'errors'  => []
 	};
 
-	foreach my $key (keys %{$errors}) {
-		push(@{$return->{errors}},{id => $key, msg => $errors->{$key}});
+	if (ref($errors) eq "HASH") {
+		foreach my $key (keys %{$errors}) {
+			push(@{$return->{errors}},{id => $key, msg => $errors->{$key}});
+		}
+	}
+	else {
+		push(@{$return->{errors}},{id => 'error', msg => $errors});
 	}
 	
 	return $self->raw_mode('text/plain',to_json($return));
