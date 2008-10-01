@@ -184,7 +184,7 @@ sub handle_request {
 
 	if ($run->{'uri'} eq "logout") {
 		# handle logout
-		$self->{mp}->err_header_out("Set-Cookie" => $app->{'cookie_name'} . "='!'; path=/; HttpOnly".($app->{https_cookies})?"; secure":'');
+		$self->{mp}->err_header_out("Set-Cookie" => $app->{'cookie_name'} . "='!'; path=/; HttpOnly"); # .($app->{https_cookies})?"; secure":'');
 		$run->{'session_handler'}->destroy();
 		return $self->{mp}->redirect($app->{'logout_target'});
 #		return $self->{mp}->redirect($app->{'site_root'}."index");
@@ -248,14 +248,14 @@ sub attach_session {
 	# set the session cookie.
 	if (!defined($session_id) || $instance->{id} ne $session_id) {
 		# err_headers get sent on both successful and errored requests
-		$self->{mp}->err_header_out("Set-Cookie" => "$app->{'cookie_name'}=$instance->{id}; path=/; HttpOnly".($app->{https_cookies})?"; secure":'');
+		$self->{mp}->err_header_out("Set-Cookie" => "$app->{'cookie_name'}=$instance->{id}; path=/; HttpOnly"); #.($app->{https_cookies})?"; secure":'');
 		$session->{'timestamp'} = time;
 	}
 
 	# see if the session has expired
 	if ($app->{'session_timeout'} > 0 && $session->{'timestamp'} < (time - ($app->{'session_timeout'}*60))) {
 		# use err header out since this is a redirect
-		$self->{mp}->err_header_out("Set-Cookie" => $app->{'cookie_name'} . "='!'; path=/; HttpOnly".($app->{https_cookies})?"; secure":'');
+		$self->{mp}->err_header_out("Set-Cookie" => $app->{'cookie_name'} . "='!'; path=/; HttpOnly"); # .($app->{https_cookies})?"; secure":'');
 		$instance->destroy;
 		return $self->{mp}->redirect($app->{'site_root'}."timeout");
 	}

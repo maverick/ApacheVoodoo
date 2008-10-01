@@ -50,8 +50,11 @@ function voodooDebug(opts){
 			if (data[0][1].constructor == Array) {
 				h = '<ul>';
 				for (j=0; j < data.length; j++) {
-					h += '<li>'+data[j][0];
-					h += this.loadDisplay(data[j][1]);
+					h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
+						 '<img src="'+this.debug_root+'/i/minus.gif" />'+
+					     data[j][0]+'</span>'+
+					     this.loadDisplay(data[j][1])+
+						 '</li>';
 				}
 				h += '</ul>';
 			}
@@ -60,11 +63,11 @@ function voodooDebug(opts){
 				for (j=0; j < data.length; j++) {
 					console.log(j);
 					h += '<dt class="vdClosed" onClick="vdDebug.toggleDL(this);">'+
-						'<img src="'+this.debug_root+'/i/plus.gif" />'+
-						data[j][0].replace(/>/g,'&gt;')
-						+'</dt><dd class="vdClosed">'+
-						data[j][1].replace(/</g,'&lt;')+
-						'</dd>';
+						 '<img src="'+this.debug_root+'/i/plus.gif" />'+
+						 data[j][0].replace(/>/g,'&gt;')
+						 +'</dt><dd class="vdClosed">'+
+						 data[j][1].replace(/</g,'&lt;')+
+						 '</dd>';
 				}
 				h += '</dl>';
 			}
@@ -100,6 +103,19 @@ function voodooDebug(opts){
 			obj.className = "vdOpen";
 			obj.firstChild.src=this.minus.src;
 			obj.nextSibling.className = "vdOpen";
+		}
+	}
+
+	this.toggleUL = function(obj) {
+		if (obj.parentNode.className == "vdOpen") {
+			obj.parentNode.className = "vdClosed";
+			obj.firstChild.src=this.plus.src;
+			//obj.nextSibling.className = "vdClosed";
+		}
+		else {
+			obj.parentNode.className = "vdOpen";
+			obj.firstChild.src=this.minus.src;
+			//obj.nextSibling.className = "vdOpen";
 		}
 	}
 
