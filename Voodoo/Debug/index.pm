@@ -48,10 +48,11 @@ sub handle {
 		}
 
 		push(@data,{
-			'id'     => $row->{id},
-			'time'   => $self->pretty_time($row->{request_timestamp}),
-			'url'    => $row->{url},
-			'result' => $row->{result}
+			'id'       => $row->{id},
+			'time'     => $self->pretty_time($row->{request_timestamp}),
+			'time_raw' => $row->{request_timestamp},
+			'url'      => $row->{url},
+			'result'   => $row->{result}
 		});
 	}
 

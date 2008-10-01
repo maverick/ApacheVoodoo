@@ -209,8 +209,6 @@ sub handle_debug {
 
 	my $seq = (($res->[0])?$res->[0]:0) + 1;
 
-	my $stack = join("/",map { join(" ",@{$_}) } @{$data->{stack}});
-
 	$data->{data} =~ s/^\s+//;
 	$data->{data} =~ s/\s+$//;
 
@@ -229,7 +227,7 @@ sub handle_debug {
 		)",undef,
 		$request_id,
 		$seq,
-		$stack,
+		Dumper($data->{stack}),
 		$data->{data}) || $self->db_error();
 }
 

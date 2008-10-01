@@ -119,8 +119,8 @@ sub setup_static_files {
 		"i/plus.gif"    => "image/gif",
 		"i/minus.gif"   => "image/gif",
 		"i/spinner.gif" => "image/gif",
-		"ajax.js"     => "application/x-javascript",
-		"style.css"   => "text/css"
+		"debug.js"      => "application/x-javascript",
+		"debug.css"     => "text/css"
 	};
 }
 

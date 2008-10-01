@@ -51,7 +51,7 @@ sub init {
 
 	$self->{enabled} = 0;
 	my $debug = shift;
-	if ($debug == 1 || (ref($debug) eq "HASH" && $debug->{all})) {
+	if ($debug eq "1" || (ref($debug) eq "HASH" && $debug->{all})) {
 		foreach (@{$self->{flags}}) {
 			$self->{enable}->{$_} = 1;
 		}
@@ -125,7 +125,12 @@ sub debug {
 	my @stack;
 	while (my $method = (caller($i+1))[3]) {
 		if ($method =~ /^Apache\:\:Voodoo/) {
+			# skip Apache::Voodoo functions
 			$i++;
+			if ((caller($i+1))[3] eq "(eval)") {
+				# also skip AV's internal evals
+				$i++;
+			}
 			next;
 		}
 
@@ -136,8 +141,8 @@ sub debug {
 	$self->{'socket'}->send({
 		type  => 'debug',
 		id    => $self->{id},
-		stack => \@stack,
-		data  => Dumper(@_)
+		stack => [reverse @stack],
+		data  => scalar(Dumper(@_))
 	});
 }
 
@@ -164,7 +169,7 @@ sub return_data {
 		id      => $self->{id},
 		handler => shift,
 		method  => shift,
-		data    => Dumper(shift)
+		data    => scalar(Dumper(shift))
 	});
 }
 

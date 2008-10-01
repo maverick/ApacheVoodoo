@@ -89,9 +89,11 @@ sub load_config {
 
 	$self->{'session_timeout'} = $conf{'session_timeout'} || 0;
 	$self->{'upload_size_max'} = $conf{'upload_size_max'} || 5242880;
-	$self->{'cookie_name'}     = $conf{'cookie_name'}     || uc($self->{'id'}). "_SID";
 	$self->{'shared_cache'}    = $conf{'shared_cache'}    || 0;
 	$self->{'ipc_max_size'}    = $conf{'ipc_max_size'}    || 0;
+
+	$self->{'cookie_name'}   = $conf{'cookie_name'}     || uc($self->{'id'}). "_SID";
+	$self->{'https_cookies'} = ($conf{'https_cookies'})?1:0;
 
 	$self->{'template_conf'} = $conf{'template_conf'} || {};
 	$self->{'template_opts'} = $conf{'template_opts'} || {};

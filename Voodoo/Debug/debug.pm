@@ -37,41 +37,48 @@ sub handle {
     return $self->json_return(
 		{ 
 			'key' => 'vd_debug',
-			'value' => $res
+			'value' => $self->_process_debug($params->{app_id},$res)
 		}
 	);
 }
 
 sub _process_debug {
-	my $self = shift;
+	my $self   = shift;
+	my $app_id = shift;
+	my $data   = shift;
 
-	my @debug = ();
-	my @last  = ();
-	foreach (@{$self->{'debug'}}) {
+	my $debug = [];
+	foreach (@{$data}) {
 		my ($stack,$mesg) = @{$_};
 
-		my $i=0;
-		my $match = 1;
-		my ($x,$y,@stack) = split(/~/,$stack);
-		foreach (@stack) {
-			unless ($match && $_ eq $last[$i]) {
-				$match=1;
-				push(@debug,{
-					'depth' => $i,
-					'name'  => $_
-				});
-			}
-			$i++;
+		$stack = eval $stack;
+
+		unless (ref($stack) eq "ARRAY") {
+			warn ("debug stack wasn't a array ref");
+			next;
 		}
 
-		@last = @stack;
+		my $d = $debug;
+		my $item;
+		while (my $i = shift @{$stack}) {
+			my $item = $i->[0];
+			$item =~ s/^$app_id\:\://;
+			$item =~ s/::(\w+)$/->$1/;
+			$item .= " (".$i->[1].")";
 
-		push(@debug, {
-				'depth' => ($#stack+1),
-				'name'  => $mesg
-		});
+			if (defined($d->[$#{$d}]) && $d->[$#{$d}]->[0] eq $item) {
+				$d = $d->[$#{$d}]->[1];
+			}
+			else {
+				push(@{$d},[$item,[]]);
+				$d = $d->[$#{$d}]->[1];
+			}
+		}
+
+		push (@{$d},$mesg);
 	}
-	return \@debug;
+
+	return $debug;
 }
 
 

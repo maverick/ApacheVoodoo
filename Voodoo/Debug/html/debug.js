@@ -47,7 +47,15 @@ function voodooDebug(opts){
 	this.loadDisplay = function(data) {
 		var h;
 		if (data.constructor == Array) {
-			if (data[0].length == 2) {
+			if (data[0][1].constructor == Array) {
+				h = '<ul>';
+				for (j=0; j < data.length; j++) {
+					h += '<li>'+data[j][0];
+					h += this.loadDisplay(data[j][1]);
+				}
+				h += '</ul>';
+			}
+			else if (data[0].length == 2) {
 				h = '<dl>';
 				for (j=0; j < data.length; j++) {
 					console.log(j);
@@ -60,7 +68,7 @@ function voodooDebug(opts){
 				}
 				h += '</dl>';
 			}
-			else {
+			else if (data[0].constructor == Array) {
 				h = '<table><tr><th>';
 				h += data[0].join('</th><th>');
 				h += '</th></tr>';
@@ -71,6 +79,9 @@ function voodooDebug(opts){
 					h += '</td></tr>';
 				}
 				h += "</table>";
+			}
+			else {
+				h = "<pre>"+data+"</pre>";
 			}
 		}
 		else {
