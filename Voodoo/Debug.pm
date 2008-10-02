@@ -138,11 +138,22 @@ sub debug {
 		push(@stack,[$method,$line]) unless $line == 0;
 	}
 
+	my $data;
+	if (length(@_) > 1 || ref($_[0])) {
+		# if there's more than one item, or the item we have is a reference
+		# we shove it through it Data::Dumper
+		$data = Dumper(@_);
+	}
+	else {
+		# simple scalar can be logged as is.
+		$data = $_[0];
+	}
+
 	$self->{'socket'}->send({
 		type  => 'debug',
 		id    => $self->{id},
 		stack => [reverse @stack],
-		data  => scalar(Dumper(@_))
+		data  => $data
 	});
 }
 

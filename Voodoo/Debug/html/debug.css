@@ -95,6 +95,12 @@ div.voodooDebug dd { white-space: pre; }
 div.voodooDebug dd.vdOpen   { display: block; }
 div.voodooDebug dd.vdClosed { display: none;  }
 
+div.voodooDebug dt,
+div.voodooDebug li {
+	font-style: italic;
+	color: #555555;
+}
+
 div.voodooDebug li.vdOpen ul,
 div.voodooDebug li.vdOpen pre {
 	display: block;
@@ -104,3 +110,6 @@ div.voodooDebug li.vdClosed pre {
 	display: none;
 }
 
+div.voodooDebug li pre {
+	font-style: normal;
+}
