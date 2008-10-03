@@ -5,10 +5,16 @@ BEGIN {
 	Apache::Voodoo::Config
 	Apache::Voodoo::Constants
 	Apache::Voodoo::Debug
+	Apache::Voodoo::Debug::Handler
 	Apache::Voodoo::Debug::SQLite
 	Apache::Voodoo::Debug::common
-	Apache::Voodoo::Debug::index
-	Apache::Voodoo::Debug::request
+	Apache::Voodoo::Debug::base
+	Apache::Voodoo::Debug::profile
+	Apache::Voodoo::Debug::debug
+	Apache::Voodoo::Debug::return_data
+	Apache::Voodoo::Debug::session
+	Apache::Voodoo::Debug::template_conf
+	Apache::Voodoo::Debug::parameters
 	Apache::Voodoo::DisplayError
 	Apache::Voodoo::Driver
 	Apache::Voodoo::Install

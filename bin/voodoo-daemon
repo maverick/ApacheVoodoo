@@ -4,104 +4,130 @@ use strict;
 use warnings;
 
 use DBI;
-use File::Pid;
-use Proc::Daemon;
+
+use Daemon::Generic;
 use Proc::UID;
 use IO::Socket::UNIX;
 use IO::Socket::SIPC;
 use POSIX ":sys_wait_h";
 
-use Data::Dumper;
-
 use Apache::Voodoo::Constants;
 
-my $ac = Apache::Voodoo::Constants->new();
+newdaemon(
+	progname => 'voodoo-daemon'	
+);
 
-my $pid = File::Pid->new({'file' => $ac->pid_file()});
-my $id = $pid->running;
-if ($id) {
-	print "Already Running ($id)\n";
+sub gd_commands_more {
+	return (
+		resetdb => 'Clear the debugging database'
+	);
+}
+
+sub gd_other_cmd {
+	my $self = shift;
+	my $opt  = shift;
+
+	if ($opt eq "resetdb") {
+
+		# FIXME actually reset the db
+
+		exit;
+	}
+	$self->gd_usage();
 	exit;
 }
 
-my $sf = $ac->socket_file();
-unlink ($sf);
+sub gd_preconfig {
+	my $self = shift;
 
-$pid->pid($$);
-unless ($pid->write) {
-	die "Couldn't write pid: $!";
-}
+	my $ac = Apache::Voodoo::Constants->new();
+	$self->{voodoo}->{ac} = $ac;
 
-Proc::UID::drop_gid_perm($ac->apache_gid);
-Proc::UID::drop_uid_perm($ac->apache_uid);
+	my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
+	my @db  = DBI->installed_drivers();
+	$dbh->disconnect;
 
-my $socket = IO::Socket::SIPC->new(
-	socket_handler => 'IO::Socket::UNIX'
-);
-
-$socket->connect(
-	Type   => SOCK_STREAM,
-	Local  => $sf,
-	Listen => 1,
-) || die "Can't open socket: $!";
-
-chmod(0660,$sf);
-chown($ac->apache_uid,$ac->apache_gid,$sf);
-
-my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
-my @db = DBI->installed_drivers();
-print "Using $db[0] for storage\n";
-
-my $db;
-eval {
-	require "Apache/Voodoo/Debug/$db[0].pm";
-	my $class = 'Apache::Voodoo::Debug::'.$db[0];
-	$db = $class->new();
-};
-if ($@) {
-	die "$db[0] is not supported: $@";
-}
-
-$db->init_db($dbh);
-
-if ($ARGV[0] eq 'daemon') {
-	# Daemon! I envoke thee!
-	Proc::Daemon::Init;
-}
-
-$SIG{CHLD} = \&reaper;
-
-while (1) {
-	my $io = $socket->accept();
-
-	# for some strange reason sometimes accept returns a dud
-	next unless (defined($io));	
-
-	my $child = fork;
-	if ($child) {
-		next;
+	my $db;
+	eval {
+		require "Apache/Voodoo/Debug/$db[0].pm";
+		my $class = 'Apache::Voodoo::Debug::'.$db[0];
+		$db = $class->new();
+	};
+	if ($@) {
+		die "$db[0] is not supported: $@";
 	}
 
-	while (defined($io)) {
-		my $data = $io->read();
+	$self->{voodoo}->{db} = $db;
 
-		last unless defined($data);
+	return (
+		pidfile => $ac->pid_file(),
+	);
+}
 
-		my $handler = 'handle_'.$data->{'type'};
-		if ($db->can($handler)) {
-			$db->$handler($data);
-		}
-		else {
-			print STDERR "==$$== message type ($data->{'type'}) isn't supported\n";
-		}
+sub gd_run {
+	my $self = shift;
+
+	my $ac = $self->{voodoo}->{ac};
+	my $db = $self->{voodoo}->{db};
+
+	my $sf = $ac->socket_file();
+	unlink ($sf);
+
+	if ($> == 0) {
+		Proc::UID::drop_gid_perm($ac->apache_gid);
+		Proc::UID::drop_uid_perm($ac->apache_uid);
 	}
-	exit 0;
+
+	my $socket = IO::Socket::SIPC->new(
+		socket_handler => 'IO::Socket::UNIX'
+	);
+
+	$socket->connect(
+		Type   => SOCK_STREAM,
+		Local  => $sf,
+		Listen => 1,
+	) || die "Can't open socket: $!";
+
+	chmod(0660,$sf);
+	chown($ac->apache_uid,$ac->apache_gid,$sf);
+
+	my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
+	$db->init_db($dbh);
+
+	$SIG{CHLD} = \&reaper;
+
+	while (1) {
+		my $io = $socket->accept();
+
+		# for some strange reason sometimes accept returns a dud
+		next unless (defined($io));	
+
+		my $child = fork;
+		if ($child) {
+			next;
+		}
+
+		while (defined($io)) {
+			my $data = $io->read();
+
+			last unless defined($data);
+
+			my $handler = 'handle_'.$data->{'type'};
+			if ($db->can($handler)) {
+				$db->$handler($data);
+			}
+			else {
+				print STDERR "==$$== message type ($data->{'type'}) isn't supported\n";
+			}
+		}
+		exit 0;
+	}
 }
 
 sub reaper {
 	my $zombie_pid;
 	while (($zombie_pid = waitpid(-1,WNOHANG)) > 0){
-    		print STDERR  "$$ reaped $zombie_pid" . ($? ? " with exit $?" : '')."\n";
+			print STDERR  "$$ reaped $zombie_pid" . ($? ? " with exit $?" : '')."\n";
 	}
 
 	$SIG{CHLD} = \&reaper;
