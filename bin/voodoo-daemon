@@ -59,6 +59,11 @@ sub gd_preconfig {
 
 	$self->{voodoo}->{db} = $db;
 
+	if ($> != 0 && $> != $ac->apache_uid()) {
+		print STDERR "This command must either be ran as root or as the same user apache runs as.\n";
+		exit;
+	}
+
 	return (
 		pidfile => $ac->pid_file(),
 	);
@@ -74,8 +79,8 @@ sub gd_run {
 	unlink ($sf);
 
 	if ($> == 0) {
-		Proc::UID::drop_gid_perm($ac->apache_gid);
-		Proc::UID::drop_uid_perm($ac->apache_uid);
+		Proc::UID::drop_gid_perm($ac->apache_gid());
+		Proc::UID::drop_uid_perm($ac->apache_uid());
 	}
 
 	my $socket = IO::Socket::SIPC->new(
