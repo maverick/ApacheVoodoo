@@ -45,7 +45,6 @@ sub gd_preconfig {
 
 	my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
 	my @db  = DBI->installed_drivers();
-	$dbh->disconnect;
 
 	my $db;
 	eval {
@@ -58,6 +57,9 @@ sub gd_preconfig {
 	}
 
 	$self->{voodoo}->{db} = $db;
+	$db->init_db($dbh,$ac);
+
+	$dbh->disconnect;
 
 	if ($> != 0 && $> != $ac->apache_uid()) {
 		print STDERR "This command must either be ran as root or as the same user apache runs as.\n";
@@ -97,7 +99,7 @@ sub gd_run {
 	chown($ac->apache_uid,$ac->apache_gid,$sf);
 
 	my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
-	$db->init_db($dbh);
+	$db->set_dbh($dbh);
 
 	$SIG{CHLD} = \&reaper;
 

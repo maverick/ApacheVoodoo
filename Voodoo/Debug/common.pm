@@ -13,6 +13,15 @@ $Data::Dumper::Sortkeys = 1;
 
 use base("Apache::Voodoo");
 
+sub set_dbh {
+	my $self = shift;
+	$self->{dbh} = shift;
+}
+
+sub get_dbh {
+	return $_[0]->{dbh};
+}
+
 sub create_schema {
 	my $self = shift;
 
@@ -24,7 +33,7 @@ sub create_schema {
 	$self->_create_template_conf();
 	$self->_create_return_data();
 
-#	$self->_create_version();
+	$self->_create_version();
 }
 
 sub _create_version {

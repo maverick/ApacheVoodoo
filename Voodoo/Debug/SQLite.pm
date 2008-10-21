@@ -6,6 +6,7 @@ use strict;
 use warnings;
 
 use DBI;
+use Data::Dumper;
 
 use base("Apache::Voodoo::Debug::common");
 
@@ -23,7 +24,15 @@ sub new {
 sub init_db {
 	my $self = shift;
 
-	my $dbh  = shift;
+	my $dbh = shift;
+	my $ac  = shift;
+
+	# find the name of the connected database file
+	my @f = grep {$_->[1] eq "main" } @{$dbh->selectall_arrayref("pragma database_list") || $self->db_error()};
+
+	# make sure it's owned by apache
+	chown($ac->apache_uid,$ac->apache_gid,$f[0]->[2]);
+
 	$self->{dbh} = $dbh;
 
 	my $tables = $dbh->selectcol_arrayref("
