@@ -42,6 +42,8 @@ sub attach {
 		$obj = tie(%session,'Apache::Session::File',$id, $c) || die "Global data not available: $!";	
 	}
 
+	$self->{connected} = 1;
+
 	return Apache::Voodoo::Session::Instance->new($obj,\%session);
 }
 

@@ -29,10 +29,13 @@ sub obj     { return $_[0]->{obj};     }
 sub disconnect {
 	my $self = shift;
 
-	# this produces an unavoidable warning.
-	{
-		no warnings;
-		untie(%{$self->{session}});
+	if ($self->{connected}) {
+		# this produces an unavoidable warning.
+		{
+			no warnings;
+			untie(%{$self->{session}});
+		}
+		$self->{connected} = 0;
 	}
 }
 
