@@ -31,11 +31,13 @@ if ($@) {
 print STDERR "mod_perl version: $mod_perl::VERSION\n";
 if ($mod_perl::VERSION >= 1.99) {
 	print STDERR "Adding prequisites for mod_perl Version 2 API...\n";
-	$required_modules{Apache2::Request} = 0;
+	$required_modules{Apache2::Request} = 2.08;
+	$required_modules{Apache2::Cookie}  = 2.08;
 }
 elsif ($mod_perl::VERSION > 0) {
 	print STDERR "Adding prequisites for mod_perl Version 1 API...\n";
 	$required_modules{Apache::Request} = 1.33;
+	$required_modules{Apache::Cookie}  = 0;
 }
 else {
 	# I'd much rather do something else here besides guess; but prompting 

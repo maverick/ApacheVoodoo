@@ -45,7 +45,7 @@ BEGIN {
 # *THE* one thing that has never made any sense to me about the mod_perl universe:
 # "How" to make method handlers is well documented, but MP doesn't call new() or provide
 # any way of making that happen...and weirder yet, no one seems to notice.
-# Thus we're left with leaving a global $self haning around long enough to copy
+# Thus we're left with leaving a global $self hanging around long enough to copy
 # replace the first arg to our handler with it.
 my $self_init = Apache::Voodoo::Handler->new();
 
@@ -59,8 +59,8 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 
-	$self->{'mp'}        = Apache::Voodoo::MP->new();
-	$self->{'constants'} = Apache::Voodoo::Constants->new();
+	$self->{mp}        = Apache::Voodoo::MP->new();
+	$self->{constants} = Apache::Voodoo::Constants->new();
 
 	$self->{debug_root} = $self->{constants}->debug_path();
 	$self->{debug_template} = $INC{"Apache/Voodoo/Handler.pm"};
@@ -387,13 +387,7 @@ sub generate_html {
 					my $ts = Time::HiRes::time;
 					$run->{'session'}->{"er_$ts"}->{'error'}  = $return->[1];
 					$run->{'session'}->{"er_$ts"}->{'return'} = $return->[2];
-
-					# internal redirects have always been touchy, removing for now until I can
-					# figure out why it's being a pain now.
-					$run->{'session_handler'}->disconnect();
-					return $self->{mp}->redirect($app->{'site_root'}."display_error?error=$ts",1);
-
-					#return $self->{mp}->redirect($app->{'site_root'}."display_error?error=$ts");
+					return $self->{mp}->redirect($app->{'site_root'}."display_error?error=$ts");
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
 					if (defined($return->[2])) {
@@ -579,7 +573,7 @@ sub restart {
 
 		# check to see if we can get a database connection
 		foreach (@{$app->{'dbs'}}) {
-			$app->{'dbh'} = DBI->connect(@{$_});
+			$app->{'dbh'} = DBI->connect_cached(@{$_});
 			last if $app->{'dbh'};
 			
 			$self->{mp}->error("========================================================");
@@ -587,12 +581,6 @@ sub restart {
 			$self->{mp}->error("$DBI::errstr");
 			$self->{mp}->error("========================================================");
 		}
-
-		# if the database connection was invalid (or there wasn't one, this would 'die'.  
-		# eval wrap is to trap and trow away this possible error ('cause we don't care)
-		eval {
-			$app->{'dbh'}->disconnect;
-		};
 
 		$self->{'apps'}->{$id} = $app;
 		
