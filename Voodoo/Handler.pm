@@ -17,7 +17,7 @@ application's page handling modules.
 =cut ################################################################################
 package Apache::Voodoo::Handler;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 
@@ -184,7 +184,7 @@ sub handle_request {
 
 	if ($run->{'uri'} eq "logout") {
 		# handle logout
-		$self->{mp}->err_header_out("Set-Cookie" => $app->{'cookie_name'} . "='!'; path=/; HttpOnly"); # .($app->{https_cookies})?"; secure":'');
+		$self->{mp}->set_cookie($app->{'cookie_name'},'!','now');
 		$run->{'session_handler'}->destroy();
 		return $self->{mp}->redirect($app->{'logout_target'});
 #		return $self->{mp}->redirect($app->{'site_root'}."index");
@@ -239,31 +239,25 @@ sub attach_session {
 	my $self = shift;
 	my $app  = shift;
 
-	my ($session_id) = ($self->{mp}->header_in('Cookie') =~ /$app->{'cookie_name'}=([0-9a-z]+)/);
-	my $instance = $app->{session_handler}->attach($session_id,$app->{dbh});
+	my $session_id = $self->{mp}->get_cookie($app->{'cookie_name'});
+	my $session = $app->{session_handler}->attach($session_id,$app->{dbh});
 
-	my $session = $instance->session;
-
-	# if this was a new session, or there was an old cookie from a previous sesion,
-	# set the session cookie.
-	if (!defined($session_id) || $instance->{id} ne $session_id) {
-		# err_headers get sent on both successful and errored requests
-		$self->{mp}->err_header_out("Set-Cookie" => "$app->{'cookie_name'}=$instance->{id}; path=/; HttpOnly"); #.($app->{https_cookies})?"; secure":'');
-		$session->{'timestamp'} = time;
+	if (!defined($session_id) || $session->{id} ne $session_id) {
+		# This is a new session, or there was an old cookie from a previous sesion,
+		$self->{mp}->set_cookie($app->{'cookie_name'},$session->{id});
 	}
+	elsif ($session->has_expired($app->{'session_timeout'})) {
+		# the session has expired
+		$self->{mp}->set_cookie($app->{'cookie_name'},'!','now');
+		$session->destroy;
 
-	# see if the session has expired
-	if ($app->{'session_timeout'} > 0 && $session->{'timestamp'} < (time - ($app->{'session_timeout'}*60))) {
-		# use err header out since this is a redirect
-		$self->{mp}->err_header_out("Set-Cookie" => $app->{'cookie_name'} . "='!'; path=/; HttpOnly"); # .($app->{https_cookies})?"; secure":'');
-		$instance->destroy;
 		return $self->{mp}->redirect($app->{'site_root'}."timeout");
 	}
-	else {
-		$session->{'timestamp'} = time;
-	}
 
-	return $instance;
+	# update the session timer
+	$session->touch();
+
+	return $session;
 }
 
 sub history_queue {
@@ -283,24 +277,17 @@ sub history_queue {
 		$session->{'history'}->[0]->{'uri'} ne $uri) {
 
 		# queue is empty or this is a new page
-		unshift(@{$session->{'history'}}, {'uri' => $uri, 'params' => $self->mkurlparams($params)});
+		unshift(@{$session->{'history'}}, {'uri' => $uri, 'params' => $params});
 	}
 	else {
 		# re-entrant call to page, update the params
-		$session->{'history'}->[0]->{'params'} = $self->mkurlparams($params);
+		$session->{'history'}->[0]->{'params'} = $params;
 	}
 
 	if (scalar(@{$session->{'history'}}) > 30) {
 		# keep the queue at 10 items
 		pop @{$session->{'history'}};
 	}
-}
-
-sub mkurlparams {
-	my $self = shift;
-	my $p = shift;
-
-	return join("&",map { $_."=".$p->{$_} } keys %{$p});
 }
 
 sub resolve_conf_section {

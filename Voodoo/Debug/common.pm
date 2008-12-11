@@ -1,6 +1,6 @@
 package Apache::Voodoo::Debug::common;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: svn://localhost/Voodoo/core/Voodoo/Driver.pm $' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL: svn://localhost/Voodoo/core/Voodoo/Driver.pm $' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

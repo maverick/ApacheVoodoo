@@ -13,7 +13,7 @@ $Id: Handler.pm 8108 2008-09-16 16:11:11Z medwards $
 =cut ################################################################################
 package Apache::Voodoo::Debug::Handler;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: svn://localhost/Voodoo/core/Voodoo/Handler.pm $' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL: svn://localhost/Voodoo/core/Voodoo/Handler.pm $' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

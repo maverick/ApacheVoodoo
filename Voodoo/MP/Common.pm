@@ -1,6 +1,6 @@
 package Apache::Voodoo::MP::Common;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: svn://atlas.nasba.int/Voodoo/core/Voodoo/MP/V1.pm $' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL: svn://atlas.nasba.int/Voodoo/core/Voodoo/MP/V1.pm $' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;
@@ -17,7 +17,10 @@ sub new {
 
 sub set_request {
 	my $self = shift;
+
 	$self->{'r'} = shift;
+
+	delete $self->{'cookiejar'};
 }
 
 sub dir_config { shift()->{'r'}->dir_config(@_); }

@@ -17,7 +17,7 @@ templating engines (Template::Toolkit, Text::Template, etc)
 =cut ################################################################################
 package Apache::Voodoo::Template;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

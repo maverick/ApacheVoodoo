@@ -1,6 +1,6 @@
 package Apache::Voodoo::Session::Instance;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;
@@ -26,6 +26,24 @@ sub id      { return $_[0]->{id};      }
 sub session { return $_[0]->{session}; }
 sub obj     { return $_[0]->{obj};     }
 	
+sub has_expired {
+	my $self    = shift;
+	my $timeout = shift;
+
+	if ($timeout > 0 && $self->{session}->{timestamp} < (time - ($timeout*60))) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+sub touch {
+	my $self = shift;
+
+	$self->{session}->{timestamp} = time;
+}
+
 sub disconnect {
 	my $self = shift;
 

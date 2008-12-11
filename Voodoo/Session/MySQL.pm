@@ -1,6 +1,6 @@
 package Apache::Voodoo::Session::MySQL;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;
@@ -35,6 +35,10 @@ sub attach {
 		Handle     => $dbh,
 		LockHandle => $dbh
 	};
+
+	unless ($id =~ /^([0-9a-z]+)$/) {
+		$id = undef;
+	}
 
 	eval {
 		$obj = tie(%session,'Apache::Session::MySQL',$id, $c) || die "Global data not available: $!";	

@@ -3,7 +3,7 @@ Factory that creates either a file based or mysql based session storage object.
 =cut ###########################################################################
 package Apache::Voodoo::Session;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

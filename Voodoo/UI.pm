@@ -3,7 +3,7 @@ Factory that creates the requested form ui driver type.
 =cut ###########################################################################
 package Apache::Voodoo::UI;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

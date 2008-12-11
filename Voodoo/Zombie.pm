@@ -18,7 +18,7 @@ where.  This is a development tool...you shouldn't have any Zombies in your prod
 =cut ################################################################################
 package Apache::Voodoo::Zombie;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 

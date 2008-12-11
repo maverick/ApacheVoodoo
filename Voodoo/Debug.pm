@@ -18,7 +18,7 @@ methods from L<Apache::Voodoo>.
 =cut ###########################################################################
 package Apache::Voodoo::Debug;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 
@@ -139,7 +139,7 @@ sub debug {
 	}
 
 	my $data;
-	if (length(@_) > 1 || ref($_[0])) {
+	if (scalar(@_) > 1 || ref($_[0])) {
 		# if there's more than one item, or the item we have is a reference
 		# we shove it through it Data::Dumper
 		$data = Dumper(@_);

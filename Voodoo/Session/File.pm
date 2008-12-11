@@ -1,6 +1,6 @@
 package Apache::Voodoo::Session::File;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;
@@ -33,6 +33,10 @@ sub attach {
 		Directory     => $self->{'session_dir'},
 		LockDirectory => $self->{'session_dir'}
 	};
+
+	unless ($id =~ /^([0-9a-z]+)$/) {
+		$id = undef;
+	}
 
 	eval {
 		$obj = tie(%session,'Apache::Session::File',$id, $c) || die "Global data not available: $!";	
