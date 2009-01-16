@@ -22,8 +22,8 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 
+require "Apache/Voodoo/SIPC.pm";
 use Time::HiRes;
-use IO::Socket::SIPC;
 use IO::Socket::UNIX;
 
 use Data::Dumper;
@@ -68,7 +68,7 @@ sub init {
 
 	return unless $self->{enabled};
 
-	$self->{'socket'} = IO::Socket::SIPC->new(
+	$self->{'socket'} = SIPC->new(
 		socket_handler => 'IO::Socket::UNIX'
 	);
 
