@@ -68,19 +68,20 @@ sub init {
 
 	return unless $self->{enabled};
 
-	eval {
-		$self->{'socket'} = IO::Socket::UNIX->new(
-			Type => SOCK_STREAM,
-			Peer => $self->{ac}->socket_file()
-		);
-	};
-	print STDERR Dumper($self->{'socket'});
+	unless (defined($self->{'socket'}) && $self->{'socket'}->connected) {
+		eval {
+			$self->{'socket'} = IO::Socket::UNIX->new(
+				Type => SOCK_STREAM,
+				Peer => $self->{ac}->socket_file()
+			);
+		};
 
-	if ($@ || !$self->{'socket'}->connected) {
-		print STDERR "Failed to open socket.  Debug info will be lost. $!\n";
-		$self->{enable}  = undef;
-		$self->{enabled} = 0;
-		return;
+		if ($@ || !$self->{'socket'}->connected) {
+			print STDERR "Failed to open socket.  Debug info will be lost. $!\n";
+			$self->{enable}  = undef;
+			$self->{enabled} = 0;
+			return;
+		}
 	}
 
 	# we always send this since is fundamental to identifying the request chain
@@ -100,13 +101,7 @@ sub enabled {
 }
 
 sub shutdown {
-	my $self = shift;
-
-	undef $self->{'enable'};
-
-	if (ref($self->{'socket'})) {
-		$self->{'socket'}->close();
-	}
+	return;
 }
 
 sub debug {
