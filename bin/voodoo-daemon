@@ -7,8 +7,10 @@ use DBI;
 
 use Daemon::Generic;
 use Proc::UID;
+
 use IO::Socket::UNIX;
-use IO::Socket::SIPC;
+use IO::Handle::Record;
+
 use POSIX ":sys_wait_h";
 
 use Apache::Voodoo::Constants;
@@ -85,11 +87,7 @@ sub gd_run {
 		Proc::UID::drop_uid_perm($ac->apache_uid());
 	}
 
-	my $socket = IO::Socket::SIPC->new(
-		socket_handler => 'IO::Socket::UNIX'
-	);
-
-	$socket->connect(
+	my $socket = IO::Socket::UNIX->new(
 		Type   => SOCK_STREAM,
 		Local  => $sf,
 		Listen => 1,
@@ -115,7 +113,7 @@ sub gd_run {
 		}
 
 		while (defined($io)) {
-			my $data = $io->read();
+			my ($data) = $io->read_record();
 
 			last unless defined($data);
 

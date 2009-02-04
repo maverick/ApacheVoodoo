@@ -22,9 +22,9 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 
-require "Apache/Voodoo/SIPC.pm";
 use Time::HiRes;
 use IO::Socket::UNIX;
+use IO::Handle::Record;
 
 use Data::Dumper;
 $Data::Dumper::Terse = 1;
@@ -68,19 +68,15 @@ sub init {
 
 	return unless $self->{enabled};
 
-	$self->{'socket'} = SIPC->new(
-		socket_handler => 'IO::Socket::UNIX'
-	);
-
-	my $ok;
 	eval {
-		$ok = $self->{'socket'}->connect(
+		$self->{'socket'} = IO::Socket::UNIX->new(
 			Type => SOCK_STREAM,
 			Peer => $self->{ac}->socket_file()
 		);
 	};
+	print STDERR Dumper($self->{'socket'});
 
-	if ($@ || !$ok) {
+	if ($@ || !$self->{'socket'}->connected) {
 		print STDERR "Failed to open socket.  Debug info will be lost. $!\n";
 		$self->{enable}  = undef;
 		$self->{enabled} = 0;
@@ -93,7 +89,7 @@ sub init {
 	$self->{'enable'}->{'result'}     = 1;
 	$self->{'enable'}->{'session_id'} = 1;
 
-	$self->{'socket'}->send({
+	$self->{'socket'}->write_record({
 		type => 'request',
 		id   => $self->{'id'}
 	});
@@ -109,7 +105,7 @@ sub shutdown {
 	undef $self->{'enable'};
 
 	if (ref($self->{'socket'})) {
-		$self->{'socket'}->disconnect();
+		$self->{'socket'}->close();
 	}
 }
 
@@ -149,7 +145,7 @@ sub debug {
 		$data = $_[0];
 	}
 
-	$self->{'socket'}->send({
+	$self->{'socket'}->write_record({
 		type  => 'debug',
 		id    => $self->{id},
 		stack => [reverse @stack],
@@ -162,7 +158,7 @@ sub mark {
 
 	return unless $self->{'enable'}->{'profile'};
 
-	$self->{'socket'}->send({
+	$self->{'socket'}->write_record({
 		type      => 'profile',
 		id        => $self->{id},
 		timestamp => Time::HiRes::time,
@@ -175,7 +171,7 @@ sub return_data {
 
 	return unless $self->{'enable'}->{'return_data'};
 
-	$self->{'socket'}->send({
+	$self->{'socket'}->write_record({
 		type    => 'return_data',
 		id      => $self->{id},
 		handler => shift,
@@ -199,7 +195,7 @@ sub _log {
 	
 	return unless $self->{'enable'}->{$type};
 
-	$self->{'socket'}->send({
+	$self->{'socket'}->write_record({
 		type => $type,
 		id   => $self->{id},
 		data => shift
