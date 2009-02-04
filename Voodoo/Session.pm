@@ -10,19 +10,22 @@ use warnings;
 
 sub new {
 	my $class = shift;
-	my $type  = shift;
 	my $conf  = shift;
 
-	if ($type eq "File") {
-		require Apache::Voodoo::Session::File;
-		return Apache::Voodoo::Session::File->new($conf);
-	}
-	elsif ($type eq "MySQL") {
+	if (defined($conf->{'session_table'})) {
+		unless (defined($conf->{'database'})) {
+			die "You have sessions configured to be stored in the database but no database configuration.";
+		}
+
 		require Apache::Voodoo::Session::MySQL;
 		return Apache::Voodoo::Session::MySQL->new($conf);
 	}
+	elsif (defined($conf->{'session_dir'})) {
+		require Apache::Voodoo::Session::File;
+		return Apache::Voodoo::Session::File->new($conf);
+	}
 	else {
-		die "$type is not supported session type.\n";
+		die "You do not have a session storage mechanism defined.";
 	}
 }
 

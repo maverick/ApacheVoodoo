@@ -13,7 +13,9 @@ sub new {
 
 	$self->{'module'} = shift;
 
+	$self->{'bootstrapping'} = 1;
 	$self->refresh;
+	$self->{'bootstrapping'} = 0;
 
 	$self->{'parents'} = {};
 	foreach (eval '@{'.$self->{'module'}.'::ISA}') {
@@ -51,15 +53,12 @@ sub refresh {
 }
 
 # 
-# Override the build in 'can' to allow:
+# Override the built in 'can' to allow:
 #   a) trigger dynamically reloading the module as needed
 #   b) dynamically create closures to link Apache::Voodoo::Handler with userland modules
 # 
 # This has some nice side effects.  
-#   Static vs Dynamic loading is totally transparent to the interaction 
-#   between Voodoo and userland modules.  
-#   Certain method names are no longer 'magical' and visible to Voodoo by default.
-#   There's no longer any need to 'register' non magical methods with Voodoo.
+#   Static vs Dynamic loading is totally transparent to the interaction between Voodoo and userland modules.  
 #
 sub can {
 	my $self = shift;
@@ -95,16 +94,17 @@ sub _handle {
 	my @params = @_;
 
 	# check parent modules for change
-	foreach (eval '@{'.$self->{'module'}.'::ISA}') {
-		my $t = $self->get_mtime($_);
-		if ($self->{'parents'}->{$_} != $t) {
-			$self->{'parents'}->{$_} = $t;
+	foreach my $module (eval '@{'.$self->{'module'}.'::ISA}') {
+		my $t = $self->get_mtime($module);
+		if ($self->{'parents'}->{$module} != $t) {
+			$self->{'parents'}->{$module} = $t;
 
-			$_ =~ s/::/\//go;
-			$_ .= ".pm";
-			delete $INC{$_};
+			my $file = $module;
+			$file =~ s/::/\//go;
+			$file .= ".pm";
+			delete $INC{$file};
 			eval {
-				require $_;
+				require $file;
 			};
 			if ($@) {
 				my $error = "<pre>\n";

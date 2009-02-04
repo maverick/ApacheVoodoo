@@ -18,8 +18,8 @@ use strict;
 use warnings;
 
 sub load_module {
-	my $self = shift;
-	my $module = shift || $self->{'module'};
+	my $self    = shift;
+	my $module  = shift || $self->{'module'};
 	
 	my $file = $module;
 	$file =~ s/::/\//go;
@@ -30,7 +30,14 @@ sub load_module {
 	# so, if you require the same module twice (or you change it on disk later)
 	# perl consults this hash and doesn't reload it.
 	# delete the entry, and perl will re-require the module from scratch
-	delete $INC{$file};
+	#
+	# We don't want to do this when the server is starting for the first time.  If
+	# we're running multiple instances of the same application, then we're just wasting time
+	# recompiling the same modules over and over, and "warnings" will sometimes (uselessly) yell about
+	# modules being redefined.
+	unless ($self->{'bootstrapping'}) {
+		delete $INC{$file};
+	}
 
 	my $obj;
 	eval {
@@ -44,6 +51,7 @@ sub load_module {
 		$module =~ s/^[^:]+:://;
 
 		require "Apache/Voodoo/Zombie.pm";
+		import Apache::Voodoo::Zombie;
 		$obj = Apache::Voodoo::Zombie->new();
 
 		$obj->module($module);

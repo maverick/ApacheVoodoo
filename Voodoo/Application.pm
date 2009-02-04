@@ -57,11 +57,11 @@ sub setup {
 	my $self = shift;
 
 	# get the list of modules we're going to use
-	foreach (keys %{$self->{'modules'}}) {
+	foreach (sort keys %{$self->{'modules'}}) {
 		$self->prep_module($_);
 	}
 
-	foreach (keys %{$self->{'includes'}}) {
+	foreach (sort keys %{$self->{'includes'}}) {
 		$self->prep_include($_);
 	}
 
@@ -144,23 +144,13 @@ sub load_config {
 						 ];
 	}
 
-	if (defined($conf{'session_table'})) {
-		if ($self->{'dbs'}) {
-			$self->{'session_handler'} = Apache::Voodoo::Session->new('MySQL',$conf{'session_table'});
-		}
-		else {
-			print STDERR "You have sessions configured to be stored in the database but no database configuration.\n";
-			$self->{'errors'}++;
-		}
-	}
-	elsif (defined($conf{'session_dir'})) {
-		$self->{'session_handler'} = Apache::Voodoo::Session->new('File',$conf{'session_dir'});
-	}
-	else {
-		print STDERR "You do not have a session storage mechanism defined.\n";
+	eval {
+		$self->{'session_handler'} = Apache::Voodoo::Session->new(\%conf);
+	};
+	if ($@) {
+		print STDERR "$@\n";
 		$self->{'errors'}++;
 	}
-
 
 	$self->{'modules'}  = $conf{'modules'}  || {};
 	$self->{'includes'} = $conf{'includes'} || {};
@@ -206,7 +196,7 @@ sub load_config {
 }
 
 sub prep_module {
-	my $self = shift;
+	my $self   = shift;
 	my $module = shift;
 
 	my $obj = $self->load_module($module);
@@ -215,7 +205,7 @@ sub prep_module {
 }
 
 sub prep_include {
-	my $self = shift;
+	my $self   = shift;
 	my $module = shift;
 
 	my $obj = $self->load_module($module);
@@ -244,7 +234,10 @@ sub map_uri {
 		return [$uri,"handle"];
 	}
 	else {
-		my ($p,$m,$o) = ($uri =~ /^(.*?)([a-z]+)_(\w+)$/);
+		my $p='';
+		my $m='';
+		my $o='';
+		($p,$m,$o) = ($uri =~ /^(.*?)([a-z]+)_(\w+)$/);
 		return ["$p$o",$m];
 	}
 }
@@ -265,7 +258,7 @@ sub refresh {
 		$self->load_config($self->{'conf_file'});
 
 		# check the new list of modules against the old list
-		foreach (keys %{$self->{'modules'}}) {
+		foreach (sort keys %{$self->{'modules'}}) {
 			unless (exists($old_module{$_})) {
 				# new module (wasn't in the old list.
 				$self->debug("Adding new module: $_");
@@ -284,7 +277,7 @@ sub refresh {
 		}
 
 		# now we do exactly the same thing for the includes
-		foreach (keys %{$self->{'includes'}}) {
+		foreach (sort keys %{$self->{'includes'}}) {
 			unless (exists($old_include{$_})) {
 				# new module
 				$self->debug("Adding new include: $_");

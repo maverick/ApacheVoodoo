@@ -11,13 +11,13 @@ use Apache::Voodoo::Session::Instance;
 
 sub new {
 	my $class = shift;
-	my $dir   = shift;
+	my $conf  = shift;
 
 	my $self = {};
 
 	bless $self,$class;
 
-	$self->{session_dir} = $dir;
+	$self->{session_dir} = $conf->{'session_dir'};
 
 	return $self;
 }
@@ -25,25 +25,28 @@ sub new {
 sub attach {
 	my $self = shift;
 	my $id   = shift;
+	my $dbh  = shift;
+
+	my %opts = @_;
 
 	my %session;
 	my $obj;
 
-	my $c = {
-		Directory     => $self->{'session_dir'},
-		LockDirectory => $self->{'session_dir'}
-	};
+	$opts{'Directory'}     = $self->{'session_dir'};
+	$opts{'LockDirectory'} = $self->{'session_dir'};
 
-	unless ($id =~ /^([0-9a-z]+)$/) {
+	# Apache::Session probably validates this internally, making this check pointless.
+	# But why take that for granted?
+	if (defined($id) && $id !~ /^([0-9a-z]+)$/) {
 		$id = undef;
 	}
 
 	eval {
-		$obj = tie(%session,'Apache::Session::File',$id, $c) || die "Global data not available: $!";	
+		$obj = tie(%session,'Apache::Session::File',$id, \%opts) || die "Tieing to session failed: $!";	
 	};
 	if ($@) {
 		undef $id;
-		$obj = tie(%session,'Apache::Session::File',$id, $c) || die "Global data not available: $!";	
+		$obj = tie(%session,'Apache::Session::File',$id, \%opts) || die "Tieing to session failed: $!";	
 	}
 
 	$self->{connected} = 1;
