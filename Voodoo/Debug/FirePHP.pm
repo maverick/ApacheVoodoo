@@ -1,7 +1,11 @@
-package FirePHP;
+package Apache::Voodoo::Debug::FirePHP;
   
 use strict;
 use warnings;
+
+use Carp;
+use Data::Dumper;
+use JSON;
 
 use constant VERSION     => '0.2.1';
 use constant LOG         => 'LOG';
@@ -22,12 +26,14 @@ sub new {
   	my $self = {};
 	bless $self,$class;
 
+	$self->{json} = new JSON;
+	$self->{json}->allow_nonref(1);
+	$self->{json}->utf8(1);
+
 	$self->{setHeader} = $options{'setHeader'};
 	$self->{userAgent} = $options{'userAgent'};
 
 	$self->{'messageIndex'} = 1;
-	$self->{'objectFilters'} = [];
-	$self->{'objectStack'} = [];
 	$self->{'enabled'} = 1;
 
     $self->{'options'}->{'maxObjectDepth'} = 10;
@@ -44,14 +50,6 @@ sub setEnabled {
 
 sub getEnabled {
 	return $_[0]->{'enabled'};
-}
-  
-sub setObjectFilter {
-	my $self   = shift;
-	my $class  = shift;
-	my $filter = shift;
-	
-    $self->{'objectFilters'}->{$class} = $filter;
 }
   
 sub setOptions {
@@ -154,7 +152,7 @@ sub dump  { return $_[0]->fb($_[1], $_[2], DUMP);  }
 
 sub table { return $_[0]->fb($_[2], $_[1], TABLE); } 
   
-sub trace { return $_[0]->fb($_[1], TRACE); } 
+sub trace { return $_[0]->fb($_[1], undef, TRACE); } 
   
 #
 # Relies on having a callback setup in the constructor that returns the user agent
@@ -163,70 +161,55 @@ sub detectClientExtension {
 	my $self = shift;
 	my $useragent = $self->{'userAgent'}->();
 
-	if ($useragent =~ /\sFirePHP\/([.\d]+)/ && $1 ge '0.0.6') {
+	if ($useragent =~ /\bFirePHP\/([.\d]+)/ && $self->_compare_version($1,'0.0.6')) {
 		return 1;
 	}
 	else {
 		return 0;
 	}
 }  
+
+sub _compare_version {
+	my $self   = shift;
+
+	my @f = split(/\./,shift);
+	my @s = split(/\./,shift);
+
+	my $c = (scalar(@f) > scalar(@s))?scalar(@f):scalar(@s);
+
+	for (my $i=0; $i < $c; $i++) {
+		if ($f[$i] < $s[$i] || (!defined($f[$i]) && defined($s[$i]))) {
+			return 0;
+		}
+	}
+	return 1;
+}
  
 sub fb {
-	my $self   = shift;
-	my $Object = shift;
+	my $self = shift;
   
-    unless (!$self->{'enabled'}) {
+    unless ($self->{'enabled'}) {
 		return 0;
     }
 
-#
-# FIXME here
-#
+	$self->{'_headers'} = [];
+  
+	if (scalar(@_) != 1 && scalar(@_) != 3) {
+		die 'Wrong number of arguments to fb() function!';
+	}
 
-    if (headers_sent($filename, $linenum)) {
-		throw $this->newException('Headers already sent in '.$filename.' on line '.$linenum.'. Cannot send log data to FirePHP. You must have Output Buffering enabled via ob_start() or output_buffering ini directive.');
-    }
-  
-    $Type = null;
-    $Label = null;
-  
-    if (func_num_args()==1) {
-    } 
-	else if(func_num_args()==2) {
-		switch (func_get_arg(1)) {
-			case self::LOG:
-			case self::INFO:
-			case self::WARN:
-			case self::ERROR:
-			case self::DUMP:
-			case self::TRACE:
-			case self::EXCEPTION:
-			case self::TABLE:
-			case self::GROUP_START:
-			case self::GROUP_END:
-				$Type = func_get_arg(1);
-				break;
-			default:
-				$Label = func_get_arg(1);
-				break;
-		}
-	}
-	else if(func_num_args()==3) {
-		$Type = func_get_arg(2);
-		$Label = func_get_arg(1);
-    }
-	else {
-		throw $this->newException('Wrong number of arguments to fb() function!');
+	my $Object = shift;
+    my $Label  = shift;
+    my $Type   = shift;
+
+	if (!$self->detectClientExtension()) {
+		return 0;
 	}
   
+    my %meta = ();
+    my $skipFinalObjectEncode = 0;
   
-	if (!$this->detectClientExtension()) {
-		return false;
-	}
-  
-    $meta = array();
-    $skipFinalObjectEncode = false;
-  
+=cut
     if ($Object instanceof Exception) {
 
 		$meta['file'] = $this->_escapeTraceFile($Object->getFile());
@@ -271,7 +254,7 @@ sub fb {
 		}
 		$Type = self::EXCEPTION;
     }
-	else if($Type==self::TRACE) {
+	if ($Type eq TRACE) {
       
 		$trace = debug_backtrace();
 		if (!$trace) return false;
@@ -287,14 +270,14 @@ sub fb {
 
 					# Skip - FB::trace(), FB::send(), $firephp->trace(), $firephp->fb()
 			}
-			else if(isset($trace[$i]['class'])
+			elsif(isset($trace[$i]['class'])
 				&& isset($trace[$i+1]['file'])
 				&& $trace[$i]['class']=='FirePHP'
 				&& substr($this->_standardizePath($trace[$i+1]['file']),-18,18)=='FirePHPCore/fb.php') {
 
 					# Skip fb()
 			}
-			else if($trace[$i]['function']=='fb'
+			elsif($trace[$i]['function']=='fb'
 				|| $trace[$i]['function']=='trace'
 				|| $trace[$i]['function']=='send') {
 
@@ -315,27 +298,27 @@ sub fb {
 			}
 		}
 	}
-	else if($Type==self::TABLE) {
+=cut
+	if ($Type eq TABLE) {
       
-		if (isset($Object[0]) && is_string($Object[0])) {
-			$Object[1] = $this->encodeTable($Object[1]);
+		if (ref($Object) eq "ARRAY" && ref($Object->[0]) ne "ARRAY") {
+			$Object->[1] = $self->encodeTable($Object->[1]);
 		}
 		else {
-			$Object = $this->encodeTable($Object);
+			$Object = $self->encodeTable($Object);
 		}
 
-		$skipFinalObjectEncode = true;
+		$skipFinalObjectEncode = 1;
 	}
-	else {
-		if($Type===null) {
-			$Type = self::LOG;
-		}
+	elsif (!defined($Type)) {
+		$Type = LOG;
     }
     
+=pod
 	if ($this->options['includeLineNumbers']) {
 		if(!isset($meta['file']) || !isset($meta['line'])) {
 
-			$trace = debug_backtrace();
+			my $trace = debug_backtrace();
 			for( $i=0 ; $trace && $i<sizeof($trace) ; $i++ ) {
 	
 				if(isset($trace[$i]['class'])
@@ -347,14 +330,14 @@ sub fb {
 
 					# Skip - FB::trace(), FB::send(), $firephp->trace(), $firephp->fb()
 				}
-				else if(isset($trace[$i]['class'])
+				elsif(isset($trace[$i]['class'])
 					&& isset($trace[$i+1]['file'])
 					&& $trace[$i]['class']=='FirePHP'
 					&& substr($this->_standardizePath($trace[$i+1]['file']),-18,18)=='FirePHPCore/fb.php') {
 
 					# Skip fb()
 				}
-				else if(isset($trace[$i]['file'])
+				elsif(isset($trace[$i]['file'])
 					&& substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php') {
 
 					# Skip FB::fb()
@@ -371,65 +354,74 @@ sub fb {
 		unset($meta['file']);
 		unset($meta['line']);
 	}
+=cut
 
-	$this->setHeader('X-Wf-Protocol-1','http://meta.wildfirehq.org/Protocol/JsonStream/0.2');
-	$this->setHeader('X-Wf-1-Plugin-1','http://meta.firephp.org/Wildfire/Plugin/FirePHP/Library-FirePHPCore/'.self::VERSION);
+	$self->setHeader('X-Wf-Protocol-1','http://meta.wildfirehq.org/Protocol/JsonStream/0.2');
+	$self->setHeader('X-Wf-1-Plugin-1','http://meta.firephp.org/Wildfire/Plugin/FirePHP/Library-FirePHPCore/'.VERSION);
  
-	$structure_index = 1;
-	if ($Type==self::DUMP) {
+	my $structure_index = 1;
+	if ($Type eq DUMP) {
 		$structure_index = 2;
-		$this->setHeader('X-Wf-1-Structure-2','http://meta.firephp.org/Wildfire/Structure/FirePHP/Dump/0.1');
+		$self->setHeader('X-Wf-1-Structure-2','http://meta.firephp.org/Wildfire/Structure/FirePHP/Dump/0.1');
 	}
 	else {
-		$this->setHeader('X-Wf-1-Structure-1','http://meta.firephp.org/Wildfire/Structure/FirePHP/FirebugConsole/0.1');
+		$self->setHeader('X-Wf-1-Structure-1','http://meta.firephp.org/Wildfire/Structure/FirePHP/FirebugConsole/0.1');
 	}
   
-    if ($Type==self::DUMP) {
-		$msg = '{"'.$Label.'":'.$this->jsonEncode($Object, $skipFinalObjectEncode).'}';
+	my $msg;
+    if ($Type eq DUMP) {
+		$msg = '{"'.$Label.'":'.$self->jsonEncode($Object, $skipFinalObjectEncode).'}';
 	}
 	else {
-		$msg_meta = array('Type'=>$Type);
-		if ($Label!==null) {
-			$msg_meta['Label'] = $Label;
+		my %msg_meta = ('Type' => $Type);
+		if (defined($Label)) {
+			$msg_meta{'Label'} = $Label;
 		}
-		if (isset($meta['file'])) {
-			$msg_meta['File'] = $meta['file'];
+		if (defined($meta{'file'})) {
+			$msg_meta{'File'} = $meta{'file'};
 		}
-		if (isset($meta['line'])) {
-			$msg_meta['Line'] = $meta['line'];
+		if (defined($meta{'line'})) {
+			$msg_meta{'Line'} = $meta{'line'};
 		}
-		$msg = '['.$this->jsonEncode($msg_meta).','.$this->jsonEncode($Object, $skipFinalObjectEncode).']';
+		$msg = '['.$self->jsonEncode(\%msg_meta).','.$self->jsonEncode($Object, $skipFinalObjectEncode).']';
     }
     
-    $parts = explode("\n",chunk_split($msg, 5000, "\n"));
+	#
+	# Ugh, this could be handled so much better.
+	# oh well...this is how the php version does it.
+	#
+	$msg =~ s/(.{5000})/$1\n/g;
+	my @parts = split(/\n/,$msg);
+	my $c_parts = scalar(@parts);
 
-    for ( $i=0 ; $i<count($parts) ; $i++) {
-		$part = $parts[$i];
+    foreach (my $i=0; $i < $c_parts; $i++) {
+		my $part = $parts[$i];
         if ($part) {
-            
-            if (count($parts)>2) {
+            if ($c_parts > 2) {
 				# Message needs to be split into multiple parts
-				$this->setHeader('X-Wf-1-'.$structure_index.'-'.'1-'.$this->messageIndex,
-					(($i==0)?strlen($msg):'')
+				$self->setHeader('X-Wf-1-'.$structure_index.'-'.'1-'.$self->{'messageIndex'},
+					(($i==0)?length($msg):'')
 					. '|' . $part . '|'
-					. (($i<count($parts)-2)?'\\':''));
+					. ($i<($c_parts-2)?'\\':''));
 			}
 			else {
-				$this->setHeader('X-Wf-1-'.$structure_index.'-'.'1-'.$this->messageIndex,
-					strlen($part) . '|' . $part . '|');
+				$self->setHeader('X-Wf-1-'.$structure_index.'-'.'1-'.$self->{'messageIndex'},
+					length($part) . '|' . $part . '|');
             }
             
-            $this->messageIndex++;
+            $self->{'messageIndex'}++;
             
-            if ($this->messageIndex > 99999) {
-				throw new Exception('Maximum number (99,999) of messages reached!');             
+            if ($self->{'messageIndex'} > 99999) {
+				#throw new Exception('Maximum number (99,999) of messages reached!');             
             }
         }
     }
 
-  	$this->setHeader('X-Wf-1-Index',$this->messageIndex-1);
+  	$self->setHeader('X-Wf-1-Index',$self->{'messageIndex'}-1);
 
-    return 1;
+	my $h = $self->{'_headers'};
+	$self->{'_headers'} = [];
+	return $h;
 }
   
 sub _standardizePath {
@@ -441,14 +433,14 @@ sub _escapeTrace {
 	my $self  = shift;
 	my $Trace = shift;
 
-    unless (ref($Trace) eq "ARRAY") return $Trace;
+	return $Trace unless (ref($Trace) eq "ARRAY");
 
 	foreach my $row (@{$Trace}) {
 		if (defined($row->{'file'})) {
 			$row->{'file'} = $self->_escapeTraceFile($row->{'file'});
 		}
 		if (defined($row->{'args'})) {
-			$row->{'args'} = $this->encodeObject($row->{'args'});
+			$row->{'args'} = $self->encodeObject($row->{'args'});
 		}
 	}
 
@@ -457,31 +449,25 @@ sub _escapeTrace {
   
 sub _escapeTraceFile { return $_[1]; }
 
-#
-# The calling object must pass in a reference to a method which 
-# can set the outgoing http header.
-#
 sub setHeader() {
 	my $self  = shift;
 	my $name  = shift;
 	my $value = shift;
 
-    $self->{setHeader}->($name,$value);
+	push(@{$self->{'_headers'}},[$name,$value]);
 }
 
 sub jsonEncode {
 	my $self   = shift;
-	my $object = shift;
+	my $Object = shift;
 	my $skipObjectEncode = (shift)?1:0;
 
-    unless ($skipObjectEncode) {
-		$Object = $self->encodeObject($Object);
-    }
-    
-	#
-	# FIXME call json object here
-	#
-	return json_encode($Object);
+#	unless ($skipObjectEncode) {
+#		$Object = $self->encodeObject($Object);
+#    }
+#	print "$Object\n";
+
+	return $self->{'json'}->encode($Object);
 }
   
 sub encodeTable {
@@ -500,181 +486,12 @@ sub encodeTable {
     return $Table;
 }
   
-#
-# FIXME here
-#
-  /**
-   * Encodes an object including members with
-   * protected and private visibility
-   * 
-   * @param Object $Object The object to be encoded
-   * @param int $Depth The current traversal depth
-   * @return array All members of the object
-   */
-  protected function encodeObject($Object, $ObjectDepth = 1, $ArrayDepth = 1)
-  {
-    $return = array();
+sub encodeObject {
+	my $self = shift;
+	my $object = shift;
 
-    if (is_resource($Object)) {
+	return {key => $object};
+	return Dumper($object);
+}
 
-      return '** '.(string)$Object.' **';
-
-    } else    
-	if (is_object($Object)) {
-
-        if ($ObjectDepth > $this->options['maxObjectDepth']) {
-          return '** Max Object Depth ('.$this->options['maxObjectDepth'].') **';
-        }
-        
-        foreach ($this->objectStack as $refVal) {
-            if ($refVal === $Object) {
-                return '** Recursion ('.get_class($Object).') **';
-            }
-        }
-        array_push($this->objectStack, $Object);
-                
-        $return['__className'] = $class = get_class($Object);
-
-        $reflectionClass = new ReflectionClass($class);  
-        $properties = array();
-        foreach( $reflectionClass->getProperties() as $property) {
-          $properties[$property->getName()] = $property;
-        }
-            
-        $members = (array)$Object;
-            
-		foreach( $properties as $raw_name => $property ) {
-          
-			$name = $raw_name;
-			if ($property->isStatic()) {
-				$name = 'static:'.$name;
-			}
-			if ($property->isPublic()) {
-				$name = 'public:'.$name;
-			}
-			else if($property->isPrivate()) {
-				$name = 'private:'.$name;
-				$raw_name = "\0".$class."\0".$raw_name;
-			}
-			else if ($property->isProtected()) {
-				$name = 'protected:'.$name;
-				$raw_name = "\0".'*'."\0".$raw_name;
-			}
-          
-			if (!(isset($this->objectFilters[$class])
-				&& is_array($this->objectFilters[$class])
-				&& in_array($raw_name,$this->objectFilters[$class]))) {
-
-				if (array_key_exists($raw_name,$members)
-					&& !$property->isStatic()) {
-				
-					$return[$name] = $this->encodeObject($members[$raw_name], $ObjectDepth + 1, 1);      
-				
-				}
-				else {
-					if (method_exists($property,'setAccessible')) {
-						$property->setAccessible(true);
-						$return[$name] = $this->encodeObject($property->getValue($Object), $ObjectDepth + 1, 1);
-					}
-					else if($property->isPublic()) {
-						$return[$name] = $this->encodeObject($property->getValue($Object), $ObjectDepth + 1, 1);
-					}
-					else {
-						$return[$name] = '** Need PHP 5.3 to get value **';
-					}
-				}
-			}
-			else {
-				$return[$name] = '** Excluded by Filter **';
-			}
-		}
-        
-        # Include all members that are not defined in the class
-        # but exist in the object
-        foreach( $members as $raw_name => $value ) {
-			$name = $raw_name;
-          
-			if ($name{0} == "\0") {
-				$parts = explode("\0", $name);
-				$name = $parts[2];
-			}
-          
-			if (!isset($properties[$name])) {
-				$name = 'undeclared:'.$name;
-              
-				if (!(isset($this->objectFilters[$class])
-					&& is_array($this->objectFilters[$class])
-					&& in_array($raw_name,$this->objectFilters[$class]))) {
-              
-					$return[$name] = $this->encodeObject($value, $ObjectDepth + 1, 1);
-				}
-				else {
-					$return[$name] = '** Excluded by Filter **';
-				}
-			}
-		}
-        
-		array_pop($this->objectStack);
-        
-    }
-	else if (is_array($Object)) {
-
-		if ($ArrayDepth > $this->options['maxArrayDepth']) {
-			return '** Max Array Depth ('.$this->options['maxArrayDepth'].') **';
-		}
-      
-		foreach ($Object as $key => $val) {
-          
-          // Encoding the $GLOBALS PHP array causes an infinite loop
-          // if the recursion is not reset here as it contains
-          // a reference to itself. This is the only way I have come up
-          // with to stop infinite recursion in this case.
-          if($key=='GLOBALS'
-             && is_array($val)
-             && array_key_exists('GLOBALS',$val)) {
-            $val['GLOBALS'] = '** Recursion (GLOBALS) **';
-          }
-          
-          $return[$key] = $this->encodeObject($val, 1, $ArrayDepth + 1);
-        }
-    } else {
-      if(self::is_utf8($Object)) {
-        return $Object;
-      } else {
-        return utf8_encode($Object);
-      }
-    }
-    return $return;
-  }
-
-  /**
-   * Returns true if $string is valid UTF-8 and false otherwise.
-   *
-   * @param mixed $str String to be tested
-   * @return boolean
-   */
-  protected static function is_utf8($str) {
-    $c=0; $b=0;
-    $bits=0;
-    $len=strlen($str);
-    for($i=0; $i<$len; $i++){
-        $c=ord($str[$i]);
-        if($c > 128){
-            if(($c >= 254)) return false;
-            elseif($c >= 252) $bits=6;
-            elseif($c >= 248) $bits=5;
-            elseif($c >= 240) $bits=4;
-            elseif($c >= 224) $bits=3;
-            elseif($c >= 192) $bits=2;
-            else return false;
-            if(($i+$bits) > $len) return false;
-            while($bits > 1){
-                $i++;
-                $b=ord($str[$i]);
-                if($b < 128 || $b > 191) return false;
-                $bits--;
-            }
-        }
-    }
-    return true;
-  } 
+1;
