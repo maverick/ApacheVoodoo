@@ -36,16 +36,16 @@ sub new {
 	$self->{'messageIndex'} = 1;
 	$self->{'enabled'} = 1;
 
-    $self->{'options'}->{'maxObjectDepth'} = 10;
-    $self->{'options'}->{'maxArrayDepth'}  = 20;
-    $self->{'options'}->{'useNativeJsonEncode'} = 1;
-    $self->{'options'}->{'includeLineNumbers'}  = 1;
+	$self->{'options'}->{'maxObjectDepth'} = 10;
+	$self->{'options'}->{'maxArrayDepth'}  = 20;
+	$self->{'options'}->{'useNativeJsonEncode'} = 1;
+	$self->{'options'}->{'includeLineNumbers'}  = 1;
 
   	return $self;
 }
 
 sub setEnabled {
-    $_[0]->{'enabled'} = ($_[1])?1:0;
+	$_[0]->{'enabled'} = ($_[1])?1:0;
 }
 
 sub getEnabled {
@@ -57,7 +57,7 @@ sub setOptions {
 	my %options = @_;
 
 	foreach (keys %options) {
-    	$self->{'options'}->{$_} = $options{$_};
+		$self->{'options'}->{$_} = $options{$_};
 	}
 }
   
@@ -131,14 +131,14 @@ sub setProcessorUrl {
 	my $self = shift;
 	my $URL  = shift;
 
-    $self->setHeader('X-FirePHP-ProcessorURL' => $URL);
+	$self->setHeader('X-FirePHP-ProcessorURL' => $URL);
 }
 
 sub setRendererUrl {
 	my $self = shift;
 	my $URL  = shift;
 
-    $self->setHeader('X-FirePHP-RendererURL' => $URL);
+	$self->setHeader('X-FirePHP-RendererURL' => $URL);
 }
   
 sub group    { return $_[0]->fb(undef, $_[1], GROUP_START); }
@@ -188,9 +188,9 @@ sub _compare_version {
 sub fb {
 	my $self = shift;
   
-    unless ($self->{'enabled'}) {
+	unless ($self->{'enabled'}) {
 		return 0;
-    }
+	}
 
 	$self->{'_headers'} = [];
   
@@ -199,15 +199,15 @@ sub fb {
 	}
 
 	my $Object = shift;
-    my $Label  = shift;
-    my $Type   = shift;
+	my $Label  = shift;
+	my $Type   = shift;
 
 	if (!$self->detectClientExtension()) {
 		return 0;
 	}
   
-    my %meta = ();
-    my $skipFinalObjectEncode = 0;
+	my %meta = ();
+	my $skipFinalObjectEncode = 0;
   
 =cut
     if ($Object instanceof Exception) {
@@ -312,7 +312,7 @@ sub fb {
 	}
 	elsif (!defined($Type)) {
 		$Type = LOG;
-    }
+	}
     
 =pod
 	if ($this->options['includeLineNumbers']) {
@@ -369,7 +369,7 @@ sub fb {
 	}
   
 	my $msg;
-    if ($Type eq DUMP) {
+	if ($Type eq DUMP) {
 		$msg = '{"'.$Label.'":'.$self->jsonEncode($Object, $skipFinalObjectEncode).'}';
 	}
 	else {
@@ -384,7 +384,7 @@ sub fb {
 			$msg_meta{'Line'} = $meta{'line'};
 		}
 		$msg = '['.$self->jsonEncode(\%msg_meta).','.$self->jsonEncode($Object, $skipFinalObjectEncode).']';
-    }
+	}
     
 	#
 	# Ugh, this could be handled so much better.
@@ -394,10 +394,10 @@ sub fb {
 	my @parts = split(/\n/,$msg);
 	my $c_parts = scalar(@parts);
 
-    foreach (my $i=0; $i < $c_parts; $i++) {
+	foreach (my $i=0; $i < $c_parts; $i++) {
 		my $part = $parts[$i];
-        if ($part) {
-            if ($c_parts > 2) {
+		if ($part) {
+			if ($c_parts > 2) {
 				# Message needs to be split into multiple parts
 				$self->setHeader('X-Wf-1-'.$structure_index.'-'.'1-'.$self->{'messageIndex'},
 					(($i==0)?length($msg):'')
@@ -407,15 +407,15 @@ sub fb {
 			else {
 				$self->setHeader('X-Wf-1-'.$structure_index.'-'.'1-'.$self->{'messageIndex'},
 					length($part) . '|' . $part . '|');
-            }
+			}
             
-            $self->{'messageIndex'}++;
+			$self->{'messageIndex'}++;
             
-            if ($self->{'messageIndex'} > 99999) {
+			if ($self->{'messageIndex'} > 99999) {
 				#throw new Exception('Maximum number (99,999) of messages reached!');             
-            }
-        }
-    }
+			}
+		}
+	}
 
   	$self->setHeader('X-Wf-1-Index',$self->{'messageIndex'}-1);
 
@@ -474,16 +474,16 @@ sub encodeTable {
 	my $self  = shift;
 	my $Table = shift;
 
-    if (ref($Table) eq "ARRAY") {
-    	for (my $i=0; $i < $#{$Table}; $i++) {
+	if (ref($Table) eq "ARRAY") {
+		for (my $i=0; $i < $#{$Table}; $i++) {
 			if (ref($Table->{$i}) eq "ARRAY") {
-        		for (my $j=0; $j < $#{$Table->[$i]}; $j++) {
-          			$Table->[$i]->[$j] = $self->encodeObject($Table->[$i]->[$j]);
+				for (my $j=0; $j < $#{$Table->[$i]}; $j++) {
+					$Table->[$i]->[$j] = $self->encodeObject($Table->[$i]->[$j]);
 				}
 			}
 		}
 	}
-    return $Table;
+	return $Table;
 }
   
 sub encodeObject {
