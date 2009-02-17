@@ -28,6 +28,8 @@ sub new {
 
 	$self->{json} = new JSON;
 	$self->{json}->allow_nonref(1);
+	$self->{json}->allow_blessed(1);
+	$self->{json}->convert_blessed(1);
 	$self->{json}->utf8(1);
 
 	$self->{setHeader} = $options{'setHeader'};
@@ -181,6 +183,9 @@ sub _compare_version {
 		if ($f[$i] < $s[$i] || (!defined($f[$i]) && defined($s[$i]))) {
 			return 0;
 		}
+		elsif ($f[$i] > $s[$i] || (defined($f[$i]) && !defined($s[$i]))) {
+			return 1;
+		}
 	}
 	return 1;
 }
@@ -198,8 +203,8 @@ sub fb {
 		die 'Wrong number of arguments to fb() function!';
 	}
 
-	my $Object = shift;
 	my $Label  = shift;
+	my $Object = shift;
 	my $Type   = shift;
 
 	if (!$self->detectClientExtension()) {

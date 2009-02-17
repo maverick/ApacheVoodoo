@@ -76,7 +76,9 @@ sub init {
 			);
 		};
 
-		if ($@ || !$self->{'socket'}->connected) {
+		if ($@ || 
+			!defined($self->{'socket'}) ||
+			!$self->{'socket'}->connected) {
 			print STDERR "Failed to open socket.  Debug info will be lost. $!\n";
 			$self->{enable}  = undef;
 			$self->{enabled} = 0;
