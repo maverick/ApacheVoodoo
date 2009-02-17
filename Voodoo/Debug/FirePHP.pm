@@ -152,7 +152,7 @@ sub warn  { return $_[0]->fb($_[1], $_[2], WARN);  }
 sub error { return $_[0]->fb($_[1], $_[2], ERROR); } 
 sub dump  { return $_[0]->fb($_[1], $_[2], DUMP);  } 
 
-sub table { return $_[0]->fb($_[2], $_[1], TABLE); } 
+sub table { return $_[0]->fb($_[1], $_[2], TABLE); } 
   
 sub trace { return $_[0]->fb($_[1], undef, TRACE); } 
   
@@ -197,6 +197,10 @@ sub fb {
 		return 0;
 	}
 
+	if (!$self->detectClientExtension()) {
+		return 0;
+	}
+
 	$self->{'_headers'} = [];
   
 	if (scalar(@_) != 1 && scalar(@_) != 3) {
@@ -207,10 +211,11 @@ sub fb {
 	my $Object = shift;
 	my $Type   = shift;
 
-	if (!$self->detectClientExtension()) {
-		return 0;
+	unless ($Object) {
+		$Object = $Label;
+		$Label = undef;
 	}
-  
+
 	my %meta = ();
 	my $skipFinalObjectEncode = 0;
   
@@ -361,16 +366,18 @@ sub fb {
 	}
 =cut
 
-	$self->setHeader('X-Wf-Protocol-1','http://meta.wildfirehq.org/Protocol/JsonStream/0.2');
-	$self->setHeader('X-Wf-1-Plugin-1','http://meta.firephp.org/Wildfire/Plugin/FirePHP/Library-FirePHPCore/'.VERSION);
- 
 	my $structure_index = 1;
-	if ($Type eq DUMP) {
-		$structure_index = 2;
-		$self->setHeader('X-Wf-1-Structure-2','http://meta.firephp.org/Wildfire/Structure/FirePHP/Dump/0.1');
-	}
-	else {
-		$self->setHeader('X-Wf-1-Structure-1','http://meta.firephp.org/Wildfire/Structure/FirePHP/FirebugConsole/0.1');
+	if ($self->{messageIndex} == 1) {
+		$self->setHeader('X-Wf-Protocol-1','http://meta.wildfirehq.org/Protocol/JsonStream/0.2');
+		$self->setHeader('X-Wf-1-Plugin-1','http://meta.firephp.org/Wildfire/Plugin/FirePHP/Library-FirePHPCore/'.VERSION);
+ 
+		if ($Type eq DUMP) {
+			$structure_index = 2;
+			$self->setHeader('X-Wf-1-Structure-2','http://meta.firephp.org/Wildfire/Structure/FirePHP/Dump/0.1');
+		}
+		else {
+			$self->setHeader('X-Wf-1-Structure-1','http://meta.firephp.org/Wildfire/Structure/FirePHP/FirebugConsole/0.1');
+		}
 	}
   
 	my $msg;
@@ -460,6 +467,7 @@ sub setHeader() {
 	my $value = shift;
 
 	push(@{$self->{'_headers'}},[$name,$value]);
+	$self->{setHeader}->($name,$value);
 }
 
 sub jsonEncode {
@@ -481,7 +489,7 @@ sub encodeTable {
 
 	if (ref($Table) eq "ARRAY") {
 		for (my $i=0; $i < $#{$Table}; $i++) {
-			if (ref($Table->{$i}) eq "ARRAY") {
+			if (ref($Table->[$i]) eq "ARRAY") {
 				for (my $j=0; $j < $#{$Table->[$i]}; $j++) {
 					$Table->[$i]->[$j] = $self->encodeObject($Table->[$i]->[$j]);
 				}
@@ -495,8 +503,12 @@ sub encodeObject {
 	my $self = shift;
 	my $object = shift;
 
-	return {key => $object};
-	return Dumper($object);
+	if (ref($object)) {
+		return Dumper($object);
+	}
+	else {
+		return $object;
+	}
 }
 
 1;
