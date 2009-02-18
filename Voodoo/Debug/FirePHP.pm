@@ -143,7 +143,7 @@ sub setRendererUrl {
 	$self->setHeader('X-FirePHP-RendererURL' => $URL);
 }
   
-sub group    { return $_[0]->fb(undef, $_[1], GROUP_START); }
+sub group    { return $_[0]->fb($_[1], undef, GROUP_START); }
 sub groupEnd { return $_[0]->fb(undef, undef, GROUP_END);   }
 
 sub log   { return $_[0]->fb($_[1], $_[2], LOG);   } 
@@ -211,7 +211,7 @@ sub fb {
 	my $Object = shift;
 	my $Type   = shift;
 
-	unless ($Object) {
+	unless (defined($Object) || $Type eq GROUP_START) {
 		$Object = $Label;
 		$Label = undef;
 	}
