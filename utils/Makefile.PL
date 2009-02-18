@@ -6,6 +6,7 @@ my %required_modules = (
 		CPAN	             => 1.9205,	
 		Apache::Session      => 1.6,
 		Config::General      => 2.27,
+		Devel::StackTrace    => 1.20,
 		Digest::MD5          => 2.36,
 		Email::Valid         => 0.15,
 		File::Pid            => 1.01,

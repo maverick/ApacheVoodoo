@@ -216,7 +216,10 @@ sub fb {
 		$Label = undef;
 	}
 
-	my %meta = ();
+	my %meta = (
+		'file' => 'Foo::bar->handle',
+		'line' => 42
+	);
 	my $skipFinalObjectEncode = 0;
   
 =cut
@@ -395,6 +398,7 @@ sub fb {
 		if (defined($meta{'line'})) {
 			$msg_meta{'Line'} = $meta{'line'};
 		}
+
 		$msg = '['.$self->jsonEncode(\%msg_meta).','.$self->jsonEncode($Object, $skipFinalObjectEncode).']';
 	}
     
