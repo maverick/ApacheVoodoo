@@ -1,23 +1,34 @@
 package Apache::Voodoo::Debug::FirePHP;
   
+$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Debug.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+
 use strict;
 use warnings;
 
-use Carp;
-use Data::Dumper;
+use Devel::StackTrace;
 use JSON;
 
-use constant VERSION     => '0.2.1';
-use constant LOG         => 'LOG';
-use constant INFO        => 'INFO';
-use constant WARN        => 'WARN';
-use constant ERROR       => 'ERROR';
-use constant DUMP        => 'DUMP';
-use constant TRACE       => 'TRACE';
-use constant EXCEPTION   => 'EXCEPTION';
-use constant TABLE       => 'TABLE';
+use Data::Dumper;
+$Data::Dumper::Terse = 1;
+$Data::Dumper::Sortkeys = 1;
+
+use constant DEBUG     => 'LOG';
+use constant INFO      => 'INFO';
+use constant WARN      => 'WARN';
+use constant ERROR     => 'ERROR';
+use constant DUMP      => 'DUMP';
+use constant TRACE     => 'TRACE';
+use constant EXCEPTION => 'EXCEPTION';
+use constant TABLE     => 'TABLE';
+
 use constant GROUP_START => 'GROUP_START';
 use constant GROUP_END   => 'GROUP_END';
+
+use constant WF_VERSION    => '0.2.1';
+use constant WF_PROTOCOL   => 'http://meta.wildfirehq.org/Protocol/JsonStream/0.2';
+use constant WF_PLUGIN     => 'http://meta.firephp.org/Wildfire/Plugin/FirePHP/Library-FirePHPCore/'.WF_VERSION;
+use constant WF_STRUCTURE1 => 'http://meta.firephp.org/Wildfire/Structure/FirePHP/FirebugConsole/0.1';
+use constant WF_STRUCTURE2 => 'http://meta.firephp.org/Wildfire/Structure/FirePHP/Dump/0.1';
   
 sub new {
 	my $class = shift;
@@ -35,99 +46,41 @@ sub new {
 	$self->{setHeader} = $options{'setHeader'};
 	$self->{userAgent} = $options{'userAgent'};
 
-	$self->{'messageIndex'} = 1;
-	$self->{'enabled'} = 1;
-
-	$self->{'options'}->{'maxObjectDepth'} = 10;
-	$self->{'options'}->{'maxArrayDepth'}  = 20;
-	$self->{'options'}->{'useNativeJsonEncode'} = 1;
-	$self->{'options'}->{'includeLineNumbers'}  = 1;
+	$self->{flags} = [ qw(debug info warn error exception table trace) ];
 
   	return $self;
 }
 
-sub setEnabled {
-	$_[0]->{'enabled'} = ($_[1])?1:0;
-}
-
-sub getEnabled {
-	return $_[0]->{'enabled'};
-}
-  
-sub setOptions {
+sub init {
 	my $self = shift;
-	my %options = @_;
 
-	foreach (keys %options) {
-		$self->{'options'}->{$_} = $options{$_};
+	my $app_id     = shift;
+	my $request_id = shift;
+	my $debug      = shift;
+
+	$self->{enabled} = 0;
+
+	return unless $self->_detectClientExtension();
+
+	if ($debug eq "1" || (ref($debug) eq "HASH" && $debug->{all})) {
+		foreach (@{$self->{flags}}) {
+			$self->{enable}->{$_} = 1;
+		}
+		$self->{enabled} = 1;
 	}
-}
-  
-=pod
-  /**
-   * Register FirePHP as your error handler
-   * 
-   * Will throw exceptions for each php error.
-   */
-  public function registerErrorHandler()
-  {
-    //NOTE: The following errors will not be caught by this error handler:
-    //      E_ERROR, E_PARSE, E_CORE_ERROR,
-    //      E_CORE_WARNING, E_COMPILE_ERROR,
-    //      E_COMPILE_WARNING, E_STRICT
-    
-    set_error_handler(array($this,'errorHandler'));     
-  }
+	elsif (ref($debug) eq "HASH") {
+		foreach (@{$self->{flags}}) {
+			if ($debug->{$_}) {
+				$self->{enable}->{$_} = 1;
+				$self->{enabled} = 1;
+			}
+		}
+	}
 
-  /**
-   * FirePHP's error handler
-   * 
-   * Throws exception for each php error that will occur.
-   *
-   * @param int $errno
-   * @param string $errstr
-   * @param string $errfile
-   * @param int $errline
-   * @param array $errcontext
-   */
-  public function errorHandler($errno, $errstr, $errfile, $errline, $errcontext)
-  {
-    // Don't throw exception if error reporting is switched off
-    if (error_reporting() == 0) {
-      return;
-    }
-    // Only throw exceptions for errors we are asking for
-    if (error_reporting() & $errno) {
-      throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-    }
-  }
-  
-  /**
-   * Register FirePHP as your exception handler
-   */
-  public function registerExceptionHandler()
-  {
-    set_exception_handler(array($this,'exceptionHandler'));     
-  }
-  
-  /**
-   * FirePHP's exception handler
-   * 
-   * Logs all exceptions to your firebug console and then stops the script.
-   *
-   * @param Exception $Exception
-   * @throws Exception
-   */
-  function exceptionHandler($Exception) {
-    $this->fb($Exception);
-  }
-  
-  /**
-   * Set custom processor url for FirePHP
-   *
-   * @param string $URL
-   */    
-=cut
+	$self->{messageIndex} = 1;
+}
+
+sub shutdown { return; }
 
 sub setProcessorUrl {
 	my $self = shift;
@@ -143,27 +96,38 @@ sub setRendererUrl {
 	$self->setHeader('X-FirePHP-RendererURL' => $URL);
 }
   
-sub group    { return $_[0]->fb($_[1], undef, GROUP_START); }
-sub groupEnd { return $_[0]->fb(undef, undef, GROUP_END);   }
-
-sub log   { return $_[0]->fb($_[1], $_[2], LOG);   } 
-sub info  { return $_[0]->fb($_[1], $_[2], INFO);  } 
-sub warn  { return $_[0]->fb($_[1], $_[2], WARN);  } 
-sub error { return $_[0]->fb($_[1], $_[2], ERROR); } 
-sub dump  { return $_[0]->fb($_[1], $_[2], DUMP);  } 
-
-sub table { return $_[0]->fb($_[1], $_[2], TABLE); } 
+sub debug     { return $_[0]->fb($_[1], $_[2], DEBUG);     } 
+sub info      { return $_[0]->fb($_[1], $_[2], INFO);      } 
+sub warn      { return $_[0]->fb($_[1], $_[2], WARN);      } 
+sub error     { return $_[0]->fb($_[1], $_[2], ERROR);     } 
+sub exception { return $_[0]->fb($_[1], $_[2], EXCEPTION); } 
+sub trace     { return $_[0]->fb($_[1], undef, TRACE);     } 
+sub table     { return $_[0]->fb($_[1], $_[2], TABLE);     } 
   
-sub trace { return $_[0]->fb($_[1], undef, TRACE); } 
+sub _group    { return $_[0]->fb($_[1], undef, GROUP_START); }
+sub _groupEnd { return $_[0]->fb(undef, undef, GROUP_END);   }
   
+#
+# At some point in the future we might push this info out 
+# through FirePHP, but not right now.
+#
+sub mark          { return; }
+sub return_data   { return; }
+sub session_id    { return; }
+sub url           { return; }
+sub result        { return; }
+sub params        { return; }
+sub template_conf { return; }
+sub session       { return; }
+
 #
 # Relies on having a callback setup in the constructor that returns the user agent
 #
-sub detectClientExtension {
+sub _detectClientExtension {
 	my $self = shift;
 	my $useragent = $self->{'userAgent'}->();
 
-	if ($useragent =~ /\bFirePHP\/([.\d]+)/ && $self->_compare_version($1,'0.0.6')) {
+	if ($useragent =~ /\bFirePHP\/([.\d]+)/ && $self->_compareVersion($1,'0.0.6')) {
 		return 1;
 	}
 	else {
@@ -171,7 +135,7 @@ sub detectClientExtension {
 	}
 }  
 
-sub _compare_version {
+sub _compareVersion {
 	my $self   = shift;
 
 	my @f = split(/\./,shift);
@@ -197,12 +161,6 @@ sub fb {
 		return 0;
 	}
 
-	if (!$self->detectClientExtension()) {
-		return 0;
-	}
-
-	$self->{'_headers'} = [];
-  
 	if (scalar(@_) != 1 && scalar(@_) != 3) {
 		die 'Wrong number of arguments to fb() function!';
 	}
@@ -216,104 +174,45 @@ sub fb {
 		$Label = undef;
 	}
 
-	my %meta = (
-		'file' => 'Foo::bar->handle',
-		'line' => 42
-	);
-	my $skipFinalObjectEncode = 0;
+	my %meta = ();
   
-=cut
-    if ($Object instanceof Exception) {
+    if ($Type eq Exception) {
 
-		$meta['file'] = $this->_escapeTraceFile($Object->getFile());
-		$meta['line'] = $Object->getLine();
-      
-		$trace = $Object->getTrace();
-		if ($Object instanceof ErrorException
-			&& isset($trace[0]['function'])
-			&& $trace[0]['function']=='errorHandler'
-			&& isset($trace[0]['class'])
-			&& $trace[0]['class']=='FirePHP') {
-           
-			$severity = false;
-			switch($Object->getSeverity()) {
-				case E_WARNING:           $severity = 'E_WARNING';           break;
-				case E_NOTICE:            $severity = 'E_NOTICE';            break;
-				case E_USER_ERROR:        $severity = 'E_USER_ERROR';        break;
-				case E_USER_WARNING:      $severity = 'E_USER_WARNING';      break;
-				case E_USER_NOTICE:       $severity = 'E_USER_NOTICE';       break;
-				case E_STRICT:            $severity = 'E_STRICT';            break;
-				case E_RECOVERABLE_ERROR: $severity = 'E_RECOVERABLE_ERROR'; break;
-				case E_DEPRECATED:        $severity = 'E_DEPRECATED';        break;
-				case E_USER_DEPRECATED:   $severity = 'E_USER_DEPRECATED';   break;
-			}
-           
-        	$Object = array('Class'=>get_class($Object),
-			                'Message'=>$severity.': '.$Object->getMessage(),
-			                'File'=>$this->_escapeTraceFile($Object->getFile()),
-			                'Line'=>$Object->getLine(),
-			                'Type'=>'trigger',
-			                'Trace'=>$this->_escapeTrace(array_splice($trace,2)));
-			$skipFinalObjectEncode = true;
-		}
-		else {
-			$Object = array('Class'=>get_class($Object),
-							'Message'=>$Object->getMessage(),
-							'File'=>$this->_escapeTraceFile($Object->getFile()),
-							'Line'=>$Object->getLine(),
-							'Type'=>'throw',
-							'Trace'=>$this->_escapeTrace($trace));
-			$skipFinalObjectEncode = true;
-		}
-		$Type = self::EXCEPTION;
+		$Object = {
+			'Class'   => undef,
+			'Type'    => (0)?'trigger':'throw',
+			'Message' => undef,
+			'File'    => undef,
+			'Line'    => undef,
+			'Trace'   => []
+			# 'Args'=> [],
+			# 'Function'=>
+		};
+
+		$meta['file'] = undef;
+		$meta['line'] = undef;
+
+		$skipFinalObjectEncode = 1;
     }
-	if ($Type eq TRACE) {
-      
-		$trace = debug_backtrace();
-		if (!$trace) return false;
+	elsif ($Type eq TRACE) {
 
-		for ( $i=0 ; $i<sizeof($trace) ; $i++ ) {
+		$Object = {
+			'Class'   => undef,
+			'Type'    => undef,
+			'Function'=> undef,
+			'Message' => undef,
+			'File'    => undef,
+			'Line'    => undef,
+			'Args' => [],
+			'Trace'=> []
+		};
 
-			if (isset($trace[$i]['class'])
-				&& isset($trace[$i]['file'])
-				&& ($trace[$i]['class']=='FirePHP'
-					|| $trace[$i]['class']=='FB')
-				&& (substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php'
-					|| substr($this->_standardizePath($trace[$i]['file']),-29,29)=='FirePHPCore/FirePHP.class.php')) {
+		$meta['file'] = undef;
+		$meta['line'] = undef;
 
-					# Skip - FB::trace(), FB::send(), $firephp->trace(), $firephp->fb()
-			}
-			elsif(isset($trace[$i]['class'])
-				&& isset($trace[$i+1]['file'])
-				&& $trace[$i]['class']=='FirePHP'
-				&& substr($this->_standardizePath($trace[$i+1]['file']),-18,18)=='FirePHPCore/fb.php') {
-
-					# Skip fb()
-			}
-			elsif($trace[$i]['function']=='fb'
-				|| $trace[$i]['function']=='trace'
-				|| $trace[$i]['function']=='send') {
-
-				$Object = array('Class'=>isset($trace[$i]['class'])?$trace[$i]['class']:'',
-                          'Type'=>isset($trace[$i]['type'])?$trace[$i]['type']:'',
-                          'Function'=>isset($trace[$i]['function'])?$trace[$i]['function']:'',
-                          'Message'=>$trace[$i]['args'][0],
-                          'File'=>isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'',
-                          'Line'=>isset($trace[$i]['line'])?$trace[$i]['line']:'',
-                          'Args'=>isset($trace[$i]['args'])?$this->encodeObject($trace[$i]['args']):'',
-                          'Trace'=>$this->_escapeTrace(array_splice($trace,$i+1)));
-
-				$skipFinalObjectEncode = true;
-				$meta['file'] = isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'';
-				$meta['line'] = isset($trace[$i]['line'])?$trace[$i]['line']:'';
-
-				break;
-			}
-		}
+		$skipFinalObjectEncode = 1;
 	}
-=cut
-	if ($Type eq TABLE) {
-      
+	elsif ($Type eq TABLE) {
 		if (ref($Object) eq "ARRAY" && ref($Object->[0]) ne "ARRAY") {
 			$Object->[1] = $self->encodeTable($Object->[1]);
 		}
@@ -323,63 +222,18 @@ sub fb {
 
 		$skipFinalObjectEncode = 1;
 	}
-	elsif (!defined($Type)) {
-		$Type = LOG;
-	}
-    
-=pod
-	if ($this->options['includeLineNumbers']) {
-		if(!isset($meta['file']) || !isset($meta['line'])) {
-
-			my $trace = debug_backtrace();
-			for( $i=0 ; $trace && $i<sizeof($trace) ; $i++ ) {
-	
-				if(isset($trace[$i]['class'])
-					&& isset($trace[$i]['file'])
-					&& ($trace[$i]['class']=='FirePHP'
-						|| $trace[$i]['class']=='FB')
-					&& (substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php'
-						|| substr($this->_standardizePath($trace[$i]['file']),-29,29)=='FirePHPCore/FirePHP.class.php')) {
-
-					# Skip - FB::trace(), FB::send(), $firephp->trace(), $firephp->fb()
-				}
-				elsif(isset($trace[$i]['class'])
-					&& isset($trace[$i+1]['file'])
-					&& $trace[$i]['class']=='FirePHP'
-					&& substr($this->_standardizePath($trace[$i+1]['file']),-18,18)=='FirePHPCore/fb.php') {
-
-					# Skip fb()
-				}
-				elsif(isset($trace[$i]['file'])
-					&& substr($this->_standardizePath($trace[$i]['file']),-18,18)=='FirePHPCore/fb.php') {
-
-					# Skip FB::fb()
-				}
-				else {
-					$meta['file'] = isset($trace[$i]['file'])?$this->_escapeTraceFile($trace[$i]['file']):'';
-					$meta['line'] = isset($trace[$i]['line'])?$trace[$i]['line']:'';
-					break;
-				}
-			}      
-		}
-	}
-	else {
-		unset($meta['file']);
-		unset($meta['line']);
-	}
-=cut
 
 	my $structure_index = 1;
 	if ($self->{messageIndex} == 1) {
-		$self->setHeader('X-Wf-Protocol-1','http://meta.wildfirehq.org/Protocol/JsonStream/0.2');
-		$self->setHeader('X-Wf-1-Plugin-1','http://meta.firephp.org/Wildfire/Plugin/FirePHP/Library-FirePHPCore/'.VERSION);
+		$self->setHeader('X-Wf-Protocol-1',WF_PROTOCOL);
+		$self->setHeader('X-Wf-1-Plugin-1',WF_PLUGIN);
  
 		if ($Type eq DUMP) {
 			$structure_index = 2;
-			$self->setHeader('X-Wf-1-Structure-2','http://meta.firephp.org/Wildfire/Structure/FirePHP/Dump/0.1');
+			$self->setHeader('X-Wf-1-Structure-2',WF_STRUCTURE2);
 		}
 		else {
-			$self->setHeader('X-Wf-1-Structure-1','http://meta.firephp.org/Wildfire/Structure/FirePHP/FirebugConsole/0.1');
+			$self->setHeader('X-Wf-1-Structure-1',WF_STRUCTURE1);
 		}
 	}
   
@@ -435,9 +289,7 @@ sub fb {
 
   	$self->setHeader('X-Wf-1-Index',$self->{'messageIndex'}-1);
 
-	my $h = $self->{'_headers'};
-	$self->{'_headers'} = [];
-	return $h;
+	return 1;
 }
   
 sub _standardizePath {
@@ -470,7 +322,6 @@ sub setHeader() {
 	my $name  = shift;
 	my $value = shift;
 
-	push(@{$self->{'_headers'}},[$name,$value]);
 	$self->{setHeader}->($name,$value);
 }
 
@@ -513,6 +364,38 @@ sub encodeObject {
 	else {
 		return $object;
 	}
+}
+
+sub _stack_trace {
+	my $self   = shift;
+	my $detail = shift;
+
+	my @trace;
+
+	my $st = Devel::StackTrace->new();
+    $st->next_frame;
+    while (my $frame = $st->next_frame()) {
+        next if ($frame->subroutine =~ /^Apache::Voodoo/);
+        next if ($frame->subroutine =~ /(eval)/);
+
+		if ($detail) {
+			push(@trace, {
+				'package'    => $frame->package,
+            	'subroutine' => $frame->subroutine,
+            	'line'       => $frame->line,
+            	'args'       => [ $frame->args ]
+        	});
+		}
+		else {
+			push(@trace, {
+				'package'    => $frame->package,
+            	'subroutine' => $frame->subroutine,
+            	'line'       => $frame->line,
+            	'args'       => [ $frame->args ]
+        	});
+		}
+    }
+	return \@trace;
 }
 
 1;
