@@ -5,6 +5,7 @@ $VERSION = sprintf("%0.4f",('$HeadURL: svn://atlas.nasba.int/Voodoo/core/Voodoo/
 use strict;
 use warnings;
 
+use Time::HiRes;
 use Data::Dumper;
 
 sub new {
@@ -18,17 +19,21 @@ sub new {
 sub set_request {
 	my $self = shift;
 
-	$self->{'r'} = shift;
+	$self->{r} = shift;
+
+	$self->{request_id} = Time::HiRes::time;
 
 	delete $self->{'cookiejar'};
 }
 
-sub dir_config { shift()->{'r'}->dir_config(@_); }
-sub filename   { shift()->{'r'}->filename(); }
-sub flush      { shift()->{'r'}->rflush(); }
-sub method     { shift()->{'r'}->method(@_); }
-sub print      { shift()->{'r'}->print(@_); }
-sub uri        { shift()->{'r'}->uri(); }
+sub request_id { return $self->{request_id}; }
+
+sub dir_config { shift()->{r}->dir_config(@_); }
+sub filename   { shift()->{r}->filename(); }
+sub flush      { shift()->{r}->rflush(); }
+sub method     { shift()->{r}->method(@_); }
+sub print      { shift()->{r}->print(@_); }
+sub uri        { shift()->{r}->uri(); }
 
 sub is_get     { return ($_[0]->{r}->method eq "GET"); }
 sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
@@ -65,10 +70,10 @@ sub _log {
 		# ye olde STDERR
 		foreach (@_) {
 			if (ref($_)) {
-				print STDERR Dumper $_,"\n";
+				warn(Dumper $_);
 			}
 			else {
-				print STDERR $_,"\n";
+				warn($_);
 			}
 		}
 	}

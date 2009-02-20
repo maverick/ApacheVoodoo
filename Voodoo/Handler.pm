@@ -27,7 +27,6 @@ use Time::HiRes;
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Application;
-use Apache::Voodoo::Debug;
 use Apache::Voodoo::DisplayError;
 
 use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2 ); 
@@ -65,8 +64,6 @@ sub new {
 	$self->{debug_root} = $self->{constants}->debug_path();
 	$self->{debug_template} = $INC{"Apache/Voodoo/Handler.pm"};
 	$self->{debug_template} =~ s/Handler.pm$/Debug\/html\/debug.tmpl/;
-
-	$debug = Apache::Voodoo::Debug->new($self->{'constants'});
 
 	if (exists $ENV{'MOD_PERL'}) {
 		# let's us do a compile check outside of mod_perl
@@ -136,7 +133,10 @@ sub handle_request {
 	# Get ready to start tracing what's going on
 	$run->{'app_id'}     = $id;
 	$run->{'request_id'} = $self->{mp}->request_id();
-	$debug->init($id,$run->{request_id},$app->{debug});
+
+	$debug = $app->{'debug_handler'};
+
+	$debug->init($run->{request_id});
 
 	if ($app->{"DEAD"}) {
 		return $self->{mp}->server_error;
@@ -352,7 +352,7 @@ sub generate_html {
 			};
 			if ($@) {
 				# caught a runtime error from perl
-				if ($app->{'debug'}) {
+				if ($app->{'devel_mode'}) {
 					return $self->display_host_error("Module: $handle->[0] $method\n$@");
 				}
 				else {
@@ -556,7 +556,6 @@ sub restart {
 		$self->{mp}->error("starting host $id");
 
 		my $app = Apache::Voodoo::Application->new($id,$self->{'constants'});
-		$app->setup();
 
 		# check to see if we can get a database connection
 		foreach (@{$app->{'dbs'}}) {

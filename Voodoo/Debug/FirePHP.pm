@@ -32,7 +32,8 @@ use constant WF_STRUCTURE2 => 'http://meta.firephp.org/Wildfire/Structure/FirePH
   
 sub new {
 	my $class = shift;
-	my %options = @_;
+	my $id    = shift;
+	my $conf  = shift;
 
   	my $self = {};
 	bless $self,$class;
@@ -43,10 +44,42 @@ sub new {
 	$self->{json}->convert_blessed(1);
 	$self->{json}->utf8(1);
 
-	$self->{setHeader} = $options{'setHeader'};
-	$self->{userAgent} = $options{'userAgent'};
+	$self->{setHeader} = sub { return; };
+	$self->{userAgent} = sub { return; };
 
-	$self->{flags} = [ qw(debug info warn error exception table trace) ];
+	my @flags = qw(debug info warn error exception table trace);
+
+	$self->{enabled} = 0;
+	if ($conf eq "1" || (ref($conf) eq "HASH" && $conf->{all})) {
+		$self->{conf}->{DEBUG}     = 1;
+		$self->{conf}->{INFO}      = 1;
+		$self->{conf}->{WARN}      = 1;
+		$self->{conf}->{ERROR}     = 1;
+		$self->{conf}->{DUMP}      = 1;
+		$self->{conf}->{TRACE}     = 1;
+		$self->{conf}->{EXCEPTION} = 1;
+		$self->{conf}->{TABLE}     = 1;
+		$self->{conf}->{GROUP_START} = 1;
+		$self->{conf}->{GROUP_END}   = 1;
+
+		$self->{enabled} = 1;
+	}
+	elsif (ref($conf) eq "HASH") {
+		$self->{conf}->{DEBUG}     = 1 if $conf->{debug};
+		$self->{conf}->{INFO}      = 1 if $conf->{info};
+		$self->{conf}->{WARN}      = 1 if $conf->{warn};
+		$self->{conf}->{ERROR}     = 1 if $conf->{error};
+		$self->{conf}->{DUMP}      = 1 if $conf->{dump};
+		$self->{conf}->{TRACE}     = 1 if $conf->{trace};
+		$self->{conf}->{EXCEPTION} = 1 if $conf->{exception};
+		$self->{conf}->{TABLE}     = 1 if $conf->{table};
+
+		if (scalar keys %{$self->{'conf'}}) {
+			$self->{enabled} = 1;
+			$self->{conf}->{GROUP_START} = 1;
+			$self->{conf}->{GROUP_END}   = 1;
+		}
+	}
 
   	return $self;
 }
@@ -54,29 +87,13 @@ sub new {
 sub init {
 	my $self = shift;
 
-	my $app_id     = shift;
-	my $request_id = shift;
-	my $debug      = shift;
+	$self->{mp} = shift;
 
 	$self->{enabled} = 0;
 
 	return unless $self->_detectClientExtension();
 
-	if ($debug eq "1" || (ref($debug) eq "HASH" && $debug->{all})) {
-		foreach (@{$self->{flags}}) {
-			$self->{enable}->{$_} = 1;
-		}
-		$self->{enabled} = 1;
-	}
-	elsif (ref($debug) eq "HASH") {
-		foreach (@{$self->{flags}}) {
-			if ($debug->{$_}) {
-				$self->{enable}->{$_} = 1;
-				$self->{enabled} = 1;
-			}
-		}
-	}
-
+	$self->{enable} = $self->{conf};
 	$self->{messageIndex} = 1;
 }
 
@@ -125,7 +142,8 @@ sub session       { return; }
 #
 sub _detectClientExtension {
 	my $self = shift;
-	my $useragent = $self->{'userAgent'}->();
+
+	my $useragent = $self->{mp}->header_in('User-Agent');
 
 	if ($useragent =~ /\bFirePHP\/([.\d]+)/ && $self->_compareVersion($1,'0.0.6')) {
 		return 1;
@@ -156,18 +174,12 @@ sub _compareVersion {
  
 sub fb {
 	my $self = shift;
-  
-	unless ($self->{'enabled'}) {
-		return 0;
-	}
-
-	if (scalar(@_) != 1 && scalar(@_) != 3) {
-		die 'Wrong number of arguments to fb() function!';
-	}
 
 	my $Label  = shift;
 	my $Object = shift;
 	my $Type   = shift;
+  
+	return unless $self->{enabled}->{$Type};
 
 	unless (defined($Object) || $Type eq GROUP_START) {
 		$Object = $Label;
@@ -322,7 +334,7 @@ sub setHeader() {
 	my $name  = shift;
 	my $value = shift;
 
-	$self->{setHeader}->($name,$value);
+	$self->{mp}->header_out($name,$value);
 }
 
 sub jsonEncode {

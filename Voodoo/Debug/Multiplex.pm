@@ -27,22 +27,15 @@ sub new {
 	my $class = shift;
 
 	my $self = {};
-	$self->{ac} = shift;
+
+	push(@{$self->{'handlers'}},@_);
 
 	bless($self,$class);
 
 	return $self;
 }
 
-sub init {
-	my $self = shift;
-
-	$self->{id}->{app_id}     = shift;
-	$self->{id}->{request_id} = shift;
-	my $debug = shift;
-
-}
-
+sub init      { my $self = shift; $_->init(@_)      foreach (@{$self->{'handlers'}}); }
 sub shutdown  { my $self = shift; $_->shutdown(@_)  foreach (@{$self->{'handlers'}}); }
 sub debug     { my $self = shift; $_->debug(@_)     foreach (@{$self->{'handlers'}}); }
 sub info      { my $self = shift; $_->info(@_)      foreach (@{$self->{'handlers'}}); }

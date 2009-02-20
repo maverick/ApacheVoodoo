@@ -34,12 +34,38 @@ $Data::Dumper::Sortkeys = 1;
 sub new {
 	my $class = shift;
 
+	my $id   = shift;
+	my $conf = shift;
+
 	my $self = {};
-	$self->{ac} = shift;
+
+	$self->{id}->{app_id} = $id;
 
 	bless($self,$class);
 
-	$self->{flags} = [ qw(debug info warn error exception table trace profile params template_conf return_data session) ];
+	my @flags = qw(debug info warn error exception table trace profile params template_conf return_data session);
+
+	$self->{enabled} = 0;
+	if ($conf eq "1" || (ref($conf) eq "HASH" && $conf->{all})) {
+		foreach (@flags) {
+			$self->{conf}->{$_} = 1;
+		}
+		$self->{enabled} = 1;
+	}
+	elsif (ref($conf) eq "HASH") {
+		foreach (@flags) {
+			if ($conf->{$_}) {
+				$self->{conf}->{$_} = 1;
+				$self->{enabled} = 1;
+			}
+		}
+	}
+
+	# we always send this since is fundamental to identifying the request chain
+	# regardless of what other info we log
+	$self->{conf}->{url}        = 1;
+	$self->{conf}->{result}     = 1;
+	$self->{conf}->{session_id} = 1;
 
 	return $self;
 }
@@ -47,26 +73,9 @@ sub new {
 sub init {
 	my $self = shift;
 
-	$self->{id}->{app_id}     = shift;
-	$self->{id}->{request_id} = shift;
+	my $mp = shift;
 
-	my $debug = shift;
-
-	$self->{enabled} = 0;
-	if ($debug eq "1" || (ref($debug) eq "HASH" && $debug->{all})) {
-		foreach (@{$self->{flags}}) {
-			$self->{enable}->{$_} = 1;
-		}
-		$self->{enabled} = 1;
-	}
-	elsif (ref($debug) eq "HASH") {
-		foreach (@{$self->{flags}}) {
-			if ($debug->{$_}) {
-				$self->{enable}->{$_} = 1;
-				$self->{enabled} = 1;
-			}
-		}
-	}
+	$self->{id}->{request_id} = $mp->request_id();
 
 	return unless $self->{enabled};
 
@@ -89,11 +98,8 @@ sub init {
 		}
 	}
 
-	# we always send this since is fundamental to identifying the request chain
-	# regardless of what other info we log
-	$self->{'enable'}->{'url'}        = 1;
-	$self->{'enable'}->{'result'}     = 1;
-	$self->{'enable'}->{'session_id'} = 1;
+	# socket looks good, enable the public facing calls.
+	$self->{enable} = $self->{conf};
 
 	$self->{'socket'}->write_record({
 		type => 'request',

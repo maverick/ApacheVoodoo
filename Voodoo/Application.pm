@@ -20,12 +20,11 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 use warnings;
 
-use Config::General;
-
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Template;
 use Apache::Voodoo::Session;
 
+use Config::General;
 use Data::Dumper;
 
 sub new {
@@ -44,28 +43,69 @@ sub new {
 			$self->{constants}->conf_file()
 		);
 
-		$self->load_config();
+		$self->refresh(1);
 	}
 	else {
-		$self->{'errors'} = "ID and configuration file paths are requried parameters";
+		$self->{'errors'} = "ID is a requried parameter.";
 	}
 
 	return $self;
 }
 
-sub setup {
-	my $self = shift;
+sub refresh {
+	my $self    = shift;
+	my $initial = shift;
 
-	# get the list of modules we're going to use
-	foreach (sort keys %{$self->{'modules'}}) {
-		$self->prep_module($_);
+	# Do nothing if this isn't the initial load, and we're not doing dynamic loading
+	unless ($initial || $self->{'dynamic_loading'}) {
+		return;
 	}
 
-	foreach (sort keys %{$self->{'includes'}}) {
-		$self->prep_include($_);
-	}
+	# check to see if we need to refresh the config.
+	if ($self->{'conf_mtime'} != (stat($self->{'conf_file'}))[9]) {
+		$self->debug("loading $self->{'conf_file'}");
 
-	$self->prep_template_engine();
+		my %old_module  = %{$self->{'modules'}};
+		my %old_include = %{$self->{'includes'}};
+
+		$self->load_config();
+
+		# check the new list of modules against the old list
+		foreach (sort keys %{$self->{'modules'}}) {
+			unless (exists($old_module{$_})) {
+				# new module (wasn't in the old list).
+				$self->debug("Adding new module: $_");
+				$self->prep_module($_);
+			}
+
+			# still a valid module, so remove it from this list.
+			delete $old_module{$_};
+		}
+
+		# whatever is left in old_modules are ones that weren't in the new list.
+		foreach (keys %old_module) {
+			$self->debug("Removing old module: $_");
+			$_ =~ s/::/\//g;
+			delete $self->{'handlers'}->{$_};
+		}
+
+		# now we do exactly the same thing for the includes
+		foreach (sort keys %{$self->{'includes'}}) {
+			unless (exists($old_include{$_})) {
+				# new module
+				$self->debug("Adding new include: $_");
+				$self->prep_include($_);
+			}
+			delete $old_include{$_};
+		}
+
+		foreach (keys %old_include) {
+			$self->debug("Removing old include: $_");
+			delete $self->{'handlers'}->{$_};
+		}
+
+		$self->prep_template_engine();
+	}
 
 	unless($self->{'dynamic_loading'}) {
 		delete $self->{'modules'};
@@ -84,13 +124,12 @@ sub load_config {
 
 	my %conf = $conf->getall();
 
-	$self->{'base_package'} = $conf{'base_package'} || $self->{'id'};
+	$conf->{id} = $self->{id};
 
+	$self->{'base_package'} = $conf{'base_package'} || $self->{'id'};
 
 	$self->{'session_timeout'} = $conf{'session_timeout'} || 0;
 	$self->{'upload_size_max'} = $conf{'upload_size_max'} || 5242880;
-	$self->{'shared_cache'}    = $conf{'shared_cache'}    || 0;
-	$self->{'ipc_max_size'}    = $conf{'ipc_max_size'}    || 0;
 
 	$self->{'cookie_name'}   = $conf{'cookie_name'}     || uc($self->{'id'}). "_SID";
 	$self->{'https_cookies'} = ($conf{'https_cookies'})?1:0;
@@ -102,18 +141,15 @@ sub load_config {
 
 	if (defined($conf{'devel_mode'})) {
 		if ($conf{'devel_mode'}) {
-			$self->{'debug'} = 1;
 			$self->{'dynamic_loading'} = 1;
 			$self->{'halt_on_errors'}  = 0;
 		}
 		else {
-			$self->{'debug'} = 0;
 			$self->{'dynamic_loading'} = 0;
 			$self->{'halt_on_errors'}  = 1;
 		}
 	}
 	else {
-		$self->{'debug'}           = $conf{'debug'} || 0;
 		$self->{'dynamic_loading'} = $conf{'dynamic_loading'} || 0;
 		$self->{'halt_on_errors'}  = defined($conf{'halt_on_errors'})?$conf{'halt_on_errors'}:1;
 	}
@@ -133,22 +169,30 @@ sub load_config {
 
 		# make the connect string a perl array ref
 		$self->{'dbs'} = [ 
-						  map {
-								[ 
-								   $_->{'connect'},
-								   $_->{'username'},
-								   $_->{'password'},
-								   $_->{'extra'}
-								]
-							  } @{$db} 
-						 ];
+			map {
+				[ 
+					$_->{'connect'},
+					$_->{'username'},
+					$_->{'password'},
+					$_->{'extra'}
+				]
+			} @{$db} 
+		];
 	}
 
 	eval {
 		$self->{'session_handler'} = Apache::Voodoo::Session->new(\%conf);
 	};
 	if ($@) {
-		print STDERR "$@\n";
+		warn "$@\n";
+		$self->{'errors'}++;
+	}
+
+	eval {
+		$self->{'debug_handler'} = Apache::Voodoo::Debug->new(\%conf);
+	};
+	if ($@) {
+		warn "$@\n";
 		$self->{'errors'}++;
 	}
 
@@ -185,7 +229,7 @@ sub load_config {
 		
 		unless($has_one) {
 			$self->{'errors'}++;
-			print STDERR "You must define at least one theme block\n";
+			warn "You must define at least one theme block\n";
 		}
 	}
 
@@ -211,6 +255,28 @@ sub prep_include {
 	my $obj = $self->load_module($module);
 
 	$self->{'handlers'}->{$module} = $obj;
+}
+
+sub load_module {
+	my $self   = shift;
+	my $module = shift;
+
+	if ($self->{'dynamic_loading'}) {
+		require "Apache/Voodoo/Loader/Dynamic.pm";
+
+		return Apache::Voodoo::Loader::Dynamic->new($self->{'base_package'}."::$module");
+	}
+	else {
+		require "Apache/Voodoo/Loader/Static.pm";
+
+		my $obj = Apache::Voodoo::Loader::Static->new($self->{'base_package'}."::$module");
+		if (ref($obj) eq "Apache::Voodoo::Zombie") {
+			# doh! the module went boom
+			$self->{'errors'}++;
+		}
+
+		return $obj;
+	}
 }
 
 sub prep_template_engine { 
@@ -242,80 +308,6 @@ sub map_uri {
 	}
 }
 
-sub refresh {
-	my $self = shift;
-
-	# bypass if we're not doing dynamic loading
-	return unless $self->{'dynamic_loading'};
-
-	# check to see if we need to refresh the config.
-	if ($self->{'conf_mtime'} != (stat($self->{'conf_file'}))[9]) {
-		$self->debug("refreshing $self->{'conf_file'}");
-
-		my %old_module  = %{$self->{'modules'}};
-		my %old_include = %{$self->{'includes'}};
-
-		$self->load_config($self->{'conf_file'});
-
-		# check the new list of modules against the old list
-		foreach (sort keys %{$self->{'modules'}}) {
-			unless (exists($old_module{$_})) {
-				# new module (wasn't in the old list.
-				$self->debug("Adding new module: $_");
-				$self->prep_module($_);
-			}
-
-			# still a valid module, so remove it from this list.
-			delete $old_module{$_};
-		}
-
-		# whatever is left in old_modules are ones that weren't in the new list.
-		foreach (keys %old_module) {
-			$self->debug("Removing old module: $_");
-			$_ =~ s/::/\//g;
-			delete $self->{'handlers'}->{$_};
-		}
-
-		# now we do exactly the same thing for the includes
-		foreach (sort keys %{$self->{'includes'}}) {
-			unless (exists($old_include{$_})) {
-				# new module
-				$self->debug("Adding new include: $_");
-				$self->prep_include($_);
-			}
-			delete $old_include{$_};
-		}
-
-		foreach (keys %old_include) {
-			$self->debug("Removing old include: $_");
-			delete $self->{'handlers'}->{$_};
-		}
-
-		$self->prep_template_engine();
-	}
-}
-
-sub load_module {
-	my $self   = shift;
-	my $module = shift;
-
-	if ($self->{'dynamic_loading'}) {
-		require "Apache/Voodoo/Loader/Dynamic.pm";
-
-		return Apache::Voodoo::Loader::Dynamic->new($self->{'base_package'}."::$module");
-	}
-	else {
-		require "Apache/Voodoo/Loader/Static.pm";
-
-		my $obj = Apache::Voodoo::Loader::Static->new($self->{'base_package'}."::$module");
-		if (ref($obj) eq "Apache::Voodoo::Zombie") {
-			# doh! the module went boom
-			$self->{'errors'}++;
-		}
-
-		return $obj;
-	}
-}
 
 sub debug { 
 	my $self = shift;
@@ -323,10 +315,10 @@ sub debug {
 	return unless $self->{'debug'};
 
 	if (ref($_[0])) {
-		print STDERR Dumper(@_);
+		warn Dumper(@_);
 	}
 	else {
-		print STDERR join("\n",@_),"\n";
+		warn join("\n",@_),"\n";
 	}
 }
 

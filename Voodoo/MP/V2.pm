@@ -16,8 +16,6 @@ use Apache2::Request;
 use Apache2::Upload;
 use Apache2::Cookie;
 
-use Time::HiRes;
-
 use base("Apache::Voodoo::MP::Common");
 
 Apache2::Const->import(-compile => qw(OK REDIRECT DECLINED FORBIDDEN SERVER_ERROR M_GET));
@@ -31,8 +29,6 @@ sub content_type   { shift()->{'r'}->content_type(@_); }
 sub err_header_out { shift()->{'r'}->err_headers_out->add(@_); }
 sub header_in      { shift()->{'r'}->headers_in->{shift()}; }
 sub header_out     { shift()->{'r'}->headers_out->add(@_); }
-
-sub request_id { return Time::HiRes::time; }
 
 sub redirect {
 	my $self = shift;
