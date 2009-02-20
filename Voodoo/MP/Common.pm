@@ -26,7 +26,7 @@ sub set_request {
 	delete $self->{'cookiejar'};
 }
 
-sub request_id { return $self->{request_id}; }
+sub request_id { return $_[0]->{request_id}; }
 
 sub dir_config { shift()->{r}->dir_config(@_); }
 sub filename   { shift()->{r}->filename(); }
@@ -70,10 +70,10 @@ sub _log {
 		# ye olde STDERR
 		foreach (@_) {
 			if (ref($_)) {
-				warn(Dumper $_);
+				CORE::warn(Dumper($_),"\n");
 			}
 			else {
-				warn($_);
+				CORE::warn($_."\n");
 			}
 		}
 	}

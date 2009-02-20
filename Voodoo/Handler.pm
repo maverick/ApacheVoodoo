@@ -6,7 +6,7 @@ Apache::Voodoo::Handler - Main interface between mod_perl and Voodoo
 
 =head1 VERSION
 
-$Id: Handler.pm 12906 2009-02-20 23:08:10Z medwards $
+$Id: Handler.pm 11537 2008-12-11 21:36:23Z medwards $
 
 =head1 SYNOPSIS
  
@@ -136,7 +136,7 @@ sub handle_request {
 
 	$debug = $app->{'debug_handler'};
 
-	$debug->init($run->{request_id});
+	$debug->init($self->{mp});
 
 	if ($app->{"DEAD"}) {
 		return $self->{mp}->server_error;
@@ -356,6 +356,7 @@ sub generate_html {
 					return $self->display_host_error("Module: $handle->[0] $method\n$@");
 				}
 				else {
+					$self->{mp}->error("Module: $handle->[0] $method\n$@");
 					return $self->{mp}->server_error;
 				}
 			}
@@ -477,7 +478,8 @@ sub generate_html {
 		$template_params->{'_MAIN_BODY_'} = $app->{'template_engine'}->output();
 		$debug->mark("main body content");
 
-		if ($debug->enabled()) {
+		# FIXME
+		if (0 && $debug->enabled()) {
 			$app->{'template_engine'}->template_abs($self->{'debug_template'});
 			$debug->mark("debug template open");
 

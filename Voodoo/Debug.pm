@@ -27,8 +27,9 @@ sub new {
 	foreach (keys %{$conf->{'debug'}}) {
 		if ($conf->{'debug'}->{$_}->{$type}) {
 			my $package = 'Apache::Voodoo::Debug::'.$_;
-			$file = $package'.pm';
-			$file =~ s/::/\//;
+			my $file = $package.'.pm';
+
+			$file =~ s/::/\//g;
 
 			require $file;
 			push(@handlers, $package->new($conf->{'id'},$conf->{'debug'}->{$_}->{$type}));
@@ -36,8 +37,8 @@ sub new {
 	}
 
 	if (scalar(@handlers) > 1) {
-		require Apache::Voodoo::Debug::Multi;
-		return Apache::Voodoo::Debug::Multi->new(@handlers);
+		require Apache::Voodoo::Debug::Multiplex;
+		return Apache::Voodoo::Debug::Multiplex->new(@handlers);
 	}
 	elsif (scalar(@handlers) == 1) {
 		return $handlers[0];

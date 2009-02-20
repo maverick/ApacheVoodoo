@@ -36,18 +36,56 @@ sub init { }
 sub debug { 
 	my $self = shift;
 
-	# sometimes Voodoo modules are called from outside Apache
-	# (most common case are cronjobs) 
 	if (ref($Apache::Voodoo::Handler::debug)) {
 		$Apache::Voodoo::Handler::debug->debug(@_);
 	}
-	else {
-		if (ref($_[0])) {
-			print STDERR Dumper @_;
-		}
-		else {
-			print STDERR join("\n",@_),"\n";
-		}
+}
+
+sub info {
+	my $self = shift;
+
+	if (ref($Apache::Voodoo::Handler::debug)) {
+		$Apache::Voodoo::Handler::debug->info(@_);
+	}
+}
+
+sub warn {
+	my $self = shift;
+
+	if (ref($Apache::Voodoo::Handler::debug)) {
+		$Apache::Voodoo::Handler::debug->warn(@_);
+	}
+}
+
+sub error {
+	my $self = shift;
+
+	if (ref($Apache::Voodoo::Handler::debug)) {
+		$Apache::Voodoo::Handler::debug->error(@_);
+	}
+}
+
+sub exception {
+	my $self = shift;
+
+	if (ref($Apache::Voodoo::Handler::debug)) {
+		$Apache::Voodoo::Handler::debug->exception(@_);
+	}
+}
+
+sub trace { 
+	my $self = shift;
+
+	if (ref($Apache::Voodoo::Handler::debug)) {
+		$Apache::Voodoo::Handler::debug->trace(@_);
+	}
+}
+
+sub table { 
+	my $self = shift;
+
+	if (ref($Apache::Voodoo::Handler::debug)) {
+		$Apache::Voodoo::Handler::debug->table(@_);
 	}
 }
 

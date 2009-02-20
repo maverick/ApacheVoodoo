@@ -6,7 +6,7 @@ Apache::Voodoo::Debug - handles operations associated with debugging output.
 
 =head1 VERSION
 
-$Id: Native.pm 12906 2009-02-20 23:08:10Z medwards $
+$Id: Native.pm 12788 2009-02-19 23:06:38Z medwards $
 
 =head1 SYNOPSIS
 
@@ -177,7 +177,7 @@ sub _debug {
 	$self->{'socket'}->write_record({
 		type  => 'debug',
 		id    => $self->{id},
-		level => $level,
+		level => $type,
 		stack => $self->_stack_trace($detail),
 		data  => $data
 	});

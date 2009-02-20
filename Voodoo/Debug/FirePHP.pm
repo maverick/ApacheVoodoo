@@ -179,7 +179,7 @@ sub fb {
 	my $Object = shift;
 	my $Type   = shift;
   
-	return unless $self->{enabled}->{$Type};
+	return unless $self->{enable}->{$Type};
 
 	unless (defined($Object) || $Type eq GROUP_START) {
 		$Object = $Label;
@@ -188,7 +188,9 @@ sub fb {
 
 	my %meta = ();
   
-    if ($Type eq Exception) {
+	my $skipFinalObjectEncode = 0;
+
+    if ($Type eq EXCEPTION) {
 
 		$Object = {
 			'Class'   => undef,
@@ -201,8 +203,8 @@ sub fb {
 			# 'Function'=>
 		};
 
-		$meta['file'] = undef;
-		$meta['line'] = undef;
+		$meta{'file'} = undef;
+		$meta{'line'} = undef;
 
 		$skipFinalObjectEncode = 1;
     }
@@ -219,8 +221,8 @@ sub fb {
 			'Trace'=> []
 		};
 
-		$meta['file'] = undef;
-		$meta['line'] = undef;
+		$meta{'file'} = undef;
+		$meta{'line'} = undef;
 
 		$skipFinalObjectEncode = 1;
 	}

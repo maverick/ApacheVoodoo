@@ -16,7 +16,7 @@ never interact with this module directly, instead they use the debug() and mark(
 methods from L<Apache::Voodoo>.
 
 =cut ###########################################################################
-package Apache::Voodoo::Debug;
+package Apache::Voodoo::Debug::Multiplex;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 

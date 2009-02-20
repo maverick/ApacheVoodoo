@@ -14,6 +14,7 @@ package Apache::Voodoo::Table;
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
+use warnings;
 
 use base("Apache::Voodoo");
 use Data::Dumper;
@@ -204,8 +205,8 @@ sub set_configuration {
 	if (@errors) {
 		$self->{'config_invalid'} = 1;
 
-		print STDERR "Errors in Apache::Voodoo::Table configuration in ".(caller(1))[1]."\n";
-		print STDERR join("\n",@errors,"\n");
+#		print STDERR "Errors in Apache::Voodoo::Table configuration in ".(caller(1))[1]."\n";
+#		print STDERR join("\n",@errors,"\n");
 	}
 }
 

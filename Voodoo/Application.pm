@@ -23,6 +23,7 @@ use warnings;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Template;
 use Apache::Voodoo::Session;
+use Apache::Voodoo::Debug;
 
 use Config::General;
 use Data::Dumper;
@@ -35,6 +36,10 @@ sub new {
 
 	$self->{'id'}        = shift;
 	$self->{'constants'} = shift || Apache::Voodoo::Constants->new();
+
+	$self->{'conf_mtime'} = 0;
+	$self->{'modules'}  = {};
+	$self->{'includes'} = {};
 
 	if (defined($self->{'id'})) {
 		$self->{'conf_file'} = File::Spec->catfile(
@@ -141,15 +146,18 @@ sub load_config {
 
 	if (defined($conf{'devel_mode'})) {
 		if ($conf{'devel_mode'}) {
+			$self->{'devel_mode'}      = 1;
 			$self->{'dynamic_loading'} = 1;
 			$self->{'halt_on_errors'}  = 0;
 		}
 		else {
+			$self->{'devel_mode'}      = 0;
 			$self->{'dynamic_loading'} = 0;
 			$self->{'halt_on_errors'}  = 1;
 		}
 	}
 	else {
+		$self->{'devel_mode'}      = 0;
 		$self->{'dynamic_loading'} = $conf{'dynamic_loading'} || 0;
 		$self->{'halt_on_errors'}  = defined($conf{'halt_on_errors'})?$conf{'halt_on_errors'}:1;
 	}
