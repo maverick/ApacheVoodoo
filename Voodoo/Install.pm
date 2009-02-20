@@ -12,7 +12,7 @@ Apache::Voodoo::Install::* objects.
 =cut ###########################################################################
 package Apache::Voodoo::Install;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Install.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

@@ -2,7 +2,7 @@
 
 =head1 Apache::Voodoo::Table::Probe::mysql
 
-$Id$
+$Id: MySQL.pm 12906 2009-02-20 23:08:10Z medwards $
 
 =head1 Initial Coding: Maverick
 
@@ -13,7 +13,7 @@ This is old and crufty and not for public use
 =cut ################################################################################
 package Apache::Voodoo::Table::Probe::MySQL;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: svn://atlas.nasba.int/Voodoo/core/Voodoo/Table/Probe/MySQL.pm $' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
 
 use DBI;
 use Data::Dumper;

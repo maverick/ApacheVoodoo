@@ -6,7 +6,7 @@ Apache::Voodoo::Debug::Null
 
 =head1 VERSION
 
-$Id$
+$Id: Null.pm 12906 2009-02-20 23:08:10Z medwards $
 
 =head1 SYNOPSIS
 
@@ -15,7 +15,7 @@ Does nothing gracefully
 =cut ###########################################################################
 package Apache::Voodoo::Debug::Null;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Debug/Null.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

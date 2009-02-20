@@ -1,6 +1,6 @@
 package Apache::Voodoo::MP::Common;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: svn://atlas.nasba.int/Voodoo/core/Voodoo/MP/V1.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

@@ -6,12 +6,12 @@
 #
 #  VERSION
 # 
-# $Id$
+# $Id: Table.pm 12906 2009-02-20 23:08:10Z medwards $
 #
 ####################################################################################
 package Apache::Voodoo::Storage::Table;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Storage/Table.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 

@@ -6,7 +6,7 @@ Apache::Voodoo::Install::Updater
 
 =head1 VERSION
 
-$Id$
+$Id: Distribution.pm 12906 2009-02-20 23:08:10Z medwards $
 
 =head1 SYNOPSIS
 
@@ -16,7 +16,7 @@ by the various .xml files in an application.
 =cut ###########################################################################
 package Apache::Voodoo::Install::Distribution;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Install/Distribution.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

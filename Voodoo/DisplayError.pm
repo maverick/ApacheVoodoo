@@ -6,7 +6,7 @@ Apache::Voodoo::DisplayError - error message displayer
 
 =head1 VERSION
 
-$Id$
+$Id: DisplayError.pm 12906 2009-02-20 23:08:10Z medwards $
 
 =head1 SYNOPSIS
 
@@ -16,7 +16,7 @@ user interaction is through L<Apache::Voodoo>::display_error()
 =cut ################################################################################
 package Apache::Voodoo::DisplayError;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/DisplayError.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use base ("Apache::Voodoo");

@@ -6,7 +6,7 @@ Apache::Voodoo::Constants - interface to Apache::Voodoo configuration settings.
 
 =head1 VERSION
 
-$Id$
+$Id: Constants.pm 12906 2009-02-20 23:08:10Z medwards $
 
 =head1 SYNOPSIS
 
@@ -15,7 +15,7 @@ This package provide an OO interface to retrive the various paths and config set
 =cut ###########################################################################
 package Apache::Voodoo::Constants;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Constants.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

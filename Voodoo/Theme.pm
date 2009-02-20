@@ -2,7 +2,7 @@
 
 =head1 Apache::Voodoo::Theme
 
-$Id$
+$Id: Theme.pm 12906 2009-02-20 23:08:10Z medwards $
 
 =head1 Initial Coding: Maverick
 
@@ -13,7 +13,7 @@ This implements a post_include module that handles all the theme processing.
 =cut ################################################################################
 package Apache::Voodoo::Theme;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Theme.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 
