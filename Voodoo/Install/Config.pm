@@ -15,7 +15,7 @@ This object is used by Voodoo internally by "voodoo-control setconfig".
 =cut ###########################################################################
 package Apache::Voodoo::Install::Config;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Install/Config.pm $' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

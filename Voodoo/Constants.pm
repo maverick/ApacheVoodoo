@@ -15,7 +15,7 @@ This package provide an OO interface to retrive the various paths and config set
 =cut ###########################################################################
 package Apache::Voodoo::Constants;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Constants.pm $' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

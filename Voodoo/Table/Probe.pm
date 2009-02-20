@@ -12,7 +12,7 @@
 #####################################################################################
 package Apache::Voodoo::Table::Probe;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Table/Probe.pm $' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;

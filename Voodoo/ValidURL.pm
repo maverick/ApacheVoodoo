@@ -1,6 +1,6 @@
 package Apache::Voodoo::ValidURL;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/ValidURL.pm $' =~ m!(\d+\.\d+)!)[0]||10);
 
 #
 # I saw this code fragment somewhere ages ago, I can't remember where.

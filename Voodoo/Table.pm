@@ -11,7 +11,7 @@
 ####################################################################################
 package Apache::Voodoo::Table;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/Table.pm $' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 
