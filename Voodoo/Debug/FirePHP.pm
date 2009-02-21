@@ -12,14 +12,16 @@ use Data::Dumper;
 $Data::Dumper::Terse = 1;
 $Data::Dumper::Sortkeys = 1;
 
-use constant DEBUG     => 'LOG';
-use constant INFO      => 'INFO';
-use constant WARN      => 'WARN';
-use constant ERROR     => 'ERROR';
-use constant DUMP      => 'DUMP';
-use constant TRACE     => 'TRACE';
-use constant EXCEPTION => 'EXCEPTION';
-use constant TABLE     => 'TABLE';
+use constant {
+	DEBUG     => 'LOG',
+	INFO      => 'INFO',
+	WARN      => 'WARN',
+	ERROR     => 'ERROR',
+	DUMP      => 'DUMP',
+	TRACE     => 'TRACE',
+	EXCEPTION => 'EXCEPTION',
+	TABLE     => 'TABLE'
+};
 
 use constant GROUP_START => 'GROUP_START';
 use constant GROUP_END   => 'GROUP_END';
@@ -51,7 +53,7 @@ sub new {
 
 	$self->{enabled} = 0;
 	if ($conf eq "1" || (ref($conf) eq "HASH" && $conf->{all})) {
-		$self->{conf}->{DEBUG}     = 1;
+		$self->{conf}->{LOG}       = 1;
 		$self->{conf}->{INFO}      = 1;
 		$self->{conf}->{WARN}      = 1;
 		$self->{conf}->{ERROR}     = 1;
@@ -65,7 +67,7 @@ sub new {
 		$self->{enabled} = 1;
 	}
 	elsif (ref($conf) eq "HASH") {
-		$self->{conf}->{DEBUG}     = 1 if $conf->{debug};
+		$self->{conf}->{LOG}       = 1 if $conf->{debug};
 		$self->{conf}->{INFO}      = 1 if $conf->{info};
 		$self->{conf}->{WARN}      = 1 if $conf->{warn};
 		$self->{conf}->{ERROR}     = 1 if $conf->{error};
@@ -90,11 +92,13 @@ sub init {
 	$self->{mp} = shift;
 
 	$self->{enabled} = 0;
+	warn "FirePHP init";
 
 	return unless $self->_detectClientExtension();
 
 	$self->{enable} = $self->{conf};
 	$self->{messageIndex} = 1;
+	warn "FirePHP enable". Dumper $self->{enable};
 }
 
 sub shutdown { return; }
@@ -192,10 +196,12 @@ sub fb {
 
     if ($Type eq EXCEPTION) {
 
+		my @trace = $self->_stack_trace();
+
 		$Object = {
 			'Class'   => undef,
 			'Type'    => (0)?'trigger':'throw',
-			'Message' => undef,
+			'Message' => $Object,
 			'File'    => undef,
 			'Line'    => undef,
 			'Trace'   => []
@@ -214,7 +220,7 @@ sub fb {
 			'Class'   => undef,
 			'Type'    => undef,
 			'Function'=> undef,
-			'Message' => undef,
+			'Message' => $Object,
 			'File'    => undef,
 			'Line'    => undef,
 			'Args' => [],
@@ -394,18 +400,17 @@ sub _stack_trace {
 
 		if ($detail) {
 			push(@trace, {
-				'package'    => $frame->package,
-            	'subroutine' => $frame->subroutine,
-            	'line'       => $frame->line,
-            	'args'       => [ $frame->args ]
+				'Class'    => $frame->package,
+            	'Function' => $frame->subroutine,
+            	'Line'     => $frame->line,
+            	'Args'     => [ $frame->args ]
         	});
 		}
 		else {
 			push(@trace, {
-				'package'    => $frame->package,
-            	'subroutine' => $frame->subroutine,
-            	'line'       => $frame->line,
-            	'args'       => [ $frame->args ]
+				'Class'    => $frame->package,
+            	'Function' => $frame->subroutine,
+            	'Line'     => $frame->line
         	});
 		}
     }
