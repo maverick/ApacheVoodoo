@@ -195,40 +195,40 @@ sub fb {
 	my $skipFinalObjectEncode = 0;
 
     if ($Type eq EXCEPTION) {
-
-		my @trace = $self->_stack_trace();
+		my @trace = $self->_stack_trace(1);
 
 		$Object = {
-			'Class'   => undef,
+			'Class'   => $trace[0]->{Class}, #.'->'.$trace[0]->{Function},
 			'Type'    => (0)?'trigger':'throw',
 			'Message' => $Object,
-			'File'    => undef,
-			'Line'    => undef,
-			'Trace'   => []
+			'File'    => $trace[0]->{File},
+			'Line'    => $trace[0]->{Line},
+			'Trace'   => \@trace
 			# 'Args'=> [],
 			# 'Function'=>
 		};
 
-		$meta{'file'} = undef;
-		$meta{'line'} = undef;
+		$meta{'file'} = $trace[0]->{File};
+		$meta{'line'} = $trace[0]->{Line};
 
 		$skipFinalObjectEncode = 1;
     }
 	elsif ($Type eq TRACE) {
+		my @trace = $self->_stack_trace();
 
 		$Object = {
-			'Class'   => undef,
+			'Class'   => $trace[0]->{Class},
 			'Type'    => undef,
-			'Function'=> undef,
+			'Function'=> $trace[0]->{Function},
 			'Message' => $Object,
-			'File'    => undef,
-			'Line'    => undef,
+			'File'    => $trace[0]->{File},
+			'Line'    => $trace[0]->{Line},
 			'Args' => [],
-			'Trace'=> []
+			'Trace'=> \@trace
 		};
 
-		$meta{'file'} = undef;
-		$meta{'line'} = undef;
+		$meta{'file'} = $trace[0]->{File};
+		$meta{'line'} = $trace[0]->{Line};
 
 		$skipFinalObjectEncode = 1;
 	}
@@ -402,6 +402,7 @@ sub _stack_trace {
 			push(@trace, {
 				'Class'    => $frame->package,
             	'Function' => $frame->subroutine,
+            	'File'     => $frame->filename,
             	'Line'     => $frame->line,
             	'Args'     => [ $frame->args ]
         	});
@@ -410,11 +411,12 @@ sub _stack_trace {
 			push(@trace, {
 				'Class'    => $frame->package,
             	'Function' => $frame->subroutine,
+            	'File'     => $frame->filename,
             	'Line'     => $frame->line
         	});
 		}
     }
-	return \@trace;
+	return @trace;
 }
 
 1;
