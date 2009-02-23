@@ -194,44 +194,27 @@ sub fb {
   
 	my $skipFinalObjectEncode = 0;
 
-    if ($Type eq EXCEPTION) {
+    if ($Type eq EXCEPTION || $Type eq TRACE) {
 		my @trace = $self->_stack_trace(1);
 
-		$Object = {
-			'Class'   => $trace[0]->{Class}, #.'->'.$trace[0]->{Function},
-			'Type'    => (0)?'trigger':'throw',
-			'Message' => $Object,
-			'File'    => $trace[0]->{File},
-			'Line'    => $trace[0]->{Line},
-			'Trace'   => \@trace
-			# 'Args'=> [],
-			# 'Function'=>
-		};
+		my $t = shift @trace;
 
-		$meta{'file'} = $trace[0]->{File};
-		$meta{'line'} = $trace[0]->{Line};
+		$meta{'File'} = $t->{class}.$t->{type}.$t->{function};
+		$meta{'Line'} = $t->{line};
+
+		$Object = {
+			'Class'   => $t->{class},
+			'Type'    => $t->{type},
+			'Function'=> $t->{function},
+			'Message' => $Object,
+			'File'    => $t->{file},
+			'Line'    => $t->{line},
+			'Args'    => $t->{args},
+			'Trace'   => \@trace
+		};
 
 		$skipFinalObjectEncode = 1;
     }
-	elsif ($Type eq TRACE) {
-		my @trace = $self->_stack_trace();
-
-		$Object = {
-			'Class'   => $trace[0]->{Class},
-			'Type'    => undef,
-			'Function'=> $trace[0]->{Function},
-			'Message' => $Object,
-			'File'    => $trace[0]->{File},
-			'Line'    => $trace[0]->{Line},
-			'Args' => [],
-			'Trace'=> \@trace
-		};
-
-		$meta{'file'} = $trace[0]->{File};
-		$meta{'line'} = $trace[0]->{Line};
-
-		$skipFinalObjectEncode = 1;
-	}
 	elsif ($Type eq TABLE) {
 		if (ref($Object) eq "ARRAY" && ref($Object->[0]) ne "ARRAY") {
 			$Object->[1] = $self->encodeTable($Object->[1]);
@@ -241,6 +224,12 @@ sub fb {
 		}
 
 		$skipFinalObjectEncode = 1;
+	}
+	else {
+		my @trace = $self->_stack_trace(1);
+		
+		$meta{'File'} = $trace[0]->{class}.$trace[0]->{type}.$trace[0]->{function};
+		$meta{'Line'} = $trace[0]->{line};
 	}
 
 	my $structure_index = 1;
@@ -262,18 +251,10 @@ sub fb {
 		$msg = '{"'.$Label.'":'.$self->jsonEncode($Object, $skipFinalObjectEncode).'}';
 	}
 	else {
-		my %msg_meta = ('Type' => $Type);
-		if (defined($Label)) {
-			$msg_meta{'Label'} = $Label;
-		}
-		if (defined($meta{'file'})) {
-			$msg_meta{'File'} = $meta{'file'};
-		}
-		if (defined($meta{'line'})) {
-			$msg_meta{'Line'} = $meta{'line'};
-		}
+		$meta{'Type'}  = $Type;
+		$meta{'Label'} = $Label;
 
-		$msg = '['.$self->jsonEncode(\%msg_meta).','.$self->jsonEncode($Object, $skipFinalObjectEncode).']';
+		$msg = '['.$self->jsonEncode(\%meta).','.$self->jsonEncode($Object, $skipFinalObjectEncode).']';
 	}
     
 	#
@@ -387,33 +368,44 @@ sub encodeObject {
 }
 
 sub _stack_trace {
-	my $self   = shift;
-	my $detail = shift;
+	my $self = shift;
+	my $full = shift;
 
 	my @trace;
+	my $i = 1;
 
 	my $st = Devel::StackTrace->new();
-    $st->next_frame;
-    while (my $frame = $st->next_frame()) {
-        next if ($frame->subroutine =~ /^Apache::Voodoo/);
-        next if ($frame->subroutine =~ /(eval)/);
+    while (my $frame = $st->frame($i++)) {
+		last if ($frame->package =~ /^Apache::Voodoo::Handler/);
+        next if ($frame->package =~ /^Apache::Voodoo/);
+        next if ($frame->package =~ /(eval)/);
 
-		if ($detail) {
-			push(@trace, {
-				'Class'    => $frame->package,
-            	'Function' => $frame->subroutine,
-            	'File'     => $frame->filename,
-            	'Line'     => $frame->line,
-            	'Args'     => [ $frame->args ]
-        	});
+		my $f = {
+			'class'    => $frame->package,
+			'function' => $st->frame($i)->subroutine,
+			'file'     => $frame->filename,
+			'line'     => $frame->line,
+		};
+		$f->{'function'} =~ s/^$f->{'class'}:://;
+
+		my @a = $st->frame($i)->args;
+
+		# if the first item is a reference to same class, then this was a method call
+		if (ref($a[0]) eq $f->{'class'}) {
+			shift @a;
+			$f->{'type'} = '->';
 		}
 		else {
-			push(@trace, {
-				'Class'    => $frame->package,
-            	'Function' => $frame->subroutine,
-            	'File'     => $frame->filename,
-            	'Line'     => $frame->line
-        	});
+			$f->{'type'} = '::';
+		}
+
+		push(@trace,$f);
+
+		if ($full) {
+			$f->{'args'} = \@a;
+		}
+		else {
+			last;
 		}
     }
 	return @trace;
