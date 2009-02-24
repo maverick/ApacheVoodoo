@@ -50,8 +50,8 @@ sub gd_preconfig {
 
 	my $db;
 	eval {
-		require "Apache/Voodoo/Debug/$db[0].pm";
-		my $class = 'Apache::Voodoo::Debug::'.$db[0];
+		require "Apache/Voodoo/Debug/Native/$db[0].pm";
+		my $class = 'Apache::Voodoo::Debug::Native::'.$db[0];
 		$db = $class->new();
 	};
 	if ($@) {

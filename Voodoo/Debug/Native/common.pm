@@ -1,4 +1,4 @@
-package Apache::Voodoo::Debug::common;
+package Apache::Voodoo::Debug::Native::common;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
@@ -191,12 +191,14 @@ sub _create_debug {
 	$self->{dbh}->do("CREATE TABLE debug (
 		request_id integer         not null,
 		seq        integer unsigned not null,
+		level      varchar(64)      not null,
 		stack      text             not null,
 		data       text             not null
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX debug_request_id ON debug(request_id)") || $self->db_error();
 	$self->{dbh}->do("CREATE INDEX debug_seq        ON debug(seq)"       ) || $self->db_error();
+	$self->{dbh}->do("CREATE INDEX debug_level      ON debug(level)"     ) || $self->db_error();
 }
 
 sub handle_debug {
@@ -225,6 +227,7 @@ sub handle_debug {
 		INSERT INTO debug(
 			request_id,
 			seq,
+			level,
 			stack,
 			data
 		)
@@ -236,6 +239,7 @@ sub handle_debug {
 		)",undef,
 		$request_id,
 		$seq,
+		$data->{level},
 		Dumper($data->{stack}),
 		$data->{data}) || $self->db_error();
 }

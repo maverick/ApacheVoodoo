@@ -92,13 +92,11 @@ sub init {
 	$self->{mp} = shift;
 
 	$self->{enabled} = 0;
-	warn "FirePHP init";
 
 	return unless $self->_detectClientExtension();
 
 	$self->{enable} = $self->{conf};
 	$self->{messageIndex} = 1;
-	warn "FirePHP enable". Dumper $self->{enable};
 }
 
 sub shutdown { return; }
@@ -117,16 +115,16 @@ sub setRendererUrl {
 	$self->setHeader('X-FirePHP-RendererURL' => $URL);
 }
   
-sub debug     { return $_[0]->fb($_[1], $_[2], DEBUG);     } 
-sub info      { return $_[0]->fb($_[1], $_[2], INFO);      } 
-sub warn      { return $_[0]->fb($_[1], $_[2], WARN);      } 
-sub error     { return $_[0]->fb($_[1], $_[2], ERROR);     } 
-sub exception { return $_[0]->fb($_[1], $_[2], EXCEPTION); } 
-sub trace     { return $_[0]->fb($_[1], undef, TRACE);     } 
-sub table     { return $_[0]->fb($_[1], $_[2], TABLE);     } 
+sub debug     { return $_[0]->_fb($_[1], $_[2], DEBUG);     } 
+sub info      { return $_[0]->_fb($_[1], $_[2], INFO);      } 
+sub warn      { return $_[0]->_fb($_[1], $_[2], WARN);      } 
+sub error     { return $_[0]->_fb($_[1], $_[2], ERROR);     } 
+sub exception { return $_[0]->_fb($_[1], $_[2], EXCEPTION); } 
+sub trace     { return $_[0]->_fb($_[1], undef, TRACE);     } 
+sub table     { return $_[0]->_fb($_[1], $_[2], TABLE);     } 
   
-sub _group    { return $_[0]->fb($_[1], undef, GROUP_START); }
-sub _groupEnd { return $_[0]->fb(undef, undef, GROUP_END);   }
+sub _group    { return $_[0]->_fb($_[1], undef, GROUP_START); }
+sub _groupEnd { return $_[0]->_fb(undef, undef, GROUP_END);   }
   
 #
 # At some point in the future we might push this info out 
@@ -176,7 +174,7 @@ sub _compareVersion {
 	return 1;
 }
  
-sub fb {
+sub _fb {
 	my $self = shift;
 
 	my $Label  = shift;
@@ -192,8 +190,6 @@ sub fb {
 
 	my %meta = ();
   
-	my $skipFinalObjectEncode = 0;
-
     if ($Type eq EXCEPTION || $Type eq TRACE) {
 		my @trace = $self->_stack_trace(1);
 
@@ -212,19 +208,7 @@ sub fb {
 			'Args'    => $t->{args},
 			'Trace'   => \@trace
 		};
-
-		$skipFinalObjectEncode = 1;
     }
-	elsif ($Type eq TABLE) {
-		if (ref($Object) eq "ARRAY" && ref($Object->[0]) ne "ARRAY") {
-			$Object->[1] = $self->encodeTable($Object->[1]);
-		}
-		else {
-			$Object = $self->encodeTable($Object);
-		}
-
-		$skipFinalObjectEncode = 1;
-	}
 	else {
 		my @trace = $self->_stack_trace(1);
 		
@@ -248,13 +232,13 @@ sub fb {
   
 	my $msg;
 	if ($Type eq DUMP) {
-		$msg = '{"'.$Label.'":'.$self->jsonEncode($Object, $skipFinalObjectEncode).'}';
+		$msg = '{"'.$Label.'":'.$self->jsonEncode($Object).'}';
 	}
 	else {
 		$meta{'Type'}  = $Type;
 		$meta{'Label'} = $Label;
 
-		$msg = '['.$self->jsonEncode(\%meta).','.$self->jsonEncode($Object, $skipFinalObjectEncode).']';
+		$msg = '['.$self->jsonEncode(\%meta).','.$self->jsonEncode($Object).']';
 	}
     
 	#
@@ -293,31 +277,6 @@ sub fb {
 	return 1;
 }
   
-sub _standardizePath {
-	my $p = $_[1];
-	return $p =~ s/\\/\//g;
-}
-  
-sub _escapeTrace {
-	my $self  = shift;
-	my $Trace = shift;
-
-	return $Trace unless (ref($Trace) eq "ARRAY");
-
-	foreach my $row (@{$Trace}) {
-		if (defined($row->{'file'})) {
-			$row->{'file'} = $self->_escapeTraceFile($row->{'file'});
-		}
-		if (defined($row->{'args'})) {
-			$row->{'args'} = $self->encodeObject($row->{'args'});
-		}
-	}
-
-	return $Trace;    
-}
-  
-sub _escapeTraceFile { return $_[1]; }
-
 sub setHeader() {
 	my $self  = shift;
 	my $name  = shift;
@@ -329,44 +288,10 @@ sub setHeader() {
 sub jsonEncode {
 	my $self   = shift;
 	my $Object = shift;
-	my $skipObjectEncode = (shift)?1:0;
-
-#	unless ($skipObjectEncode) {
-#		$Object = $self->encodeObject($Object);
-#    }
-#	print "$Object\n";
 
 	return $self->{'json'}->encode($Object);
 }
   
-sub encodeTable {
-	my $self  = shift;
-	my $Table = shift;
-
-	if (ref($Table) eq "ARRAY") {
-		for (my $i=0; $i < $#{$Table}; $i++) {
-			if (ref($Table->[$i]) eq "ARRAY") {
-				for (my $j=0; $j < $#{$Table->[$i]}; $j++) {
-					$Table->[$i]->[$j] = $self->encodeObject($Table->[$i]->[$j]);
-				}
-			}
-		}
-	}
-	return $Table;
-}
-  
-sub encodeObject {
-	my $self = shift;
-	my $object = shift;
-
-	if (ref($object)) {
-		return Dumper($object);
-	}
-	else {
-		return $object;
-	}
-}
-
 sub _stack_trace {
 	my $self = shift;
 	my $full = shift;

@@ -1,4 +1,4 @@
-package Apache::Voodoo::Debug::SQLite;
+package Apache::Voodoo::Debug::Native::SQLite;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
@@ -8,7 +8,7 @@ use warnings;
 use DBI;
 use Data::Dumper;
 
-use base("Apache::Voodoo::Debug::common");
+use base("Apache::Voodoo::Debug::Native::common");
 
 sub new {
 	my $class = shift;

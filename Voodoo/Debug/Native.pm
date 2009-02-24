@@ -26,6 +26,7 @@ use warnings;
 use Devel::StackTrace;
 use IO::Socket::UNIX;
 use IO::Handle::Record;
+use Apache::Voodoo::Constants;
 
 use Data::Dumper;
 $Data::Dumper::Terse = 1;
@@ -79,11 +80,12 @@ sub init {
 
 	return unless $self->{enabled};
 
+	my $ac = Apache::Voodoo::Constants->new();
 	unless (defined($self->{'socket'}) && $self->{'socket'}->connected) {
 		eval {
 			$self->{'socket'} = IO::Socket::UNIX->new(
 				Type => SOCK_STREAM,
-				Peer => $self->{ac}->socket_file()
+				Peer => $ac->socket_file()
 			);
 		};
 
@@ -91,7 +93,7 @@ sub init {
 			!defined($self->{'socket'}) ||
 			!$self->{'socket'}->connected) {
 
-			warn("Failed to open socket.  Debug info will be lost. $!\n");
+			warn("Failed to open socket.  Debug info will be lost. $@\n");
 			$self->{enable}  = undef;
 			$self->{enabled} = 0;
 			return;
@@ -124,32 +126,44 @@ sub trace     { my $self = shift; $self->_debug('trace',    @_); }
 sub table     { my $self = shift; $self->_debug('table',    @_); }
 
 sub _stack_trace {
-	my $self   = shift;
-	my $detail = shift;
+	my $self = shift;
+	my $full = shift;
 
 	my @trace;
+	my $i = 1;
 
 	my $st = Devel::StackTrace->new();
-    $st->next_frame;
-    while (my $frame = $st->next_frame()) {
-        next if ($frame->subroutine =~ /^Apache::Voodoo/);
-        next if ($frame->subroutine =~ /(eval)/);
+    while (my $frame = $st->frame($i++)) {
+		last if ($frame->package =~ /^Apache::Voodoo::Handler/);
+        next if ($frame->package =~ /^Apache::Voodoo/);
+        next if ($frame->package =~ /(eval)/);
 
-		if ($detail) {
-			push(@trace, {
-				'package'    => $frame->package,
-            	'subroutine' => $frame->subroutine,
-            	'line'       => $frame->line,
-            	'args'       => [ $frame->args ]
-        	});
+		my $f = {
+			'class'    => $frame->package,
+			'function' => $st->frame($i)->subroutine,
+			'file'     => $frame->filename,
+			'line'     => $frame->line,
+		};
+		$f->{'function'} =~ s/^$f->{'class'}:://;
+
+		my @a = $st->frame($i)->args;
+
+		# if the first item is a reference to same class, then this was a method call
+		if (ref($a[0]) eq $f->{'class'}) {
+			shift @a;
+			$f->{'type'} = '->';
 		}
 		else {
-			push(@trace, {
-				'package'    => $frame->package,
-            	'subroutine' => $frame->subroutine,
-            	'line'       => $frame->line,
-            	'args'       => [ $frame->args ]
-        	});
+			$f->{'type'} = '::';
+		}
+
+		push(@trace,$f);
+
+		if ($full) {
+			$f->{'args'} = \@a;
+		}
+		else {
+			last;
 		}
     }
 	return \@trace;
@@ -172,13 +186,13 @@ sub _debug {
 		$data = $_[0];
 	}
 
-	my $detail = ($type =~ /(exception|trace)/)?1:0;
+	my $full = ($type =~ /(exception|trace)/)?1:0;
 
 	$self->{'socket'}->write_record({
 		type  => 'debug',
 		id    => $self->{id},
 		level => $type,
-		stack => $self->_stack_trace($detail),
+		stack => Dumper($self->_stack_trace($full)),
 		data  => $data
 	});
 }
