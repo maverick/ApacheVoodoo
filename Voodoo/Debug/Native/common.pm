@@ -235,6 +235,7 @@ sub handle_debug {
 			?,
 			?,
 			?,
+			?,
 			?
 		)",undef,
 		$request_id,

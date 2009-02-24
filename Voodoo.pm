@@ -15,6 +15,7 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 
 use Data::Dumper;
+use Time::HiRes;
 
 sub new {
 	my $class = shift;
@@ -93,7 +94,7 @@ sub mark {
 	my $self = shift;
 
 	if (defined($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->mark(@_);
+		$Apache::Voodoo::Handler::debug->mark(Time::HiRes::time, @_);
 	}
 }
 

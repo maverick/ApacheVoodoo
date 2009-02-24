@@ -142,7 +142,7 @@ sub handle_request {
 		return $self->{mp}->server_error;
 	}
 
-	$debug->mark("START");
+	$debug->mark(Time::HiRes::time,"START");
 
 	$app->{'site_root'} = $self->{mp}->site_root;
 	if ($app->{'site_root'} ne "/") {
@@ -156,7 +156,7 @@ sub handle_request {
    	# remove the beginning /
    	$run->{'uri'} =~ s/^\///o;
 
-	$debug->mark("template dir resolution");
+	$debug->mark(Time::HiRes::time,"template dir resolution");
 
 	####################
 	# connect to db
@@ -179,7 +179,7 @@ sub handle_request {
 	$run->{session_handler} = $self->attach_session($app);
 	$run->{session} = $run->{session_handler}->session;
 
-	$debug->mark("session attachment");
+	$debug->mark(Time::HiRes::time,"session attachment");
 	$debug->session_id($run->{session}->{_session_id});
 
 	if ($run->{'uri'} eq "logout") {
@@ -199,7 +199,7 @@ sub handle_request {
 		return $self->display_host_error($run->{'input_params'});
 	}
 
-	$debug->mark("parameter parsing");
+	$debug->mark(Time::HiRes::time,"parameter parsing");
 	$debug->params($run->{'input_params'});
 
 	####################
@@ -210,7 +210,7 @@ sub handle_request {
 		!$run->{input_params}->{return}
 		) {
 		$self->history_queue($run);
-		$debug->mark("history capture");
+		$debug->mark(Time::HiRes::time,"history capture");
 	}
 
 	####################
@@ -218,7 +218,7 @@ sub handle_request {
 	####################
 	$run->{'template_conf'} = $self->resolve_conf_section($app,$run);
 
-	$debug->mark("config section resolution");
+	$debug->mark(Time::HiRes::time,"config section resolution");
 	$debug->template_conf($run->{'template_conf'});
 
 	####################
@@ -230,7 +230,7 @@ sub handle_request {
 	$debug->result($return);
 	$run->{session_handler}->disconnect();
 
-	$debug->mark('END');
+	$debug->mark(Time::HiRes::time,'END');
 	$debug->shutdown();
 	return $return;
 }
@@ -361,7 +361,7 @@ sub generate_html {
 				}
 			}
 
-			$debug->mark("handler for ".$handle->[0]." ".$handle->[1]);
+			$debug->mark(Time::HiRes::time,"handler for ".$handle->[0]." ".$handle->[1]);
 			$debug->return_data($handle->[0],$handle->[1],$return);
 
 			if (ref($return) eq "ARRAY") {
@@ -418,7 +418,7 @@ sub generate_html {
 			foreach my $k ( keys %{$return}) {
 				$t_params->{$k} = $return->{$k};
 			}
-			$debug->mark("result packing");
+			$debug->mark(Time::HiRes::time,"result packing");
 		}
 	}
 
@@ -464,7 +464,7 @@ sub generate_html {
 	eval {
 		# load the template
 		$app->{'template_engine'}->template($run->{'uri'});
-		$debug->mark("template open");
+		$debug->mark(Time::HiRes::time,"template open");
 
 		$template_params->{'SITE_ROOT'}  = $app->{'site_root'};
 
@@ -476,12 +476,12 @@ sub generate_html {
 
 		# generate the main body contents
 		$template_params->{'_MAIN_BODY_'} = $app->{'template_engine'}->output();
-		$debug->mark("main body content");
+		$debug->mark(Time::HiRes::time,"main body content");
 
 		# FIXME
 		if (0 && $debug->enabled()) {
 			$app->{'template_engine'}->template_abs($self->{'debug_template'});
-			$debug->mark("debug template open");
+			$debug->mark(Time::HiRes::time,"debug template open");
 
 			# pack up the params
 			$app->{'template_engine'}->params({
@@ -497,7 +497,7 @@ sub generate_html {
 
 		# load the skeleton template
 		$app->{'template_engine'}->template($skeleton_file);
-		$debug->mark("skeleton open");
+		$debug->mark(Time::HiRes::time,"skeleton open");
 
 		# pack everything into the skeleton
 		$app->{'template_engine'}->params($template_params);

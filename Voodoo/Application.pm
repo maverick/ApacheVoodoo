@@ -129,7 +129,7 @@ sub load_config {
 
 	my %conf = $conf->getall();
 
-	$conf->{id} = $self->{id};
+	$conf{id} = $self->{id};
 
 	$self->{'base_package'} = $conf{'base_package'} || $self->{'id'};
 
