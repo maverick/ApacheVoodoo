@@ -113,3 +113,12 @@ div.voodooDebug li.vdClosed pre {
 div.voodooDebug li pre {
 	font-style: normal;
 }
+
+div.voodooDebug span.vdSwitchOn {
+	color: green;
+}
+
+div.voodooDebug span.vdSwitchOff {
+	color: #aaa;
+}
+

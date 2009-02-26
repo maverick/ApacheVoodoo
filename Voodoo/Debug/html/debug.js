@@ -153,4 +153,13 @@ function voodooDebug(opts){
 		}
 		return false;
 	}
+
+	this.toggleFilter = function(obj,section) {
+		if (obj.className == 'vdSwitchOn') {
+			obj.className = 'vdSwitchOff';
+		}
+		else {
+			obj.className = 'vdSwitchOn';
+		}
+	}
 }

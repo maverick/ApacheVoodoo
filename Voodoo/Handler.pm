@@ -61,10 +61,6 @@ sub new {
 	$self->{mp}        = Apache::Voodoo::MP->new();
 	$self->{constants} = Apache::Voodoo::Constants->new();
 
-	$self->{debug_root} = $self->{constants}->debug_path();
-	$self->{debug_template} = $INC{"Apache/Voodoo/Handler.pm"};
-	$self->{debug_template} =~ s/Handler.pm$/Debug\/html\/debug.tmpl/;
-
 	if (exists $ENV{'MOD_PERL'}) {
 		# let's us do a compile check outside of mod_perl
 		$self->restart;
@@ -224,7 +220,7 @@ sub handle_request {
 	####################
 	# prepare main body contents
 	####################
-	my $return = $self->generate_html($app,$run);
+	my $return = $self->generate_content($app,$run);
 
 	$debug->session($run->{session});
 	$debug->result($return);
@@ -262,7 +258,7 @@ sub attach_session {
 
 sub history_queue {
 	my $self = shift;
-	my $p = shift;
+	my $p    = shift;
 
 	my $session = $p->{'session'};
 	my $params  = $p->{'input_params'};
@@ -311,7 +307,7 @@ sub resolve_conf_section {
 	return $app->{'template_conf'}->{'default'};
 }
 
-sub generate_html {
+sub generate_content {
 	my $self = shift;
 	my $app  = shift;
 	my $run  = shift;
@@ -478,21 +474,9 @@ sub generate_html {
 		$template_params->{'_MAIN_BODY_'} = $app->{'template_engine'}->output();
 		$debug->mark(Time::HiRes::time,"main body content");
 
-		# FIXME
-		if (0 && $debug->enabled()) {
-			$app->{'template_engine'}->template_abs($self->{'debug_template'});
-			$debug->mark(Time::HiRes::time,"debug template open");
-
-			# pack up the params
-			$app->{'template_engine'}->params({
-				app_id     => $run->{app_id},
-				request_id => $run->{request_id},
-				session_id => $run->{session}->{_session_id},
-				debug_root => $self->{'debug_root'},
-			});
-
-			# generate the main body contents
-			$template_params->{'_DEBUG_'} = $app->{'template_engine'}->output();
+		my %d = $debug->finalize();
+		foreach (keys %d) {
+			$template_params->{$_} = $d{$_};
 		}
 
 		# load the skeleton template

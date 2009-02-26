@@ -54,6 +54,16 @@ sub params        { my $self = shift; $_->params(@_)        foreach (@{$self->{'
 sub template_conf { my $self = shift; $_->template_conf(@_) foreach (@{$self->{'handlers'}}); }
 sub session       { my $self = shift; $_->session(@_)       foreach (@{$self->{'handlers'}}); }
 
+sub finalize {
+	my $self = shift;
+
+	my @d;
+	foreach (@{$self->{handlers}}) {
+		push(@d,$_->finalize(@_));
+	}
+	return @d;
+}
+
 1;
 
 =pod ################################################################################

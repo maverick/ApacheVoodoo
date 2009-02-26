@@ -26,6 +26,8 @@ use warnings;
 use Devel::StackTrace;
 use IO::Socket::UNIX;
 use IO::Handle::Record;
+use HTML::Template;
+
 use Apache::Voodoo::Constants;
 
 use Data::Dumper;
@@ -39,10 +41,12 @@ sub new {
 	my $conf = shift;
 
 	my $self = {};
+	bless($self,$class);
 
 	$self->{id}->{app_id} = $id;
 
-	bless($self,$class);
+	my $ac = Apache::Voodoo::Constants->new();
+	$self->{socket_file} = $ac->socket_file();
 
 	my @flags = qw(debug info warn error exception table trace profile params template_conf return_data session);
 
@@ -60,6 +64,23 @@ sub new {
 				$self->{enabled} = 1;
 			}
 		}
+	}
+
+	if ($self->{enabled}) {
+		my $file = $INC{"Apache/Voodoo/Constants.pm"};
+		$file =~ s/Constants.pm$/Debug\/html\/debug.tmpl/;
+
+		$self->{template} = HTML::Template->new(
+			'filename'          => $file,
+			'die_on_bad_params' => 0,
+			'global_vars'       => 1,
+			'loop_context_vars' => 1
+		);
+
+		$self->{template}->param(
+			debug_root => $ac->debug_path(),
+			app_id     => $self->{id}->{app_id}
+		);
 	}
 
 	# we always send this since is fundamental to identifying the request chain
@@ -80,12 +101,11 @@ sub init {
 
 	return unless $self->{enabled};
 
-	my $ac = Apache::Voodoo::Constants->new();
 	unless (defined($self->{'socket'}) && $self->{'socket'}->connected) {
 		eval {
 			$self->{'socket'} = IO::Socket::UNIX->new(
 				Type => SOCK_STREAM,
-				Peer => $ac->socket_file()
+				Peer => $self->{socket_file}
 			);
 		};
 
@@ -107,6 +127,8 @@ sub init {
 		type => 'request',
 		id   => $self->{'id'}
 	});
+
+	$self->{template}->param(request_id => $self->{id}->{request_id});
 }
 
 sub enabled {
@@ -225,13 +247,20 @@ sub return_data {
 }
 
 
-# these all behave the same way.
-sub session_id    { my $self = shift; $self->_log('session_id',    @_);  }
+# these all behave the same way.  With the execption of session_id which
+# also inserts it into the underlying template.
 sub url           { my $self = shift; $self->_log('url',           @_);  }
 sub result        { my $self = shift; $self->_log('result',        @_);  }
 sub params        { my $self = shift; $self->_log('params',        @_);  }
 sub template_conf { my $self = shift; $self->_log('template_conf', @_);  }
 sub session       { my $self = shift; $self->_log('session',Dumper(@_)); }
+sub session_id { 
+	my $self = shift; 
+	my $id   = shift;
+
+	$self->{template}->param(session_id => $id);
+	$self->_log('session_id',$id);
+}
 
 sub _log {
 	my $self = shift;
@@ -244,6 +273,18 @@ sub _log {
 		id   => $self->{id},
 		data => shift
 	});
+}
+
+sub finalize {
+	my $self = shift;
+
+	return () unless $self->{enabled};
+
+	foreach (keys %{$self->{'enable'}}) {
+		$self->{template}->param('enable_'.$_ => $self->{'enable'}->{$_});
+	}
+
+	return (_DEBUG_ => $self->{template}->output());
 }
 
 1;

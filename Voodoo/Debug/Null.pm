@@ -49,6 +49,8 @@ sub params        { return; }
 sub template_conf { return; }
 sub session       { return; }
 
+sub finalize { return (); }
+
 1;
 
 =pod ################################################################################

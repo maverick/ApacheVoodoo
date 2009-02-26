@@ -139,6 +139,10 @@ sub params        { return; }
 sub template_conf { return; }
 sub session       { return; }
 
+# This is here for API compliance.
+# FirePHP has no finalize step
+sub finalize { return (); }
+
 #
 # Relies on having a callback setup in the constructor that returns the user agent
 #
