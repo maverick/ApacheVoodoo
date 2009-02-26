@@ -48,17 +48,26 @@ sub new {
 	my $ac = Apache::Voodoo::Constants->new();
 	$self->{socket_file} = $ac->socket_file();
 
-	my @flags = qw(debug info warn error exception table trace profile params template_conf return_data session);
+	my @flags = qw(debug info warn error exception table trace);
+	my @flag2 = qw(profile params template_conf return_data session);
 
 	$self->{enabled} = 0;
 	if ($conf eq "1" || (ref($conf) eq "HASH" && $conf->{all})) {
-		foreach (@flags) {
+		foreach (@flags,@flag2) {
 			$self->{conf}->{$_} = 1;
 		}
+		$self->{conf}->{anydebug} = 1;
 		$self->{enabled} = 1;
 	}
 	elsif (ref($conf) eq "HASH") {
 		foreach (@flags) {
+			if ($conf->{$_}) {
+				$self->{conf}->{$_} = 1;
+				$self->{conf}->{anydebug} = 1;
+				$self->{enabled} = 1;
+			}
+		}
+		foreach (@flag2) {
 			if ($conf->{$_}) {
 				$self->{conf}->{$_} = 1;
 				$self->{enabled} = 1;

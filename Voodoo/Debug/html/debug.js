@@ -155,11 +155,5 @@ function voodooDebug(opts){
 	}
 
 	this.toggleFilter = function(obj,section) {
-		if (obj.className == 'vdSwitchOn') {
-			obj.className = 'vdSwitchOff';
-		}
-		else {
-			obj.className = 'vdSwitchOn';
-		}
 	}
 }
