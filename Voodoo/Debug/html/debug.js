@@ -27,9 +27,9 @@ function voodooDebug(opts){
 	this.spinner = new Image(16,16);
 	this.spinner.src = this.debug_root+"/i/spinner.gif";
 	this.minus = new Image(16,16);
-	this.minus.src = this.debug_root+"/i/minus.gif";
+	this.minus.src = this.debug_root+"/i/minus.png";
 	this.plus = new Image(16,16);
-	this.plus.src = this.debug_root+"/i/plus.gif";
+	this.plus.src = this.debug_root+"/i/plus.png";
 
 	this.yourBrowserIsBroken=(navigator.userAgent.toLowerCase().indexOf("msie")!=-1);
 
@@ -51,7 +51,7 @@ function voodooDebug(opts){
 				h = '<ul>';
 				for (j=0; j < data.length; j++) {
 					h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
-						 '<img src="'+this.debug_root+'/i/minus.gif" />'+
+						 '<img src="'+this.debug_root+'/i/minus.png" />'+
 					     data[j][0]+'</span>'+
 					     this.loadDisplay(data[j][1])+
 						 '</li>';
@@ -63,7 +63,7 @@ function voodooDebug(opts){
 				for (j=0; j < data.length; j++) {
 					console.log(j);
 					h += '<dt class="vdClosed" onClick="vdDebug.toggleDL(this);">'+
-						 '<img src="'+this.debug_root+'/i/plus.gif" />'+
+						 '<img src="'+this.debug_root+'/i/plus.png" />'+
 						 data[j][0].replace(/>/g,'&gt;')
 						 +'</dt><dd class="vdClosed">'+
 						 data[j][1].replace(/</g,'&lt;')+

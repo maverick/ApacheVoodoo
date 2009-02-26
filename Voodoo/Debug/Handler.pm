@@ -116,11 +116,17 @@ sub setup_static_files {
 	my $self = shift;
 
 	$self->{static_files} = { 
-		"i/plus.gif"    => "image/gif",
-		"i/minus.gif"   => "image/gif",
-		"i/spinner.gif" => "image/gif",
-		"debug.js"      => "application/x-javascript",
-		"debug.css"     => "text/css"
+		"debug.css"        => "text/css",
+		"debug.js"         => "application/x-javascript",
+		"i/error.png"      => "image/png",
+		"i/exception.png"  => "image/png",
+		"i/info.png"       => "image/png",
+		"i/minus.png"      => "image/png",
+		"i/plus.png"       => "image/png",
+		"i/spinner.gif"    => "image/gif",
+		"i/table.png"      => "image/png",
+		"i/trace.png"      => "image/png",
+		"i/warn.png"       => "image/png",
 	};
 }
 
