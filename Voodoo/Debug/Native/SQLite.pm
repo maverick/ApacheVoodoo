@@ -6,7 +6,6 @@ use strict;
 use warnings;
 
 use DBI;
-use Data::Dumper;
 
 use base("Apache::Voodoo::Debug::Native::common");
 

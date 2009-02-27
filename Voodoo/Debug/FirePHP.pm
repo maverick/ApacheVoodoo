@@ -8,10 +8,6 @@ use warnings;
 use Devel::StackTrace;
 use JSON;
 
-use Data::Dumper;
-$Data::Dumper::Terse = 1;
-$Data::Dumper::Sortkeys = 1;
-
 use constant {
 	DEBUG     => 'LOG',
 	INFO      => 'INFO',

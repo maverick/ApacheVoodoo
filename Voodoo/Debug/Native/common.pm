@@ -6,16 +6,19 @@ use strict;
 use warnings;
 
 use DBI;
-
-use Data::Dumper;
-$Data::Dumper::Terse = 1;
-$Data::Dumper::Sortkeys = 1;
+use JSON;
 
 use base("Apache::Voodoo");
 
 sub set_dbh {
 	my $self = shift;
 	$self->{dbh} = shift;
+
+	$self->{json} = new JSON;
+	$self->{json}->allow_nonref(1);
+	$self->{json}->allow_blessed(1);
+	$self->{json}->convert_blessed(1);
+	$self->{json}->utf8(1);
 }
 
 sub get_dbh {
@@ -241,7 +244,7 @@ sub handle_debug {
 		$request_id,
 		$seq,
 		$data->{level},
-		Dumper($data->{stack}),
+		$self->_encode($data->{stack}),
 		$data->{data}) || $self->db_error();
 }
 
@@ -266,7 +269,7 @@ sub handle_params {
 		return;
 	}
 
-	my $d = $self->trim(Dumper $data->{data});
+	my $d = $self->trim($self->_encode($data->{data}));
 
 	$self->{dbh}->do("
 		INSERT INTO params (
@@ -346,7 +349,7 @@ sub handle_template_conf {
 			?
 		)",undef,
 		$request_id,
-		Dumper($data->{data})) || $self->db_error();
+		$self->_encode($data->{data})) || $self->db_error();
 }
 
 sub _create_return_data {
@@ -403,6 +406,12 @@ sub handle_return_data {
 		$data->{handler},
 		$data->{method},
 		$data->{data}) || $self->db_error();
+}
+
+sub _encode {
+	my $self = shift;
+	
+	return $self->{json}->encode(@_);
 }
 
 1;

@@ -27,12 +27,12 @@ use Devel::StackTrace;
 use IO::Socket::UNIX;
 use IO::Handle::Record;
 use HTML::Template;
+use JSON;
 
 use Apache::Voodoo::Constants;
 
-use Data::Dumper;
-$Data::Dumper::Terse = 1;
-$Data::Dumper::Sortkeys = 1;
+#$Data::Dumper::Terse = 1;
+#$Data::Dumper::Sortkeys = 1;
 
 sub new {
 	my $class = shift;
@@ -90,6 +90,12 @@ sub new {
 			debug_root => $ac->debug_path(),
 			app_id     => $self->{id}->{app_id}
 		);
+
+		$self->{json} = new JSON;
+		$self->{json}->allow_nonref(1);
+		$self->{json}->allow_blessed(1);
+		$self->{json}->convert_blessed(1);
+		$self->{json}->utf8(1);
 	}
 
 	# we always send this since is fundamental to identifying the request chain
@@ -210,7 +216,7 @@ sub _debug {
 	if (scalar(@_) > 1 || ref($_[0])) {
 		# if there's more than one item, or the item we have is a reference
 		# we shove it through it Data::Dumper
-		$data = Dumper(@_);
+		$data = $self->_encode(@_);
 	}
 	else {
 		# simple scalar can be logged as is.
@@ -223,7 +229,7 @@ sub _debug {
 		type  => 'debug',
 		id    => $self->{id},
 		level => $type,
-		stack => Dumper($self->_stack_trace($full)),
+		stack => $self->_encode($self->_stack_trace($full)),
 		data  => $data
 	});
 }
@@ -251,7 +257,7 @@ sub return_data {
 		id      => $self->{id},
 		handler => shift,
 		method  => shift,
-		data    => scalar(Dumper(shift))
+		data    => scalar($self->_encode(shift))
 	});
 }
 
@@ -262,7 +268,7 @@ sub url           { my $self = shift; $self->_log('url',           @_);  }
 sub result        { my $self = shift; $self->_log('result',        @_);  }
 sub params        { my $self = shift; $self->_log('params',        @_);  }
 sub template_conf { my $self = shift; $self->_log('template_conf', @_);  }
-sub session       { my $self = shift; $self->_log('session',Dumper(@_)); }
+sub session       { my $self = shift; $self->_log('session',$self->_encode(@_)); }
 sub session_id { 
 	my $self = shift; 
 	my $id   = shift;
@@ -283,6 +289,13 @@ sub _log {
 		data => shift
 	});
 }
+
+sub _encode {
+	my $self = shift;
+	
+	return $self->{json}->encode(@_);
+}
+
 
 sub finalize {
 	my $self = shift;
