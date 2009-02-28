@@ -223,7 +223,7 @@ sub handle_request {
 	my $return = $self->generate_content($app,$run);
 
 	$debug->session($run->{session});
-	$debug->result($return);
+	$debug->status($return);
 	$run->{session_handler}->disconnect();
 
 	$debug->mark(Time::HiRes::time,'END');

@@ -130,7 +130,7 @@ sub mark          { return; }
 sub return_data   { return; }
 sub session_id    { return; }
 sub url           { return; }
-sub result        { return; }
+sub status        { return; }
 sub params        { return; }
 sub template_conf { return; }
 sub session       { return; }

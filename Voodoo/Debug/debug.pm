@@ -24,6 +24,7 @@ sub handle {
 
 	my $res = $dbh->selectall_arrayref("
 		SELECT
+			level,
 			stack,
 			data
 		FROM
@@ -34,11 +35,10 @@ sub handle {
 			seq",undef,
 		$id) || $self->db_error();
 
-    return $self->json_return(
-		{ 
-			'key' => 'vd_debug',
-			'value' => $self->_process_debug($params->{app_id},$res)
-		}
+    return $self->raw_mode('text/plain',
+		'{"key":"vd_debug",'.
+		'"value":'. $self->_process_debug($params->{app_id},$res).
+		'}'
 	);
 }
 
@@ -47,36 +47,23 @@ sub _process_debug {
 	my $app_id = shift;
 	my $data   = shift;
 
-	my $debug = [];
-	foreach (@{$data}) {
-		my ($stack,$mesg) = @{$_};
-
-		$stack = eval $stack;
-
-		unless (ref($stack) eq "ARRAY") {
-			warn ("debug stack wasn't a array ref");
-			next;
+	my $debug = '[';
+	foreach my $row (@{$data}) {
+		$debug .= '{"level":"'.$row->[0].'"';
+		$debug .= ',"stack":' .$row->[1];
+		$debug .= ',"data":';
+		if ($row->[2] =~ /^[\[\{\"]/) {
+			$debug .= $row->[2];
 		}
-
-		my $d = $debug;
-		my $item;
-		while (my $i = shift @{$stack}) {
-			my $item = $i->[0];
-			$item =~ s/^$app_id\:\://;
-			$item =~ s/::(\w+)$/->$1/;
-			$item .= " (".$i->[1].")";
-
-			if (defined($d->[$#{$d}]) && $d->[$#{$d}]->[0] eq $item) {
-				$d = $d->[$#{$d}]->[1];
-			}
-			else {
-				push(@{$d},[$item,[]]);
-				$d = $d->[$#{$d}]->[1];
-			}
+		else {
+			$debug .= '"'.$row->[2].'"';
 		}
-
-		push (@{$d},$mesg);
+			
+		$debug .= '},';
 	}
+	$debug =~ s/,$//;
+	$debug =~ s/,/,\n/g;
+	$debug .= ']';
 
 	return $debug;
 }

@@ -10,12 +10,12 @@ var vdDebug = new voodooDebug({
 });
 </script>
 
-<div class="voodooDebug">
+<div class="voodooDebug" id="voodooDebug">
 	<div class="vdClosed">
 		<span onClick="vdDebug.handleSection(this,'top');"><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Debug</span>
 		<div class="vdContent">
 			<a target="_new" href="http://debug.darkstar.nasba.int/index?app_id=<tmpl_var app_id>&session_id=<tmpl_var session_id>&request_id=<tmpl_var request_id>">Open Debug Window</a>
-			<tmpl_if enable_profile>      <div class="vdClosed"><span onClick="vdDebug.handleSection(this,'profile');"      ><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Generation Time</span><div id="vd_profile"       class="vdContent"></div></div></tmpl_if>
+			<tmpl_if enable_profile><div class="vdClosed"><span onClick="vdDebug.handleSection(this,'profile');"      ><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Generation Time</span><div id="vd_profile"       class="vdContent"></div></div></tmpl_if>
 			<tmpl_if enable_anydebug>
 				<div class="vdClosed">
 					<span onClick="vdDebug.handleSection(this,'debug');"><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Debug Trace</span>
@@ -37,7 +37,7 @@ var vdDebug = new voodooDebug({
 					</div>
 				</div>
 			</tmpl_if>
-			<tmpl_if enable_result>       <div class="vdClosed"><span onClick="vdDebug.handleSection(this,'return_data');"  ><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Return Data</span    ><div id="vd_return_data"   class="vdContent"></div></div></tmpl_if>
+			<tmpl_if enable_return_data>  <div class="vdClosed"><span onClick="vdDebug.handleSection(this,'return_data');"  ><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Return Data</span    ><div id="vd_return_data"   class="vdContent"></div></div></tmpl_if>
 			<tmpl_if enable_session>      <div class="vdClosed"><span onClick="vdDebug.handleSection(this,'session');"      ><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Session Data</span   ><div id="vd_session"       class="vdContent"></div></div></tmpl_if>
 			<tmpl_if enable_template_conf><div class="vdClosed"><span onClick="vdDebug.handleSection(this,'template_conf');"><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Config Data</span    ><div id="vd_template_conf" class="vdContent"></div></div></tmpl_if>
 			<tmpl_if enable_parameters>   <div class="vdClosed"><span onClick="vdDebug.handleSection(this,'parameters');"   ><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Input Params</span   ><div id="vd_parameters"    class="vdContent"></div></div></tmpl_if>

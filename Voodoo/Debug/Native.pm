@@ -31,9 +31,6 @@ use JSON;
 
 use Apache::Voodoo::Constants;
 
-#$Data::Dumper::Terse = 1;
-#$Data::Dumper::Sortkeys = 1;
-
 sub new {
 	my $class = shift;
 
@@ -101,7 +98,7 @@ sub new {
 	# we always send this since is fundamental to identifying the request chain
 	# regardless of what other info we log
 	$self->{conf}->{url}        = 1;
-	$self->{conf}->{result}     = 1;
+	$self->{conf}->{status}     = 1;
 	$self->{conf}->{session_id} = 1;
 
 	return $self;
@@ -128,7 +125,7 @@ sub init {
 			!defined($self->{'socket'}) ||
 			!$self->{'socket'}->connected) {
 
-			warn("Failed to open socket.  Debug info will be lost. $@\n");
+			warn("Failed to open socket.  Debug info will be lost. $@ $!\n");
 			$self->{enable}  = undef;
 			$self->{enabled} = 0;
 			return;
@@ -215,7 +212,7 @@ sub _debug {
 	my $data;
 	if (scalar(@_) > 1 || ref($_[0])) {
 		# if there's more than one item, or the item we have is a reference
-		# we shove it through it Data::Dumper
+		# then we need to serialize it.
 		$data = $self->_encode(@_);
 	}
 	else {
@@ -257,18 +254,19 @@ sub return_data {
 		id      => $self->{id},
 		handler => shift,
 		method  => shift,
-		data    => scalar($self->_encode(shift))
+		data    => $self->_encode(shift)
 	});
 }
 
 
 # these all behave the same way.  With the execption of session_id which
 # also inserts it into the underlying template.
-sub url           { my $self = shift; $self->_log('url',           @_);  }
-sub result        { my $self = shift; $self->_log('result',        @_);  }
-sub params        { my $self = shift; $self->_log('params',        @_);  }
-sub template_conf { my $self = shift; $self->_log('template_conf', @_);  }
-sub session       { my $self = shift; $self->_log('session',$self->_encode(@_)); }
+sub url           { my $self = shift; $self->_log('url',           @_); }
+sub status        { my $self = shift; $self->_log('status',        @_); }
+sub params        { my $self = shift; $self->_log('params',        @_); }
+sub template_conf { my $self = shift; $self->_log('template_conf', @_); }
+sub session       { my $self = shift; $self->_log('session',       @_); }
+
 sub session_id { 
 	my $self = shift; 
 	my $id   = shift;
@@ -283,10 +281,21 @@ sub _log {
 	
 	return unless $self->{'enable'}->{$type};
 
+	my $data;
+	if (scalar(@_) > 1 || ref($_[0])) {
+		# if there's more than one item, or the item we have is a reference
+		# then we need to serialize it.
+		$data = $self->_encode(@_);
+	}
+	else {
+		# simple scalar can be logged as is.
+		$data = $_[0];
+	}
+
 	$self->{'socket'}->write_record({
 		type => $type,
 		id   => $self->{id},
-		data => shift
+		data => $data
 	});
 }
 

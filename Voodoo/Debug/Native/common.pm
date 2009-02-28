@@ -6,19 +6,12 @@ use strict;
 use warnings;
 
 use DBI;
-use JSON;
 
 use base("Apache::Voodoo");
 
 sub set_dbh {
 	my $self = shift;
 	$self->{dbh} = shift;
-
-	$self->{json} = new JSON;
-	$self->{json}->allow_nonref(1);
-	$self->{json}->allow_blessed(1);
-	$self->{json}->convert_blessed(1);
-	$self->{json}->utf8(1);
 }
 
 sub get_dbh {
@@ -54,7 +47,7 @@ sub _create_request {
 		application       varchar(64) not null,
 		session_id        varchar(64),
 		url               varchar(255),
-		result            varchar(128)
+		status            varchar(128)
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX request_request_timestamp ON request(request_timestamp)") || $self->db_error();
@@ -132,14 +125,14 @@ sub handle_session_id {
 		$data->{id}->{app_id}) || $self->db_error();
 }
 
-sub handle_result {
+sub handle_status {
 	my $self = shift;
 	my $data = shift;
 
 	$self->{dbh}->do("
 		UPDATE request
 		SET	
-			result = ?
+			status = ?
 		WHERE
 			request_timestamp = ? AND
 			application       = ?
@@ -244,7 +237,7 @@ sub handle_debug {
 		$request_id,
 		$seq,
 		$data->{level},
-		$self->_encode($data->{stack}),
+		$data->{stack},
 		$data->{data}) || $self->db_error();
 }
 
@@ -269,8 +262,6 @@ sub handle_params {
 		return;
 	}
 
-	my $d = $self->trim($self->_encode($data->{data}));
-
 	$self->{dbh}->do("
 		INSERT INTO params (
 			request_id,
@@ -281,7 +272,7 @@ sub handle_params {
 			?
 		)",undef,
 		$request_id,
-		$d) || $self->db_error();
+		$data->{data}) || $self->db_error();
 }
 
 sub _create_session {
@@ -349,7 +340,7 @@ sub handle_template_conf {
 			?
 		)",undef,
 		$request_id,
-		$self->_encode($data->{data})) || $self->db_error();
+		$data->{data}) || $self->db_error();
 }
 
 sub _create_return_data {
@@ -406,12 +397,6 @@ sub handle_return_data {
 		$data->{handler},
 		$data->{method},
 		$data->{data}) || $self->db_error();
-}
-
-sub _encode {
-	my $self = shift;
-	
-	return $self->{json}->encode(@_);
 }
 
 1;

@@ -205,7 +205,7 @@ sub decimal_unsigned {
 	my ($l,$r) = split(/,/,$size);
 
 	$column->{'type'}   = 'unsigned_decimal';
-	$column->{'left'}   = 'left'   => $l - $r;
+	$column->{'left'}   = $l - $r;
 	$column->{'right'}  = $r;
 	$column->{'length'} = $r+$l+1;
 }
