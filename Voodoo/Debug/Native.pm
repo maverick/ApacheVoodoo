@@ -302,7 +302,12 @@ sub _log {
 sub _encode {
 	my $self = shift;
 	
-	return $self->{json}->encode(@_);
+	if (scalar(@_) > 1) {
+		return $self->{json}->encode([@_]);
+	}
+	else {
+		return $self->{json}->encode(@_);
+	}
 }
 
 
