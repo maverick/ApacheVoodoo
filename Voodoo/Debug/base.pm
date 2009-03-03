@@ -52,6 +52,18 @@ sub json_false {
 	return $JSON::false;
 }
 
+sub json_data {
+	my $self = shift;
+	my $type = shift;
+	my $data = shift;
+
+	unless ($data =~ /^\s*[\[\{\"]/) {
+		$data = '"'.$data.'"';
+	}
+
+    return $self->raw_mode("text/plain",'{"key":"'.$type.'","value":'.$data.'}');
+}
+
 sub json_return {
 	my $self = shift;
 	my $data = shift;

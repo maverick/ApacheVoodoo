@@ -43,10 +43,10 @@ function voodooDebug(opts) {
 	this.imgMinus.src   = this.debug_root+"/i/minus.png";
 	this.imgPlus.src    = this.debug_root+"/i/plus.png";
 
-	var levels = ["debug","info","warn","error","exception","table","trace"];
+	var levels = new Array("debug","info","warn","error","exception","table","trace");
 	this.imgLevels = new Object();
-	for (var i in levels) {
-		this.imgLevels[levels[i]] = new Image(14,14);
+	for (var i=0; i < levels.length; i++) {
+		this.imgLevels[levels[i]] = new Image(12,12);
 		this.imgLevels[levels[i]].src = this.debug_root+"/i/"+levels[i]+".png";
 	}
 
@@ -93,10 +93,12 @@ function voodooDebug(opts) {
 	// End of Feather Ajax
 	//////////////////////////////////////////////////////////////////////////////////
 
-	this.handleProfile = function(data) {
-		var h = '<table><tr><th>';
-		h += data[0].join('</th><th>');
-		h += '</th></tr>';
+	this.handleTable = function(data,title) {
+		var h = '<table>';
+		if (typeof (title) != "undefined") {
+			h += '<caption><img src="'+this.imgLevels['table'].src+'"/>'+title+'</caption>';
+		}
+		h += '<tr><th>'+data[0].join('</th><th>')+'</th></tr>';
 
 		for (j=1; j < data.length; j++) {
 			h += '<tr><td><pre>';
@@ -109,12 +111,14 @@ function voodooDebug(opts) {
 
 	this.handleDebug = function(data) {
 		var h = '<dl>';
-		for (j=0; j < data.length; j++) {
+		for (var i=0; i < data.length; i++) {
 			h += '<dt class="vdClosed" onClick="vdDebug.toggleDL(this);">'+
 				'<img src="'+this.imgPlus.src+'" />'+
-				data[j][0].replace(/>/g,'&gt;')
-				+'</dt><dd class="vdClosed">'+
-				data[j][1].replace(/</g,'&lt;')+
+
+
+				'</dt><dd class="vdClosed">'+
+				'<img src="'+this.imgLevels[data[i].level].src+'"/>'+
+				// data[j][1].replace(/</g,'&lt;')+
 				'</dd>';
 		}
 		h += '</dl>';
@@ -154,13 +158,18 @@ function voodooDebug(opts) {
 		console.log(data);
 
 		var h;
-		if (data.value == null || data.value.length <= 0) {
+		if (data.value == null || 
+			data.value.length <= 0
+			// || typeof (data.value.length) == "undefined" 
+
+			) {
+
 			h = "<i>(empty)</i>";
 		}
 		else {
 			if (data.constructor == Object) {
 				switch (data.key) {
-					case 'vd_profile':     h = this.handleProfile(   data.value); break;
+					case 'vd_profile':     h = this.handleTable(     data.value); break;
 					case 'vd_debug':       h = this.handleDebug(     data.value); break;
 					case 'vd_return_data': h = this.handleReturnData(data.value); break;
 					default:               h = this.handleData(      data.value); break;
@@ -236,8 +245,6 @@ function voodooDebug(opts) {
 
 	this.toggleFilter = function(obj,section) {
 	}
-
-
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// Start of JSON library.

@@ -31,12 +31,7 @@ sub handle {
 			request_id = ?",undef,
 		$id) || $self->db_error();
 
-    return $self->json_return(
-		{ 
-			'key' => 'vd_session',
-			'value' => $res->[0]->[0]
-		}
-	);
+    return $self->json_data('vd_session',$res->[0]->[0]);
 }
 
 

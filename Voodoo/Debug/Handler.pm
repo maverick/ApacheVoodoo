@@ -118,6 +118,7 @@ sub setup_static_files {
 	$self->{static_files} = { 
 		"debug.css"        => "text/css",
 		"debug.js"         => "application/x-javascript",
+		"i/debug.png"      => "image/png",
 		"i/error.png"      => "image/png",
 		"i/exception.png"  => "image/png",
 		"i/info.png"       => "image/png",

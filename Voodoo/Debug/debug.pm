@@ -35,11 +35,7 @@ sub handle {
 			seq",undef,
 		$id) || $self->db_error();
 
-    return $self->raw_mode('text/plain',
-		'{"key":"vd_debug",'.
-		'"value":'. $self->_process_debug($params->{app_id},$res).
-		'}'
-	);
+    return $self->json_data('vd_debug',$self->_process_debug($params->{app_id},$res));
 }
 
 sub _process_debug {

@@ -35,16 +35,14 @@ sub handle {
 			seq",undef,
 		$id) || $self->db_error();
 
-    return $self->json_return(
-		{ 
-			'key' => 'vd_return_data',
-			'value' => [
-				map {
-					[ $_->[0].'-&gt;'.$_->[1], $_->[2] ]
-				}@{$res}
-			]
-		}
-	);
+	my $d = '[';
+	foreach (@{$res}) {
+		$d .= '["'.$_->[0].'-&gt;'.$_->[1].'",'.$_->[2].'],';
+	}
+	$d =~ s/,$//;
+	$d .= ']';
+
+    return $self->json_data('vd_return_data',$d);
 }
 
 
