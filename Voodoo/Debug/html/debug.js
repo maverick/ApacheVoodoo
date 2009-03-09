@@ -93,11 +93,8 @@ function voodooDebug(opts) {
 	// End of Feather Ajax
 	//////////////////////////////////////////////////////////////////////////////////
 
-	this.handleTable = function(data,title) {
+	this.handleTable = function(data) {
 		var h = '<table>';
-		if (typeof (title) != "undefined") {
-			h += '<caption><img src="'+this.imgLevels['table'].src+'"/>'+title+'</caption>';
-		}
 		h += '<tr><th>'+data[0].join('</th><th>')+'</th></tr>';
 
 		for (j=1; j < data.length; j++) {
@@ -110,18 +107,29 @@ function voodooDebug(opts) {
 	}
 
 	this.handleDebug = function(data) {
-		var h = '<dl>';
+		var h = '<ul>';
 		for (var i=0; i < data.length; i++) {
-			h += '<dt class="vdClosed" onClick="vdDebug.toggleDL(this);">'+
+			h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
 				'<img src="'+this.imgPlus.src+'" />'+
+					data[i].stack[0].class + 
+					data[i].stack[0].type.replace('<','&lt;').replace('>','&gt;') + 
+					data[i].stack[0].function + "</span>" +
+					'<ul><li class="vdClosed" onClick="vdDebug.toggleUL(this);">' +
+					'<img src="'+this.imgLevels[data[i].level].src+'"/> ' +
+					data[i].stack[0].line + ':' +
+				'';
+				
+				if (data[i].level == "table") {
+					h += data[i].data[0];
+					h += this.handleTable(data[i].data[1]);
+				}
+				else {
+					h += this.dumpData(data[i].data);
+				}
 
-
-				'</dt><dd class="vdClosed">'+
-				'<img src="'+this.imgLevels[data[i].level].src+'"/>'+
-				// data[j][1].replace(/</g,'&lt;')+
-				'</dd>';
+				h += '</li></ul></li>';
 		}
-		h += '</dl>';
+		h += '</ul>';
 		return h;
 	}
 
@@ -145,27 +153,28 @@ function voodooDebug(opts) {
 			return "<i>undefined</i>";
 		}
 		else if (data.constructor == Object) {
-			var h = '{<ul>\n';
+			var a = new Array();
 			for (var key in data) {
-				h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
-					key + ' =></span> ' + this.dumpData(data[key]) +
-					'</li>\n';
+				a.push(
+					'<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
+					key + ' =></span> ' + this.dumpData(data[key])
+				);
 			}
-			h += '</ul>}\n';
-			return h;
+			return '{<ul>' + a.join(",</li>") + '</li>' + '</ul>}';
 		}
 		else if (data.constructor == Array) {
-			var h = '[<ul>\n';
+			var a = new Array();
 			for (var j=0; j < data.length; j++) {
-				h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
-					this.dumpData(data[j])+'</span>'+
-					'</li>\n';
+				a.push(
+					'<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
+					this.dumpData(data[j])+'</span>'
+				);
 			}
-			h += '</ul>]\n';
-			return h;
+			return '[<ul>' + a.join(",</li>") + '</li>' + '</ul>]';
 		}
 		else {
-			return data;
+			var d = new String(data);
+			return '"' + d.replace(/"/g,'\\"') + '"';
 		}
 	}
 
@@ -204,12 +213,12 @@ function voodooDebug(opts) {
 		if (obj.className == "vdOpen") {
 			obj.className = "vdClosed";
 			obj.firstChild.src=this.imgPlus.src;
-			obj.nextSibling.className = "vdClosed";
+			//obj.nextSibling.className = "vdClosed";
 		}
 		else {
 			obj.className = "vdOpen";
 			obj.firstChild.src=this.imgMinus.src;
-			obj.nextSibling.className = "vdOpen";
+			//obj.nextSibling.className = "vdOpen";
 		}
 	}
 

@@ -58,7 +58,6 @@ sub _process_debug {
 		$debug .= '},';
 	}
 	$debug =~ s/,$//;
-	$debug =~ s/,/,\n/g;
 	$debug .= ']';
 
 	return $debug;
