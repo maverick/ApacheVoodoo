@@ -134,16 +134,15 @@ function voodooDebug(opts) {
 	}
 
 	this.handleReturnData = function(data) {
-		var h = '<dl>';
+		var h = '<ul>';
 		for (j=0; j < data.length; j++) {
-			h += '<dt class="vdClosed" onClick="vdDebug.toggleDL(this);">'+
+			h += '<li class="vdOpen" onClick="vdDebug.toggleUL(this);">'+
 				'<img src="'+this.imgPlus.src+'" />'+
-				data[j][0].replace(/>/g,'&gt;')
-				+'</dt><dd class="vdClosed">'+
-				data[j][1].replace(/</g,'&lt;')+
-				'</dd>';
+				data[j][0].replace(/>/g,'&gt;') + ' ' +
+				this.dumpData(data[j][1]) +
+				'</li>';
 		}
-		h += '</dl>';
+		h += '</ul>';
 		return h;
 
 	}
@@ -160,17 +159,28 @@ function voodooDebug(opts) {
 					key + ' =></span> ' + this.dumpData(data[key])
 				);
 			}
-			return '{<ul>' + a.join(",</li>") + '</li>' + '</ul>}';
+
+			if (a.length > 0) {
+				return '{<ul>' + a.join(",</li>") + '</li>' + '</ul>}';
+			}
+			else {
+				return "{}";
+			}
 		}
 		else if (data.constructor == Array) {
-			var a = new Array();
-			for (var j=0; j < data.length; j++) {
-				a.push(
-					'<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
-					this.dumpData(data[j])+'</span>'
-				);
+			if (data.length > 0) {
+				var a = new Array();
+				for (var j=0; j < data.length; j++) {
+					a.push(
+						'<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
+						this.dumpData(data[j])+'</span>'
+					);
+				}
+				return '[<ul>' + a.join(",</li>") + '</li>' + '</ul>]';
 			}
-			return '[<ul>' + a.join(",</li>") + '</li>' + '</ul>]';
+			else {
+				return "[]";
+			}
 		}
 		else {
 			var d = new String(data);
@@ -196,7 +206,7 @@ function voodooDebug(opts) {
 				switch (data.key) {
 					case 'vd_profile':     h = this.handleTable(     data.value); break;
 					case 'vd_debug':       h = this.handleDebug(     data.value); break;
-					//case 'vd_return_data': h = this.handleReturnData(data.value); break;
+					case 'vd_return_data': h = this.handleReturnData(data.value); break;
 					default:               h = this.dumpData(        data.value); break;
 				}
 			}
