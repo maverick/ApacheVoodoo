@@ -140,17 +140,33 @@ function voodooDebug(opts) {
 
 	}
 
-	this.handleData = function(data) {
-		var h = '<ul>';
-		for (j=0; j < data.length; j++) {
-			h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
-				'<img src="'+this.imgMinus.src+'" />'+
-				data[j][0]+'</span>'+
-				this.handleData(data[j][1])+
-				'</li>';
+	this.dumpData = function(data) {
+		if (data == null) {
+			return "<i>undefined</i>";
 		}
-		h += '</ul>';
-		return h;
+		else if (data.constructor == Object) {
+			var h = '{<ul>\n';
+			for (var key in data) {
+				h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
+					key + ' =></span> ' + this.dumpData(data[key]) +
+					'</li>\n';
+			}
+			h += '</ul>}\n';
+			return h;
+		}
+		else if (data.constructor == Array) {
+			var h = '[<ul>\n';
+			for (var j=0; j < data.length; j++) {
+				h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
+					this.dumpData(data[j])+'</span>'+
+					'</li>\n';
+			}
+			h += '</ul>]\n';
+			return h;
+		}
+		else {
+			return data;
+		}
 	}
 
 	this.handleDisplay = function(rawdata) {
@@ -171,8 +187,8 @@ function voodooDebug(opts) {
 				switch (data.key) {
 					case 'vd_profile':     h = this.handleTable(     data.value); break;
 					case 'vd_debug':       h = this.handleDebug(     data.value); break;
-					case 'vd_return_data': h = this.handleReturnData(data.value); break;
-					default:               h = this.handleData(      data.value); break;
+					//case 'vd_return_data': h = this.handleReturnData(data.value); break;
+					default:               h = this.dumpData(        data.value); break;
 				}
 			}
 			else {
