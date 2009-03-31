@@ -43,11 +43,22 @@ function voodooDebug(opts) {
 	this.imgMinus.src   = this.debug_root+"/i/minus.png";
 	this.imgPlus.src    = this.debug_root+"/i/plus.png";
 
-	var levels = new Array("debug","info","warn","error","exception","table","trace");
+	this.elementid = 1;
+
+	this.levels = {
+		"debug":     1,
+		"info":      1,
+		"warn":      1,
+		"error":     1,
+		"exception": 1,
+		"table":     1,
+		"trace":     1
+	};
+
 	this.imgLevels = new Object();
-	for (var i=0; i < levels.length; i++) {
-		this.imgLevels[levels[i]] = new Image(12,12);
-		this.imgLevels[levels[i]].src = this.debug_root+"/i/"+levels[i]+".png";
+	for (var key in this.levels) {
+		this.imgLevels[key] = new Image(12,12);
+		this.imgLevels[key].src = this.debug_root+"/i/"+key+".png";
 	}
 
 	this.yourBrowserIsBroken = (navigator.userAgent.toLowerCase().indexOf("msie")!=-1);
@@ -93,6 +104,11 @@ function voodooDebug(opts) {
 	// End of Feather Ajax
 	//////////////////////////////////////////////////////////////////////////////////
 
+	this.makeId = function() {
+		this.elementid += 1;
+		return 'voodooDebug_id_'+this.elementid;
+	}
+
 	this.handleTable = function(data) {
 		var h = '<table>';
 		h += '<tr><th>'+data[0].join('</th><th>')+'</th></tr>';
@@ -107,14 +123,14 @@ function voodooDebug(opts) {
 	}
 
 	this.handleDebug = function(data) {
-		var h = '<ul>';
+		var h = '<dl>';
 		for (var i=0; i < data.length; i++) {
-			h += '<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
+			h += '<dt class="vdOpen"><span class="vdClick" onClick="vdDebug.toggleDL(this);">'+
 				'<img src="'+this.imgPlus.src+'" />'+
 					data[i].stack[0].class + 
 					data[i].stack[0].type.replace('<','&lt;').replace('>','&gt;') + 
 					data[i].stack[0].function + "</span>" +
-					'<ul><li class="vdClosed" onClick="vdDebug.toggleUL(this);">' +
+					'<dl><dt class="vdClosed vdClick" onClick="vdDebug.toggleDL(this);">' +
 					'<img src="'+this.imgLevels[data[i].level].src+'"/> ' +
 					data[i].stack[0].line + ':' +
 				'';
@@ -127,25 +143,22 @@ function voodooDebug(opts) {
 					h += this.dumpData(data[i].data);
 				}
 
-				h += '</li></ul></li>';
+				h += '</dt></dl></dt>';
 		}
-		h += '</ul>';
+		h += '</dl>';
 		return h;
 	}
 
 	this.handleReturnData = function(data) {
-		var h = '<ul>';
+		var h = '<dl>';
 		for (j=0; j < data.length; j++) {
-			h += '<li class="vdOpen" onClick="vdDebug.toggleUL(this);">'+
-				'<img src="'+this.imgPlus.src+'" />'+
-				data[j][0].replace(/>/g,'&gt;') + ' ' +
-				this.dumpData(data[j][1]) +
-				'</li>';
+			h += '<dt>'+data[j][0].replace(/>/g,'&gt;') + ': ' + this.dumpData(data[j][1]) + '</dt>';
 		}
-		h += '</ul>';
+		h += '</dl>';
 		return h;
 
 	}
+
 
 	this.dumpData = function(data) {
 		if (data == null) {
@@ -154,14 +167,13 @@ function voodooDebug(opts) {
 		else if (data.constructor == Object) {
 			var a = new Array();
 			for (var key in data) {
-				a.push(
-					'<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
-					key + ' =></span> ' + this.dumpData(data[key])
-				);
+				a.push( '<li>' + key + ' => ' + this.dumpData(data[key]));
 			}
 
 			if (a.length > 0) {
-				return '{<ul>' + a.join(",</li>") + '</li>' + '</ul>}';
+				var id = this.makeId();
+				return '<span class="vdInVisible vdClick"   id="' +id+ '-c" onClick="vdDebug.toggleData(\''+id+'\')">{<i>' + a.length + ' elements...</i> }</span>'+
+				       '<span class="vdVisible" id="' +id+ '-o"><span class="vdClick" onClick="vdDebug.toggleData(\''+id+'\')">{</span><ul>' + a.join(",</li>") + '</li></ul>}</span';
 			}
 			else {
 				return "{}";
@@ -172,11 +184,12 @@ function voodooDebug(opts) {
 				var a = new Array();
 				for (var j=0; j < data.length; j++) {
 					a.push(
-						'<li class="vdOpen"><span onClick="vdDebug.toggleUL(this);">'+
-						this.dumpData(data[j])+'</span>'
+						'<li>'+this.dumpData(data[j])
 					);
 				}
-				return '[<ul>' + a.join(",</li>") + '</li>' + '</ul>]';
+				var id = this.makeId();
+				return '<span class="vdInVisible vdClick"   id="' +id+ '-c" onClick="vdDebug.toggleData(\''+id+'\')">[<i>' + a.length + ' elements...</i> ]</span>'+
+				       '<span class="vdVisible" id="' +id+ '-o"><span class="vdClick" onClick="vdDebug.toggleData(\''+id+'\')">[</span><ul>' + a.join(",</li>") + '</li></ul>]</span';
 			}
 			else {
 				return "[]";
@@ -193,12 +206,7 @@ function voodooDebug(opts) {
 		console.log(data);
 
 		var h;
-		if (data.value == null || 
-			data.value.length <= 0
-			// || typeof (data.value.length) == "undefined" 
-
-			) {
-
+		if (data.value == null || data.value.length <= 0 ) {
 			h = "<i>(empty)</i>";
 		}
 		else {
@@ -223,24 +231,19 @@ function voodooDebug(opts) {
 		if (obj.className == "vdOpen") {
 			obj.className = "vdClosed";
 			obj.firstChild.src=this.imgPlus.src;
-			//obj.nextSibling.className = "vdClosed";
 		}
 		else {
 			obj.className = "vdOpen";
 			obj.firstChild.src=this.imgMinus.src;
-			//obj.nextSibling.className = "vdOpen";
 		}
 	}
 
-	this.toggleUL = function(obj) {
-		if (obj.parentNode.className == "vdOpen") {
-			obj.parentNode.className = "vdClosed";
-			obj.firstChild.src=this.imgPlus.src;
-		}
-		else {
-			obj.parentNode.className = "vdOpen";
-			obj.firstChild.src=this.imgMinus.src;
-		}
+	this.toggleData = function(id) {
+		var first  = document.getElementById(id+'-c');
+		var second = document.getElementById(id+'-o');
+		var tmp = first.className;
+		first.className = second.className;
+		second.className = tmp;
 	}
 
 	this.handleSection = function(obj, section) {
@@ -254,11 +257,17 @@ function voodooDebug(opts) {
 
 			if (section != "top") {
 				document.getElementById("vd_"+section).innerHTML = '<img src="'+this.imgSpinner.src+'">';	
-				this.sndReq('get',this.debug_root+"/"+section,
-					'app_id='     +this.app_id+
-					'&session_id='+this.session_id+
-					'&request_id='+this.request_id
-				);
+
+				var params = 'app_id='     +this.app_id+
+				             '&session_id='+this.session_id+
+				             '&request_id='+this.request_id;
+
+				if (section == "debug") {
+					for (var i in this.levels) {
+						params += '&' + i + '='	+ this.levels[i];
+					}
+				}
+				this.sndReq('get',this.debug_root+"/"+section,params);
 			}
 		}
 
@@ -278,7 +287,18 @@ function voodooDebug(opts) {
 		return false;
 	}
 
-	this.toggleFilter = function(obj,section) {
+	this.toggleFilter = function(obj,level) {
+		document.getElementById("vd_debug").innerHTML = '<img src="'+this.imgSpinner.src+'">';	
+		this.levels[level] = (this.levels[level])?0:1;
+
+		var params = 'app_id='     +this.app_id+
+		             '&session_id='+this.session_id+
+		             '&request_id='+this.request_id;
+
+		for (var i in this.levels) {
+			params += '&' + i + '='	+ this.levels[i];
+		}
+		this.sndReq('get',this.debug_root+"/debug",params);
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////

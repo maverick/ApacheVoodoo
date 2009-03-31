@@ -27,13 +27,14 @@ div.voodooDebug div.vdClosed {
 	border: 1px solid black;
 }
 
-div.voodooDebug div.vdOpen div.vdContent {
-	display: block;
-}
+div.voodooDebug div.vdOpen   div.vdContent { display: block; }
+div.voodooDebug div.vdClosed div.vdContent { display: none;  }
 
-div.voodooDebug div.vdClosed div.vdContent {
-	display: none;
-}
+div.voodooDebug dd.vdOpen   { display: block; }
+div.voodooDebug dd.vdClosed { display: none;  }
+
+div.voodooDebug span.vdVisible   { display: block; }
+div.voodooDebug span.vdInvisible { display: none;  }
 
 div.voodooDebug div.vdOpen div.vdOpen div.vdContent {
 	max-width: 1024px;
@@ -43,16 +44,12 @@ div.voodooDebug div.vdOpen div.vdOpen div.vdContent {
 	overflow-y: auto;
 }
 
-div.voodooDebug span { 
+div.voodooDebug ul {
+	cursor: default;
+}
+
+div.voodooDebug .vdClick { 
 	cursor: pointer;
-}
-
-div.voodooDebug div { 
-	text-align: left;
-}
-
-div.voodooDebug>div { 
-	text-align: right;
 }
 
 div.voodooDebug table {
@@ -75,7 +72,6 @@ div.voodooDebug td {
 
 div.voodooDebug dt { 
 	margin-left: 2em; 
-	cursor: pointer;
 }
 
 div.voodooDebug ul {
@@ -91,24 +87,3 @@ div.voodooDebug ul pre {
 
 div.voodooDebug div.vdOpen div.vdOpen div.vdContent span { white-space: pre; }
 div.voodooDebug dd { white-space: pre; }
-
-div.voodooDebug dd.vdOpen   { display: block; }
-div.voodooDebug dd.vdClosed { display: none;  }
-
-div.voodooDebug dt,
-div.voodooDebug li {
-}
-
-div.voodooDebug li.vdOpen ul,
-div.voodooDebug li.vdOpen pre {
-	display: block;
-}
-div.voodooDebug li.vdClosed ul,
-div.voodooDebug li.vdClosed pre {
-	display: none;
-}
-
-div.voodooDebug li pre {
-	font-style: normal;
-}
-

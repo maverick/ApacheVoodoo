@@ -22,7 +22,14 @@ sub handle {
 		return $self->json_error($id);
 	}
 
-	my $res = $dbh->selectall_arrayref("
+	my @levels;
+	foreach (qw(debug info warn error exception table trace)) {
+		if ($params->{$_} eq "1") {
+			push(@levels,$_);
+		}
+	}
+
+	my $query = "
 		SELECT
 			level,
 			stack,
@@ -30,10 +37,17 @@ sub handle {
 		FROM
 			debug
 		WHERE
-			request_id = ?
+			request_id = ?";
+
+	if (scalar(@levels)) {
+		$query .= ' AND level IN (' . join(',',map { '?'} @levels) . ') ';
+	}
+
+	$query .= "
 		ORDER BY
-			seq",undef,
-		$id) || $self->db_error();
+			seq";
+
+	my $res = $dbh->selectall_arrayref($query,undef,$id,@levels) || $self->db_error();
 
     return $self->json_data('vd_debug',$self->_process_debug($params->{app_id},$res));
 }
