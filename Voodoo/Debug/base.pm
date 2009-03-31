@@ -57,7 +57,12 @@ sub json_data {
 	my $type = shift;
 	my $data = shift;
 
-	unless ($data =~ /^\s*[\[\{\"]/) {
+	if (ref($data)) {
+		my $json = new JSON;
+		$json->pretty(1);
+		$data = $json->encode($data);
+	}
+	elsif ($data !~ /^\s*[\[\{\"]/) {
 		$data = '"'.$data.'"';
 	}
 

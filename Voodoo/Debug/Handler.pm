@@ -98,7 +98,8 @@ sub setup_handlers {
 		'return_data',
 		'session',
 		'template_conf',
-		'parameters') {
+		'parameters',
+		'request') {
 
 		my $m = 'Apache::Voodoo::Debug::'.$_;
 		my $f = 'Apache/Voodoo/Debug/'.$_.'.pm';

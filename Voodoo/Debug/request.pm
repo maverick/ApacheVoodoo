@@ -8,36 +8,42 @@ package Apache::Voodoo::Debug::request;
 use strict;
 use warnings;
 
-use base ("Apache::Voodoo");
+use base ("Apache::Voodoo::Debug::base");
 
-use JSON;
-
-sub list {
+sub handle {
 	my $self = shift;
 	my $p    = shift;
 
 	my $params  = $p->{'params'};
 	my $dbh     = $p->{'dbh'};
 
-	my $res = $dbh->selectall_arrayref("
-		SELECT
-			id,
-			request_timestamp,
-			application,
-			session_id,
-			url
-		FROM
-			request
-		ORDER BY
-			id") || $self->db_error();
+	my $app_id     = $params->{'app_id'};
+	my $session_id = $params->{'session_id'};
+	my $request_id = $params->{'request_id'};
 
-	return $self->raw_mode(
-		'text/plain',
-		to_json({
-			'params' => $params,
-			'requests' => $res
-		})
-	);
+	my $return = [];
+	if ($app_id     =~ /^[a-z]\w+/i   && 
+		$session_id =~ /^[a-f0-9]+$/i &&
+		$request_id =~ /^\d+\.\d+$/) {
+
+		$return = $dbh->selectall_arrayref("
+			SELECT
+				request_timestamp AS request_id,
+				url
+			FROM
+				request
+			WHERE
+				application = ? AND
+				session_id  = ? AND
+				request_timestamp >= ?
+			ORDER BY
+				id",{Slice => {}},
+				$app_id,
+				$session_id,
+				$request_id) || $self->db_error();
+	}
+
+    return $self->json_data('vd_request',$return);
 }
 
 1;

@@ -35,6 +35,8 @@ function voodooDebug(opts) {
 	this.session_id = opts.session_id;
 	this.request_id = opts.request_id;
 
+	this.origin_id  = this.request_id;
+
 	this.imgSpinner = new Image(16,16);
 	this.imgMinus   = new Image(9,9);
 	this.imgPlus    = new Image(9,9);
@@ -159,6 +161,20 @@ function voodooDebug(opts) {
 
 	}
 
+	this.handleListRequests = function(data) {
+		console.log(data);
+		var select = document.getElementById("voodooDebugSelect");
+		while (select.length > 0) {
+			select.remove(0);
+		}
+
+		for (var i=0; i < data.length; i++) {
+			select.add(new Option(data[i].url,data[i].request_id),null);
+			if (data[i].request_id == this.request_id) {
+				select.selectedIndex = i;
+			}
+		}
+	}
 
 	this.dumpData = function(data) {
 		if (data == null) {
@@ -203,7 +219,6 @@ function voodooDebug(opts) {
 
 	this.handleDisplay = function(rawdata) {
 		var data = this.parse(rawdata);
-		console.log(data);
 
 		var h;
 		if (data.value == null || data.value.length <= 0 ) {
@@ -212,6 +227,9 @@ function voodooDebug(opts) {
 		else {
 			if (data.constructor == Object) {
 				switch (data.key) {
+					case 'vd_request':
+						this.handleListRequests(data.value);
+						return;	// *sigh* this ended up being a special case.
 					case 'vd_profile':     h = this.handleTable(     data.value); break;
 					case 'vd_debug':       h = this.handleDebug(     data.value); break;
 					case 'vd_return_data': h = this.handleReturnData(data.value); break;
@@ -222,28 +240,33 @@ function voodooDebug(opts) {
 				h = "<span>"+data+"</span>";
 			}
 		}
-		console.log(h);
-
 		document.getElementById(data.key).innerHTML = h;
+
 	}
 
-	this.toggleDL = function(obj) {
-		if (obj.className == "vdOpen") {
-			obj.className = "vdClosed";
-			obj.firstChild.src=this.imgPlus.src;
-		}
-		else {
-			obj.className = "vdOpen";
-			obj.firstChild.src=this.imgMinus.src;
-		}
+	this.loadRequest = function(obj) {
+	}
+	
+	this.listRequests = function() {
+		var params = 'app_id='     +this.app_id+
+		             '&session_id='+this.session_id+
+		             '&request_id='+this.origin_id;
+
+		this.sndReq('get',this.debug_root+"/request",params);
 	}
 
-	this.toggleData = function(id) {
-		var first  = document.getElementById(id+'-c');
-		var second = document.getElementById(id+'-o');
-		var tmp = first.className;
-		first.className = second.className;
-		second.className = tmp;
+	this.filterDebug = function(obj,level) {
+		document.getElementById("vd_debug").innerHTML = '<img src="'+this.imgSpinner.src+'">';	
+		this.levels[level] = (this.levels[level])?0:1;
+
+		var params = 'app_id='     +this.app_id+
+		             '&session_id='+this.session_id+
+		             '&request_id='+this.request_id;
+
+		for (var i in this.levels) {
+			params += '&' + i + '='	+ this.levels[i];
+		}
+		this.sndReq('get',this.debug_root+"/debug",params);
 	}
 
 	this.handleSection = function(obj, section) {
@@ -287,19 +310,25 @@ function voodooDebug(opts) {
 		return false;
 	}
 
-	this.toggleFilter = function(obj,level) {
-		document.getElementById("vd_debug").innerHTML = '<img src="'+this.imgSpinner.src+'">';	
-		this.levels[level] = (this.levels[level])?0:1;
-
-		var params = 'app_id='     +this.app_id+
-		             '&session_id='+this.session_id+
-		             '&request_id='+this.request_id;
-
-		for (var i in this.levels) {
-			params += '&' + i + '='	+ this.levels[i];
+	this.toggleDL = function(obj) {
+		if (obj.className == "vdOpen") {
+			obj.className = "vdClosed";
+			obj.firstChild.src=this.imgPlus.src;
 		}
-		this.sndReq('get',this.debug_root+"/debug",params);
+		else {
+			obj.className = "vdOpen";
+			obj.firstChild.src=this.imgMinus.src;
+		}
 	}
+
+	this.toggleData = function(id) {
+		var first  = document.getElementById(id+'-c');
+		var second = document.getElementById(id+'-o');
+		var tmp = first.className;
+		first.className = second.className;
+		second.className = tmp;
+	}
+
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// Start of JSON library.
