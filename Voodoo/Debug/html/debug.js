@@ -1,7 +1,7 @@
 // $Id$
 //
-// Ajax handler for Voodoo's native debugging functions.  This object contains  
-// both Sean Kane's Feather Ajax and the reference JSON parser found at JSON.org.
+// Ajax handler for Voodoo's native debugging functions.  This contains modified versions
+// of Sean Kane's Feather Ajax and the reference JSON parser found at JSON.org.
 // The original copyright notices for those components appear below, along with
 // comments in the code noting where they begin, end and how they were modified.
 
@@ -45,7 +45,7 @@ function voodooDebug(opts) {
 	this.imgMinus.src   = this.debug_root+"/i/minus.png";
 	this.imgPlus.src    = this.debug_root+"/i/plus.png";
 
-	this.elementid = 1;
+	this.elementid = 1; //counter so we can generate unique element ids.
 
 	this.levels = {
 		"debug":     1,
@@ -57,6 +57,18 @@ function voodooDebug(opts) {
 		"trace":     1
 	};
 
+	this.openSections = {
+		"profile":       false,
+		"debug":         false,
+		"return_data":   false,
+		"session":       false,
+		"template_conf": false,
+		"parameters":    false
+	};
+
+	this.parser = new voodooJson();
+	console.log(this.parser);
+
 	this.imgLevels = new Object();
 	for (var key in this.levels) {
 		this.imgLevels[key] = new Image(12,12);
@@ -64,51 +76,163 @@ function voodooDebug(opts) {
 	}
 
 	this.yourBrowserIsBroken = (navigator.userAgent.toLowerCase().indexOf("msie")!=-1);
+	
+	////////////////////////////////////////////////////////////////////////////////
+	//
+	// PUBLIC METHODS
+	//
+	////////////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////////////
-	// Beginning of Feather Ajax
-	//////////////////////////////////////////////////////////////////////////////////
+	// pulls down the list of ajax requests made by the page we're looking at
+	this.listRequests = function() {
+		var params = 'app_id='     +this.app_id+
+		             '&session_id='+this.session_id+
+		             '&request_id='+this.origin_id;
 
-	this.createRequestObject = function() {
-		try {
-			var ro=new XMLHttpRequest();
-		}
-		catch(e) {
-			var ro=new ActiveXObject("Microsoft.XMLHTTP");
-		}
-		return ro;
+		this.sendRequest('request',params);
 	}
 
-	this.http = this.createRequestObject();
-	var me = this;
-	this.sndReq = function(action,url,data) {
-		if (action.toUpperCase()=="POST") {
-			this.http.open(action,url,true);
-			this.http.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
-			this.http.onreadystatechange=this.handleResponse;
-			this.http.send(data);
+	// Changes the which request we're looking at; refreshes all the open sections
+	this.changeRequest = function(obj) {
+		this.request_id = obj.value;
+		for (section in this.openSections) {
+			if (this.openSections[section]) {
+				this.loadSection(section);
+			}
+		}
+	}
+	
+	// Changes the debug block filtering options
+	this.filterDebug = function(obj,level) {
+		document.getElementById("vd_debug").innerHTML = '<img src="'+this.imgSpinner.src+'">';	
+		this.levels[level] = (this.levels[level])?0:1;
+
+		var params = 'app_id='     +this.app_id+
+		             '&session_id='+this.session_id+
+		             '&request_id='+this.request_id;
+
+		for (var i in this.levels) {
+			params += '&' + i + '='	+ this.levels[i];
+		}
+		this.sendRequest('debug',params);
+	}
+
+	// Handles the opening or closing of the various debug panels
+	this.handleSection = function(obj, section) {
+		if (obj.parentNode.className == "vdOpen") {
+			obj.parentNode.className = 'vdClosed';
+			obj.firstChild.src=this.imgPlus.src;
+
+			if (section != "top") {
+				this.openSections[section] = false;
+			}
 		}
 		else {
-			this.http.open(action,url+'?'+data,true);
-			this.http.onreadystatechange=this.handleResponse;
-			this.http.send(null);
+			obj.parentNode.className = 'vdOpen';
+			obj.firstChild.src=this.imgMinus.src;
+
+			if (section != "top") {
+				this.openSections[section] = true;
+				this.loadSection(section);
+			}
 		}
+
+		if (this.yourBrowserIsBroken) {
+			var selectState;
+			if (section == "top") {
+				selectState = (obj.parentNode.className == "vdOpen") ? 'hidden': 'visible';
+			}
+			else {
+				selectState = 'hidden';
+			}
+			var selects = document.getElementsByTagName("SELECT");
+			for (var i = 0; i < selects.length; i++) {
+				selects[i].style.visibility = selectState;
+			}
+		}
+		return false;
 	}
 
-	this.handleResponse = function() {
-		// Callbacks stripped;
-		if (me.http.readyState==4) {
-			me.handleDisplay(me.http.responseText);
+	
+	////////////////////////////////////////////////////////////////////////////////
+	//
+	// Methods associated with making the ajax requests
+	//
+	////////////////////////////////////////////////////////////////////////////////
+
+	// Replaces the newly opened (or refreshed) sub panel's contents with the spinner
+	// image and fires the ajax request pull down the content
+	this.loadSection = function(section) {
+		document.getElementById("vd_"+section).innerHTML = '<img src="'+this.imgSpinner.src+'">';	
+
+		var params = 'app_id='     +this.app_id+
+		             '&session_id='+this.session_id+
+		             '&request_id='+this.request_id;
+
+		if (section == "debug") {
+			for (var i in this.levels) {
+				params += '&' + i + '='	+ this.levels[i];
+			}
 		}
+		this.sendRequest(section,params);
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////
-	// End of Feather Ajax
-	//////////////////////////////////////////////////////////////////////////////////
+	this.sendRequest = function(addr,params) {
+		var ajax = new voodooAjax();
+		ajax.setResponseHandler(this);
+		ajax.sndReq('get',this.debug_root+"/"+addr,params);
+	}
 
-	this.makeId = function() {
-		this.elementid += 1;
-		return 'voodooDebug_id_'+this.elementid;
+
+	////////////////////////////////////////////////////////////////////////////////
+	//
+	// Methods for handling the ajax response and creating the display
+	//
+	////////////////////////////////////////////////////////////////////////////////
+	
+	// Main ajax response handler, all ajax responses enter here.
+	this.handleResponse = function(rawdata) {
+		console.log(this);
+		console.log(this.parser);
+		var data = this.parser.parse(rawdata);
+
+		var h;
+		if (data.value == null || data.value.length <= 0 ) {
+			h = "<i>(empty)</i>";
+		}
+		else {
+			if (data.constructor == Object) {
+				switch (data.key) {
+					case 'vd_request':
+						this.handleListRequests(data.value);
+						return;	// *sigh* this ended up being a special case.
+					case 'vd_profile':     h = this.handleTable(     data.value); break;
+					case 'vd_debug':       h = this.handleDebug(     data.value); break;
+					case 'vd_return_data': h = this.handleReturnData(data.value); break;
+					default:               h = this.dumpData(        data.value); break;
+				}
+			}
+			else {
+				h = "<span>"+data+"</span>";
+			}
+		}
+		document.getElementById(data.key).innerHTML = h;
+	}
+
+	// Updates the select list of requests.
+	this.handleListRequests = function(data) {
+		console.log(data);
+		var select = document.getElementById("voodooDebugSelect");
+		while (select.length > 0) {
+			select.remove(0);
+		}
+
+		for (var i=0; i < data.length; i++) {
+			select.add(new Option(data[i].url,data[i].request_id),null);
+			if (data[i].request_id == this.request_id) {
+				select.selectedIndex = i;
+			}
+		}
 	}
 
 	this.handleTable = function(data) {
@@ -116,8 +240,10 @@ function voodooDebug(opts) {
 		h += '<tr><th>'+data[0].join('</th><th>')+'</th></tr>';
 
 		for (j=1; j < data.length; j++) {
-			h += '<tr><td><pre>';
-			h += data[j].join('</pre></td><td><pre>');
+			h += '<tr class="vdTableRow';
+			h += (j%2)?'Odd':'';
+			h += '"><td>';
+			h += data[j].join('</td><td>');
 			h += '</td></tr>';
 		}
 		h += "</table>";
@@ -161,21 +287,7 @@ function voodooDebug(opts) {
 
 	}
 
-	this.handleListRequests = function(data) {
-		console.log(data);
-		var select = document.getElementById("voodooDebugSelect");
-		while (select.length > 0) {
-			select.remove(0);
-		}
-
-		for (var i=0; i < data.length; i++) {
-			select.add(new Option(data[i].url,data[i].request_id),null);
-			if (data[i].request_id == this.request_id) {
-				select.selectedIndex = i;
-			}
-		}
-	}
-
+	// walks a JSON data structure and creates a collapsible view of it.
 	this.dumpData = function(data) {
 		if (data == null) {
 			return "<i>undefined</i>";
@@ -217,99 +329,6 @@ function voodooDebug(opts) {
 		}
 	}
 
-	this.handleDisplay = function(rawdata) {
-		var data = this.parse(rawdata);
-
-		var h;
-		if (data.value == null || data.value.length <= 0 ) {
-			h = "<i>(empty)</i>";
-		}
-		else {
-			if (data.constructor == Object) {
-				switch (data.key) {
-					case 'vd_request':
-						this.handleListRequests(data.value);
-						return;	// *sigh* this ended up being a special case.
-					case 'vd_profile':     h = this.handleTable(     data.value); break;
-					case 'vd_debug':       h = this.handleDebug(     data.value); break;
-					case 'vd_return_data': h = this.handleReturnData(data.value); break;
-					default:               h = this.dumpData(        data.value); break;
-				}
-			}
-			else {
-				h = "<span>"+data+"</span>";
-			}
-		}
-		document.getElementById(data.key).innerHTML = h;
-
-	}
-
-	this.loadRequest = function(obj) {
-	}
-	
-	this.listRequests = function() {
-		var params = 'app_id='     +this.app_id+
-		             '&session_id='+this.session_id+
-		             '&request_id='+this.origin_id;
-
-		this.sndReq('get',this.debug_root+"/request",params);
-	}
-
-	this.filterDebug = function(obj,level) {
-		document.getElementById("vd_debug").innerHTML = '<img src="'+this.imgSpinner.src+'">';	
-		this.levels[level] = (this.levels[level])?0:1;
-
-		var params = 'app_id='     +this.app_id+
-		             '&session_id='+this.session_id+
-		             '&request_id='+this.request_id;
-
-		for (var i in this.levels) {
-			params += '&' + i + '='	+ this.levels[i];
-		}
-		this.sndReq('get',this.debug_root+"/debug",params);
-	}
-
-	this.handleSection = function(obj, section) {
-		if (obj.parentNode.className == "vdOpen") {
-			obj.parentNode.className = 'vdClosed';
-			obj.firstChild.src=this.imgPlus.src;
-		}
-		else {
-			obj.parentNode.className = 'vdOpen';
-			obj.firstChild.src=this.imgMinus.src;
-
-			if (section != "top") {
-				document.getElementById("vd_"+section).innerHTML = '<img src="'+this.imgSpinner.src+'">';	
-
-				var params = 'app_id='     +this.app_id+
-				             '&session_id='+this.session_id+
-				             '&request_id='+this.request_id;
-
-				if (section == "debug") {
-					for (var i in this.levels) {
-						params += '&' + i + '='	+ this.levels[i];
-					}
-				}
-				this.sndReq('get',this.debug_root+"/"+section,params);
-			}
-		}
-
-		if (this.yourBrowserIsBroken) {
-			var selectState;
-			if (section == "top") {
-				selectState = (obj.parentNode.className == "vdOpen") ? 'hidden': 'visible';
-			}
-			else {
-				selectState = 'hidden';
-			}
-			var selects = document.getElementsByTagName("SELECT");
-			for (var i = 0; i < selects.length; i++) {
-				selects[i].style.visibility = selectState;
-			}
-		}
-		return false;
-	}
-
 	this.toggleDL = function(obj) {
 		if (obj.className == "vdOpen") {
 			obj.className = "vdClosed";
@@ -329,16 +348,24 @@ function voodooDebug(opts) {
 		second.className = tmp;
 	}
 
+	this.makeId = function() {
+		this.elementid += 1;
+		return 'voodooDebug_id_'+this.elementid;
+	}
+}
 
+function voodooJson() {
 	//////////////////////////////////////////////////////////////////////////////////
-	// Start of JSON library.
+	// JSON library
+	//
 	// The stringify function and it's supporting functions have been removed
 	// since this object only needs the parse function.
-	// The comments were extremly verbose and have been removed.
+	// The comments were extremely verbose and have been removed.
 	//////////////////////////////////////////////////////////////////////////////////
 	this.f = function (n) {
 		return n<10?'0'+n:n;
 	}
+
 	if (typeof Date.prototype.toJSON !== 'function') {
 		Date.prototype.toJSON = function(key) {
 			return this.getUTCFullYear()+'-'+f(this.getUTCMonth()+1)+'-'+f(this.getUTCDate())+'T'+f(this.getUTCHours())+':'+f(this.getUTCMinutes())+':'+f(this.getUTCSeconds())+'Z';
@@ -382,7 +409,51 @@ function voodooDebug(opts) {
 		}
 		throw new SyntaxError('voodooDebug.parse');
 	}
+}
+
+function voodooAjax() {
 	//////////////////////////////////////////////////////////////////////////////////
-	// End of JSON library
+	// Feather Ajax
 	//////////////////////////////////////////////////////////////////////////////////
+
+	// reference to the calling object
+	this.caller = null;
+
+	// ..and the associated set method
+	this.setResponseHandler = function(obj) {
+		this.caller = obj;
+	}
+
+	this.createRequestObject = function() {
+		try {
+			var ro=new XMLHttpRequest();
+		}
+		catch(e) {
+			var ro=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		return ro;
+	}
+
+	this.http = this.createRequestObject();
+	var me = this;
+	this.sndReq = function(action,url,data) {
+		if (action.toUpperCase()=="POST") {
+			this.http.open(action,url,true);
+			this.http.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+			this.http.onreadystatechange=this.handleResponse;
+			this.http.send(data);
+		}
+		else {
+			this.http.open(action,url+'?'+data,true);
+			this.http.onreadystatechange=this.handleResponse;
+			this.http.send(null);
+		}
+	}
+
+	this.handleResponse = function() {
+		// Stripped down to only call the response handler passing it the response content
+		if (me.http.readyState==4) {
+			me.caller.handleResponse(me.http.responseText);
+		}
+	}
 }

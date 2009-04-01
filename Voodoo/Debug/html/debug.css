@@ -70,6 +70,10 @@ div.voodooDebug td {
 	color: #000000;
 }
 
+div.voodooDebug .vdTableRowOdd {
+	background-color: #e0ffe0;
+}
+
 div.voodooDebug dt { 
 	margin-left: 2em; 
 }

@@ -14,7 +14,7 @@ var vdDebug = new voodooDebug({
 	<div class="vdClosed">
 		<span class="vdClick" onClick="vdDebug.handleSection(this,'top');"><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Debug</span>
 		<div class="vdContent">
-			Change Request: <select id="voodooDebugSelect" onChange="vdDebug.loadRequest(this)" onFocus="vdDebug.listRequests()">
+			Change Request: <select id="voodooDebugSelect" onChange="vdDebug.changeRequest(this)" onFocus="vdDebug.listRequests()">
 			<option> </option>
 			</select>
 			<tmpl_if enable_profile><div class="vdClosed"><span onClick="vdDebug.handleSection(this,'profile');"      ><img src="<tmpl_var debug_root>/i/plus.png" width="9"/>Generation Time</span><div id="vd_profile"       class="vdContent"></div></div></tmpl_if>
