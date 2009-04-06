@@ -67,7 +67,6 @@ function voodooDebug(opts) {
 	};
 
 	this.parser = new voodooJson();
-	console.log(this.parser);
 
 	this.imgLevels = new Object();
 	for (var key in this.levels) {
@@ -192,8 +191,6 @@ function voodooDebug(opts) {
 	
 	// Main ajax response handler, all ajax responses enter here.
 	this.handleResponse = function(rawdata) {
-		console.log(this);
-		console.log(this.parser);
 		var data = this.parser.parse(rawdata);
 
 		var h;
@@ -221,7 +218,6 @@ function voodooDebug(opts) {
 
 	// Updates the select list of requests.
 	this.handleListRequests = function(data) {
-		console.log(data);
 		var select = document.getElementById("voodooDebugSelect");
 		while (select.length > 0) {
 			select.remove(0);
@@ -251,30 +247,71 @@ function voodooDebug(opts) {
 	}
 
 	this.handleDebug = function(data) {
+		console.log(data);
+
+		var stack = new Array();
+
 		var h = '<dl>';
 		for (var i=0; i < data.length; i++) {
-			h += '<dt class="vdOpen"><span class="vdClick" onClick="vdDebug.toggleDL(this);">'+
-				'<img src="'+this.imgPlus.src+'" />'+
-					data[i].stack[0].class + 
-					data[i].stack[0].type.replace('<','&lt;').replace('>','&gt;') + 
-					data[i].stack[0].function + "</span>" +
-					'<dl><dt class="vdClosed vdClick" onClick="vdDebug.toggleDL(this);">' +
-					'<img src="'+this.imgLevels[data[i].level].src+'"/> ' +
-					data[i].stack[0].line + ':' +
-				'';
-				
-				if (data[i].level == "table") {
-					h += data[i].data[0];
-					h += this.handleTable(data[i].data[1]);
-				}
-				else {
-					h += this.dumpData(data[i].data);
-				}
+			var row = data[i];
 
-				h += '</dt></dl></dt>';
+			var depth;
+			for (depth=0; depth < row.stack.length; depth++) {
+				var frame = row.stack[depth];
+
+				if (frame.object != stack[depth].object || frame.function != stack[depth].function) {
+					if (depth <= stack.length) {
+						// pop stack, add new item
+					}
+					else {
+						// push new item
+					}
+				}
+				h += '<dt class="vdOpen"><span class="vdClick" onClick="vdDebug.toggleDL(this);">'+
+					'<img src="'+this.imgPlus.src+'" />'+
+						row.stack[0].class + 
+						row.stack[0].type.replace('<','&lt;').replace('>','&gt;') + 
+						row.stack[0].function + "</span>" +
+						'<dl><dt class="vdClosed vdClick" onClick="vdDebug.toggleDL(this);">' +
+						'<img src="'+this.imgLevels[row.level].src+'"/> ' +
+						row.stack[0].line + ':' +
+					'';
+			}
+				
+			if (row.level == "table") {
+				h += row.data[0];
+				h += this.handleTable(data[i].data[1]);
+			}
+			else if (row.level == "exception" || row.level == "trace") {
+				h += row.data;
+				h += this.handleTable(this.convertStackToTable(row.stack));
+			}
+			else {
+				h += this.dumpData(row.data);
+			}
+
+			h += '</dt></dl></dt>';
 		}
 		h += '</dl>';
 		return h;
+	}
+
+	this.convertStackToTable = function(data) {
+		var t = new Array();
+		t.push(new Array('Instruction','Line','Args'));
+		for (var i=0; i<data.length; i++) {
+			var args = new Array();
+			for (var j=0; j<data[i].args.length; j++) {
+				args.push(this.dumpData(data[i].args[j],true));
+			}
+
+			t.push(new Array(
+				data[i].class + data[i].type + data[i].function,
+				data[i].line,
+				args.join(',')
+			));
+		}
+		return t;
 	}
 
 	this.handleReturnData = function(data) {
@@ -288,7 +325,7 @@ function voodooDebug(opts) {
 	}
 
 	// walks a JSON data structure and creates a collapsible view of it.
-	this.dumpData = function(data) {
+	this.dumpData = function(data,closed) {
 		if (data == null) {
 			return "<i>undefined</i>";
 		}
@@ -299,9 +336,7 @@ function voodooDebug(opts) {
 			}
 
 			if (a.length > 0) {
-				var id = this.makeId();
-				return '<span class="vdInVisible vdClick"   id="' +id+ '-c" onClick="vdDebug.toggleData(\''+id+'\')">{<i>' + a.length + ' elements...</i> }</span>'+
-				       '<span class="vdVisible" id="' +id+ '-o"><span class="vdClick" onClick="vdDebug.toggleData(\''+id+'\')">{</span><ul>' + a.join(",</li>") + '</li></ul>}</span';
+				return this._mkblock(a,closed,'{','}');
 			}
 			else {
 				return "{}";
@@ -315,9 +350,7 @@ function voodooDebug(opts) {
 						'<li>'+this.dumpData(data[j])
 					);
 				}
-				var id = this.makeId();
-				return '<span class="vdInVisible vdClick"   id="' +id+ '-c" onClick="vdDebug.toggleData(\''+id+'\')">[<i>' + a.length + ' elements...</i> ]</span>'+
-				       '<span class="vdVisible" id="' +id+ '-o"><span class="vdClick" onClick="vdDebug.toggleData(\''+id+'\')">[</span><ul>' + a.join(",</li>") + '</li></ul>]</span';
+				return this._mkblock(a,closed,'[',']');
 			}
 			else {
 				return "[]";
@@ -325,8 +358,22 @@ function voodooDebug(opts) {
 		}
 		else {
 			var d = new String(data);
-			return '"' + d.replace(/"/g,'\\"') + '"';
+			return '"' + d.replace(/"/g,'\\"').replace('<','&lt;').replace('>','&gt;') + '"';
 		}
+	}
+
+	this._mkblock = function(a,closed,l,r) {
+		var o = 'vdVisible';
+		var c = 'vdInvisible';
+		if (closed) {
+			o = 'vdInvisible';
+			c = 'vdVisible';
+			console.log("closed");
+		}
+
+		var id = this.makeId();
+		return '<span class="'+c+'" id="' +id+'-c"><span class="vdClick" onClick="vdDebug.toggleData(\''+id+'\')">'+l+'<i>' + a.length + ' elements...</i>'+r+'</span></span>'+
+		       '<span class="'+o+'" id="' +id+'-o"><span class="vdClick" onClick="vdDebug.toggleData(\''+id+'\')">'+l+'</span><ul>' + a.join(",</li>") + '</li></ul>'+r+'</span';
 	}
 
 	this.toggleDL = function(obj) {

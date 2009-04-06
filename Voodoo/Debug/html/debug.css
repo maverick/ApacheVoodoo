@@ -6,7 +6,6 @@ div.voodooDebug {
 	right: 0px;
 	z-index: 10000;
 	border: 1px solid black;
-	border-collapse: collapse;
 }
 
 .voodooDebug,
@@ -53,20 +52,19 @@ div.voodooDebug .vdClick {
 }
 
 div.voodooDebug table {
-	border: 1px solid black;
 	padding: 5px 0px 5px 0px;
+	border-collapse: collapse;
 }
 
 div.voodooDebug th {
 	background: #ccc; 
-	border-bottom: 1px solid black;
 }
 
 div.voodooDebug th,
 div.voodooDebug td {
 	padding-left: 2px;
 	padding-right: 2px;
-	border-left: 1px solid black;
+	border: 1px solid black;
 	color: #000000;
 }
 

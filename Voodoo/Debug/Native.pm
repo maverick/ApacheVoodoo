@@ -135,6 +135,8 @@ sub init {
 	# socket looks good, enable the public facing calls.
 	$self->{enable} = $self->{conf};
 
+	# FIXME: if the daemon goes away after the server starts, the socket is stale.
+	# we need to pick that condition up correctly.
 	$self->{'socket'}->write_record({
 		type => 'request',
 		id   => $self->{'id'}
