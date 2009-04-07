@@ -280,6 +280,10 @@ sub db_error {
 	$errstr .= "$query\n";
 	$errstr .= "==================================================\n";
 
+	if (ref($Apache::Voodoo::Handler::debug)) {
+		$Apache::Voodoo::Handler::debug->exception($errstr);
+	}
+
 	# don't really care for this, but there doesn't seem to be any way to 
 	# terminate this request.
 	die $errstr;
