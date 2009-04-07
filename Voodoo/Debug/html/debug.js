@@ -251,32 +251,33 @@ function voodooDebug(opts) {
 
 		var stack = new Array();
 
-		var h = '<dl>';
+		var h = '<ul>';
 		for (var i=0; i < data.length; i++) {
 			var row = data[i];
 
 			var depth;
 			for (depth=0; depth < row.stack.length; depth++) {
 				var frame = row.stack[depth];
+				if (stack[depth]          == undefined   || 
+					stack[depth].class    != frame.class ||
+					stack[depth].function != frame.function) {
 
-				if (frame.object != stack[depth].object || frame.function != stack[depth].function) {
-					if (depth <= stack.length) {
-						// pop stack, add new item
+					while (depth < stack.length-1) {
+						// pop stack up to the point that everything matches
+						console.log("pop stack:",stack.length-1, " depth:",depth);
+						h += '</li></ul>';
+						stack.pop();
 					}
-					else {
-						// push new item
-					}
+					// push new item
+					stack.push(frame);
+					h += '<li class="vdOpen"><span class="vdClick" onClick="vdDebug.toggleUL(this);">'+
+					     '<img src="'+this.imgMinus.src+'" />'+
+						 frame.class + 
+					     frame.type.replace('<','&lt;').replace('>','&gt;') + 
+					     frame.function + "</span><ul>";
 				}
-				h += '<dt class="vdOpen"><span class="vdClick" onClick="vdDebug.toggleDL(this);">'+
-					'<img src="'+this.imgPlus.src+'" />'+
-						row.stack[0].class + 
-						row.stack[0].type.replace('<','&lt;').replace('>','&gt;') + 
-						row.stack[0].function + "</span>" +
-						'<dl><dt class="vdClosed vdClick" onClick="vdDebug.toggleDL(this);">' +
-						'<img src="'+this.imgLevels[row.level].src+'"/> ' +
-						row.stack[0].line + ':' +
-					'';
 			}
+			h += '<li><img src="'+this.imgLevels[row.level].src+'"/> ' + row.stack[0].line + ':';
 				
 			if (row.level == "table") {
 				h += row.data[0];
@@ -290,16 +291,21 @@ function voodooDebug(opts) {
 				h += this.dumpData(row.data);
 			}
 
-			h += '</dt></dl></dt>';
+			h += '</li>';
 		}
-		h += '</dl>';
+
+		// close all the openg dl's.  This will be however deep the stack is.
+		for (var i=0; i <= stack.length; i++) {
+			h += '</li></ul>';
+		}
+
 		return h;
 	}
 
 	this.convertStackToTable = function(data) {
 		var t = new Array();
 		t.push(new Array('Instruction','Line','Args'));
-		for (var i=0; i<data.length; i++) {
+		for (var i=data.length-1; i >= 0; i--) {
 			var args = new Array();
 			for (var j=0; j<data[i].args.length; j++) {
 				args.push(this.dumpData(data[i].args[j],true));
@@ -376,13 +382,13 @@ function voodooDebug(opts) {
 		       '<span class="'+o+'" id="' +id+'-o"><span class="vdClick" onClick="vdDebug.toggleData(\''+id+'\')">'+l+'</span><ul>' + a.join(",</li>") + '</li></ul>'+r+'</span';
 	}
 
-	this.toggleDL = function(obj) {
-		if (obj.className == "vdOpen") {
-			obj.className = "vdClosed";
+	this.toggleUL = function(obj) {
+		if (obj.parentNode.className == "vdOpen") {
+			obj.parentNode.className = "vdClosed";
 			obj.firstChild.src=this.imgPlus.src;
 		}
 		else {
-			obj.className = "vdOpen";
+			obj.parentNode.className = "vdOpen";
 			obj.firstChild.src=this.imgMinus.src;
 		}
 	}

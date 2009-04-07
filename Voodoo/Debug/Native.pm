@@ -169,10 +169,10 @@ sub _stack_trace {
 	my $i = 1;
 
 	my $st = Devel::StackTrace->new();
-    while (my $frame = $st->frame($i++)) {
+	while (my $frame = $st->frame($i++)) {
 		last if ($frame->package =~ /^Apache::Voodoo::Handler/);
-        next if ($frame->package =~ /^Apache::Voodoo/);
-        next if ($frame->package =~ /(eval)/);
+		next if ($frame->package =~ /^Apache::Voodoo/);
+		next if ($frame->package =~ /(eval)/);
 
 		my $f = {
 			'class'    => $frame->package,
@@ -201,8 +201,8 @@ sub _stack_trace {
 		else {
 			last;
 		}
-    }
-	return \@trace;
+	}
+	return [reverse @trace];
 }
 
 sub _debug {

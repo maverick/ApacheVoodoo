@@ -32,6 +32,9 @@ div.voodooDebug div.vdClosed div.vdContent { display: none;  }
 div.voodooDebug dd.vdOpen   { display: block; }
 div.voodooDebug dd.vdClosed { display: none;  }
 
+div.voodooDebug li.vdOpen   ul { display: block; }
+div.voodooDebug li.vdClosed ul { display: none;  }
+
 div.voodooDebug span.vdVisible   { display: block; }
 div.voodooDebug span.vdInvisible { display: none;  }
 
