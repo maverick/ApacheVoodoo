@@ -134,6 +134,13 @@ function voodooDebug(opts) {
 				this.openSections[section] = true;
 				this.loadSection(section);
 			}
+			else {
+				// make sure the select list of urls has at least the current page listed
+				var select = document.getElementById("voodooDebugSelect");
+				if (select.length < 1) {
+					select.add(new Option(location.pathname,this.origin_id),null);
+				}
+			}
 		}
 
 		if (this.yourBrowserIsBroken) {
@@ -338,7 +345,7 @@ function voodooDebug(opts) {
 		else if (data.constructor == Object) {
 			var a = new Array();
 			for (var key in data) {
-				a.push( '<li>' + key + ' => ' + this.dumpData(data[key]));
+				a.push('<li>' + key + ' => ' + this.dumpData(data[key]));
 			}
 
 			if (a.length > 0) {
@@ -352,9 +359,7 @@ function voodooDebug(opts) {
 			if (data.length > 0) {
 				var a = new Array();
 				for (var j=0; j < data.length; j++) {
-					a.push(
-						'<li>'+this.dumpData(data[j])
-					);
+					a.push('<li>' + this.dumpData(data[j]));
 				}
 				return this._mkblock(a,closed,'[',']');
 			}
