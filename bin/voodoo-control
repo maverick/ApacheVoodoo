@@ -126,16 +126,20 @@ sub showconfig {
 
 	my $cnf = Apache::Voodoo::Constants->new();
 
-	print "Apache Prefix Path: ", $cnf->prefix(),"\n";
-	print "  App Install Path: ", $cnf->install_path(),"\n";
-	print "      Session Path: ", $cnf->session_path(),"\n";
-	print "  Config File Path: ", $cnf->conf_path(),"\n";
-	print "  Config File Name: ", $cnf->conf_file(),"\n";
-	print "  Update File Path: ", $cnf->updates_path(),"\n";
-	print "Template File Path: ", $cnf->tmpl_path(),"\n";
-	print "  Perl Module Path: ", $cnf->code_path(),"\n";
-	print "        Apache UID: ", $cnf->apache_uid(),"\n";
-	print "        Apache GID: ", $cnf->apache_gid(),"\n";
+	print " Apache Prefix Path: ", $cnf->prefix(),"\n";
+	print "   App Install Path: ", $cnf->install_path(),"\n";
+	print "       Session Path: ", $cnf->session_path(),"\n";
+	print "   Config File Path: ", $cnf->conf_path(),"\n";
+	print "   Config File Name: ", $cnf->conf_file(),"\n";
+	print "   Update File Path: ", $cnf->updates_path(),"\n";
+	print " Template File Path: ", $cnf->tmpl_path(),"\n";
+	print "   Perl Module Path: ", $cnf->code_path(),"\n";
+	print "         Apache UID: ", $cnf->apache_uid(),"\n";
+	print "         Apache GID: ", $cnf->apache_gid(),"\n";
+	print "Debug DB Connection: ", $cnf->debug_dbd()->[0],"\n";
+	print "  Debug DB Username: ", $cnf->debug_dbd()->[1],"\n";
+	print "  Debug DB Password: ", $cnf->debug_dbd()->[2],"\n";
+	print "     Debug URL Path: ", $cnf->debug_path(),"\n";
 	print "\n";
 	print "Config settings stored in: ", $INC{'Apache/Voodoo/MyConfig.pm'},"\n";
 	exit 0;	
@@ -270,7 +274,7 @@ sub show_usage {
 	print "    -r --dbroot  Database root password\n";
 	print "    -v number    Increase verbosity \n";
 	print "\n";
-	print "Expert Options: (Useful in a development environment; dangerous in a production environment.\n";
+	print "Expert Options: (Useful in a development environment; dangerous in a production environment.)\n";
 	print "    --ignore           Causes errors in the update command files to be ignored\n";
 	print "    markupdatesapplied Makes the system believe all the update have been applied,\n";
 	print "                       doesn't acutally process them.\n";

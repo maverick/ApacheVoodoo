@@ -28,6 +28,7 @@ use Data::Dumper;
 
 $Data::Dumper::Indent=1;
 $Data::Dumper::Terse=1;
+$Data::Dumper::Sortkeys=1;
 
 sub new {
 	my $class = shift;
@@ -60,6 +61,8 @@ sub do_config_setup {
 	$self->code_path();
 	$self->apache_uid();
 	$self->apache_gid();
+	$self->debug_dbd();
+	$self->debug_path();
 
 	return if $self->{"pretend"};
 
@@ -253,6 +256,28 @@ sub apache_gid {
 		}
 		print "Can't find this group.  Please try again.\n";
 	}
+}
+
+sub debug_dbd {
+	my $self = shift;
+
+	unless ($self->{DEBUG_DBD}) {
+		$self->{DEBUG_DBD} = ['dbi:SQLite:dbname=/tmp/apachevoodoo.db','',''];
+	}
+
+	$self->{DEBUG_DBD}->[0] = prompt("Debug Database Connect", $self->{DEBUG_DBD}->[0]);
+	$self->{DEBUG_DBD}->[1] = prompt("Debug Database Username",$self->{DEBUG_DBD}->[1]);
+	$self->{DEBUG_DBD}->[2] = prompt("Debug Database Password",$self->{DEBUG_DBD}->[2]);
+}
+
+sub debug_path {
+	my $self = shift;
+
+	unless ($self->{DEBUG_PATH}) {
+		$self->{DEBUG_PATH} = "/debug";
+	}
+
+	$self->{DEBUG_PATH} = prompt("URL Path to the debug handler",$self->{DEBUG_PATH});
 }
 
 1;

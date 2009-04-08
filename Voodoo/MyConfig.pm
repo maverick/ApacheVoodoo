@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::MyConfig
+Apache::Voodoo::MyConfig - Config settings for Apache::Voodoo
 
 =head1 SYNOPSIS
 
@@ -13,21 +13,24 @@ directly; use the supplied "voodoo-control" program instead.
 package Apache::Voodoo::MyConfig;
 
 $CONFIG = {
-  'SESSION_PATH' => '/data/apache/session',
-  'INSTALL_PATH' => '/data/apache/sites',
-  'TMPL_PATH' => 'html',
-  'APACHE_UID' => 81,
-  'PREFIX' => '/data/apache',
   'APACHE_GID' => 81,
-  'UPDATES_PATH' => 'etc/updates',
-  'CONF_PATH' => 'etc',
-  'CONF_FILE' => 'etc/voodoo.conf',
+  'APACHE_UID' => 81,
   'CODE_PATH' => 'code',
-  'SOCKET_FILE' => '/tmp/apachevoodoo.sock',
-  'PID_FILE' => '/tmp/apachevoodoo.pid',
-  'DEBUG_DBD' => ['dbi:SQLite:dbname=/tmp/apachevoodoo.db','',''],
-  'DEBUG_PATH' => "/debug"
-};
+  'CONF_FILE' => 'etc/voodoo.conf',
+  'CONF_PATH' => 'etc',
+  'DEBUG_DBD' => [
+    'dbi:SQLite:dbname=/tmp/apachevoodoo.db',
+    '',
+    ''
+  ],
+  'DEBUG_PATH' => '/debug',
+  'INSTALL_PATH' => '/data/apache/sites',
+  'PREFIX' => '/data/apache',
+  'SESSION_PATH' => '/data/apache/session',
+  'TMPL_PATH' => 'html',
+  'UPDATES_PATH' => 'etc/updates'
+}
+;
 
 1;
 
@@ -35,7 +38,7 @@ $CONFIG = {
 
 =head1 AUTHOR
 
-Maverick, /\/\averick@smurfbaneDOTorg
+Maverick, //verick@smurfbaneDOTorg
 
 =head1 COPYRIGHT
 
