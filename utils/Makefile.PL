@@ -2,22 +2,24 @@ use 5.008000;
 use ExtUtils::MakeMaker;
 
 my %required_modules = (
-		# voodoo-control uses CPAN under the hood to do some of it's work which is why it's listed here.
-		CPAN	             => 1.9205,	
-		Apache::Session      => 1.6,
-		Config::General      => 2.27,
-		Devel::StackTrace    => 1.20,
-		Digest::MD5          => 2.36,
-		Email::Valid         => 0.15,
-		File::Pid            => 1.01,
-		HTML::Template       => 2.7,
-		IO::Handle::Record   => 0.13,
-		IPC::SharedCache     => 1.3,
-		Daemon::Generic      => 0.51,
-		Proc::UID            => 0.05,
-		Time::HiRes          => 1.65,
-		XML::Checker::Parser => 0,
-		# Apache::Admin::Config => 0.92
+	# voodoo-control uses CPAN under the hood to do some of it's work which is why it's listed here.
+	CPAN	             => 1.9205,	
+	Apache::Session      => 1.6,
+	Config::General      => 2.27,
+	Devel::StackTrace    => 1.20,
+	Digest::MD5          => 2.36,
+	Email::Valid         => 0.15,
+	Exception::Class     => 1.26,
+	Exception::Class::DBI=> 1.00,
+	File::Pid            => 1.01,
+	HTML::Template       => 2.7,
+	IO::Handle::Record   => 0.13,
+	IPC::SharedCache     => 1.3,
+	Daemon::Generic      => 0.51,
+	Proc::UID            => 0.05,
+	Time::HiRes          => 1.65,
+	XML::Checker::Parser => 0,
+	# Apache::Admin::Config => 0.92
 );
 
 eval {
