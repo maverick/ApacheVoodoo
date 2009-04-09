@@ -100,19 +100,18 @@ sub handle_request {
 	# URI translation jazz to get down to a proper filename
 	####################
 	if ($run->{'uri'} =~ /\/$/o) {
-		if (-e "$run->{'filename'}/index.tmpl") { 
-			return $self->{mp}->redirect($run->{'uri'}."index");
-		}
-		else { 
-			return $self->{mp}->declined;
-		}
+		return $self->{mp}->redirect($run->{'uri'}."index");
 	}
 
    	# remove the optional trailing .tmpl
    	$run->{'filename'} =~ s/\.tmpl$//o;
    	$run->{'uri'}      =~ s/\.tmpl$//o;
 
-	unless (-e "$run->{'filename'}.tmpl") { return $self->{mp}->declined;  }
+	# FIXME here's where to break the requirement for .tmpl files
+	unless (-e "$run->{'filename'}.tmpl") {
+		return $self->{mp}->declined;
+	}
+
 	unless (-r "$run->{'filename'}.tmpl") { return $self->{mp}->forbidden; }
 
 	########################################
@@ -154,20 +153,6 @@ sub handle_request {
 
 	$debug->mark(Time::HiRes::time,"template dir resolution");
 
-	####################
-	# connect to db
-	####################
-	foreach (@{$app->{'dbs'}}) {
-		$app->{'dbh'} = DBI->connect_cached(@{$_});
-		last if $app->{'dbh'};
-	
-		return $self->display_host_error(
-			"========================================================\n" .
-			"DB CONNECT FAILED\n" .
-			"$DBI::errstr\n" .
-			"========================================================\n"
-		);
-	}
 
 	####################
 	# Attach session
@@ -184,6 +169,21 @@ sub handle_request {
 		$run->{'session_handler'}->destroy();
 		return $self->{mp}->redirect($app->{'logout_target'});
 #		return $self->{mp}->redirect($app->{'site_root'}."index");
+	}
+
+	####################
+	# connect to db
+	####################
+	foreach (@{$app->{'dbs'}}) {
+		$app->{'dbh'} = DBI->connect_cached(@{$_});
+		last if $app->{'dbh'};
+	
+		return $self->display_host_error(
+			"========================================================\n" .
+			"DB CONNECT FAILED\n" .
+			"$DBI::errstr\n" .
+			"========================================================\n"
+		);
 	}
 
 	####################
