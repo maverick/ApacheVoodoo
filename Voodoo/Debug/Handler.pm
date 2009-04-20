@@ -23,7 +23,6 @@ use Time::HiRes;
 
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
-use Apache::Voodoo::Template;
 
 use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2 ); 
 			  
@@ -59,30 +58,6 @@ sub new {
 	$self->{template_dir} = $INC{"Apache/Voodoo/Debug/Handler.pm"};
 	$self->{template_dir} =~ s/Handler.pm$/html/;
 
-    $self->{template_engine} = Apache::Voodoo::Template->new({template_dir => $self->{template_dir}});
-
-=pod
-	my $cf_name      = $self->{constants}->conf_file();
-	my $install_path = $self->{constants}->install_path();
-
-	$self->{mp}->error("Scanning: $install_path");
-
-	unless (opendir(DIR,$install_path)) {
-		$self->{mp}->error("Can't open dir: $!");
-		return;
-	}
-
-	foreach my $id (readdir(DIR)) {
-		next unless $id =~ /^[a-z]\w*$/i;
-		my $fp = File::Spec->catfile($install_path,$id,$cf_name);
-		next unless -f $fp;
-		next unless -r $fp;
-		
-		$self->{'apps'}->{$id} = {};
-	}
-	closedir(DIR);
-=cut
-
 	$self->setup_static_files();
 	$self->setup_handlers();
 
@@ -104,7 +79,6 @@ sub setup_handlers {
 		my $m = 'Apache::Voodoo::Debug::'.$_;
 		my $f = 'Apache/Voodoo/Debug/'.$_.'.pm';
 
-		delete $INC{$f};
 		require $f;
 
 		my $p = $m->new();
@@ -267,6 +241,7 @@ sub generate_content {
 			$self->{mp}->header_out(each %{$return->[3]}) if $return->[3];
 			$self->{mp}->content_type($return->[1] || "text/html");
 			$self->{mp}->print($return->[2]);
+			$self->{mp}->flush();
 			return $self->{mp}->ok;
 		}
 		else {

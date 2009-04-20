@@ -1,28 +1,32 @@
 =pod #####################################################################################
 
-=head1 Apache::Voodoo::Theme
+=head1 Apache::Voodoo::View::HtmlTemplate::Theme
 
 $Id: Theme.pm 12906 2009-02-20 23:08:10Z medwards $
 
-=head1 Initial Coding: Maverick
-
-This implements a post_include module that handles all the theme processing.
-
-( And is going to be removed since you can do this sort of thing in CSS much better)
+=head1 Synopsis
 
 =cut ################################################################################
-package Apache::Voodoo::Theme;
+package Apache::Voodoo::View::HtmlTemplate::Theme;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
+use warnings;
 
-use Data::Dumper;
 use Config::General;
 use IPC::SharedCache;
 use HTML::Template;
 
-use base("Apache::Voodoo");
+sub new {
+	my $class = shift;
+
+	my $self = {};
+
+	bless $self,$class;
+
+	return $self;
+}
 
 sub handle {
 	my $self = shift;
@@ -32,7 +36,7 @@ sub handle {
 
 	my $chosen_theme = $self->choose_theme($p);
 
-	my $return;
+	my $return = {};
 
 	# URL relative
 	$return->{'THEME_DIR'} = $themes->{$chosen_theme};
@@ -96,7 +100,7 @@ sub choose_theme {
 
 		if ($self->{'sys_theme'}->{'mtime'} ne $mtime) {
 			unless(open(T,$sys_override)) {
-				return $self->display_error("Can't open $sys_override: $!");
+				die "Can't open $sys_override: $!";
 			}
 			my $t = <T>;
 			chomp($t);

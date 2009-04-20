@@ -262,6 +262,7 @@ sub trim {
 # Database Interaction
 ################################################################################
 
+# deprecated, dbi uses exceptions now.
 sub db_error {
 	my @caller = caller(1);
 
@@ -279,10 +280,6 @@ sub db_error {
 	$errstr .= "===================== QUERY ======================\n";
 	$errstr .= "$query\n";
 	$errstr .= "==================================================\n";
-
-	if (ref($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->exception($errstr);
-	}
 
 	# don't really care for this, but there doesn't seem to be any way to 
 	# terminate this request.
@@ -574,7 +571,6 @@ sub validate_date {
 	# if we make it this far the date should be ok return sucess
 	return 1;
 }
-
 
 sub pretty_time {
 	my $self = shift;

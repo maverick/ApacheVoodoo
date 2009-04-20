@@ -21,9 +21,10 @@ use strict;
 use warnings;
 
 use Apache::Voodoo::Constants;
-use Apache::Voodoo::Template;
 use Apache::Voodoo::Session;
 use Apache::Voodoo::Debug;
+use Apache::Voodoo::Exception;
+use Apache::Voodoo::View::HtmlTemplate;
 
 use Config::General;
 use Data::Dumper;
@@ -178,6 +179,13 @@ sub load_config {
 		# make the connect string a perl array ref
 		$self->{'dbs'} = [ 
 			map {
+				unless (ref ($_->{'extra'}) eq "HASH") {
+					$_->{'extra'} = {};
+				}
+				$_->{'extra'}->{PrintError}  = 0;
+				$_->{'extra'}->{RaiseError}  = 0;
+				$_->{'extra'}->{HandleError} = Apache::Voodoo::Exception::DBI->handler;
+
 				[ 
 					$_->{'connect'},
 					$_->{'username'},
@@ -290,13 +298,16 @@ sub load_module {
 sub prep_template_engine { 
 	my $self = shift;
 
-	$self->{'template_engine'} = Apache::Voodoo::Template->new({
+	$self->{'template_engine'} = Apache::Voodoo::View::HtmlTemplate->new({
 		template_dir  => File::Spec->catfile(
 			$self->{'constants'}->install_path(),
 			$self->{'id'},
 			$self->{'constants'}->tmpl_path()
 		),
-		template_opts => $self->{'template_opts'}
+		template_opts => $self->{'template_opts'},
+		use_themes    => $self->{'use_themes'},
+		themes        => $self->{'themes'},
+		site_root     => $self->{'site_root'}
 	});
 }
 

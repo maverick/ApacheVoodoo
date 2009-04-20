@@ -29,6 +29,8 @@ use Apache::Voodoo::Constants;
 use Apache::Voodoo::Application;
 use Apache::Voodoo::DisplayError;
 
+use Data::Dumper;
+
 use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2 ); 
 			  
 # setup primary hook to mod_perl depending on which version we're running
@@ -40,6 +42,16 @@ BEGIN {
 		*handler = sub ($$) { shift()->handle_request(@_) };
 	}
 }
+
+$SIG{__DIE__} = sub { 
+	if (ref($_[0]) =~ /^Apache::Voodoo::Exception/) {
+		# Already one of our exception classes, just pass it up the chain
+		$_[0]->rethrow;
+	}
+	else {
+		Apache::Voodoo::Exception::RunTime->throw( error => join '', @_ );
+	}
+};
 
 # *THE* one thing that has never made any sense to me about the mod_perl universe:
 # "How" to make method handlers is well documented, but MP doesn't call new() or provide
@@ -153,7 +165,6 @@ sub handle_request {
 
 	$debug->mark(Time::HiRes::time,"template dir resolution");
 
-
 	####################
 	# Attach session
 	####################
@@ -175,7 +186,9 @@ sub handle_request {
 	# connect to db
 	####################
 	foreach (@{$app->{'dbs'}}) {
-		$app->{'dbh'} = DBI->connect_cached(@{$_});
+		eval {
+			$app->{'dbh'} = DBI->connect_cached(@{$_});
+		};
 		last if $app->{'dbh'};
 	
 		return $self->display_host_error(
@@ -312,195 +325,125 @@ sub generate_content {
 	my $app  = shift;
 	my $run  = shift;
 
+	my $p = {
+		"debug"         => $debug,
+		"dbh"           => $app->{'dbh'},
+		"document_root" => $app->{'template_dir'},
+		"params"        => $run->{'input_params'},
+		"session"       => $run->{'session'},
+		"template_conf" => $run->{'template_conf'},
+		"themes"        => $app->{'themes'},
+		"mp"            => $self->{'mp'},
+		"uri"           => $run->{'uri'},
+		# these are deprecated.  In the future get them from $p->{mp}
+		"dir_config"    => $self->{mp}->dir_config,
+		"user-agent"    => $self->{mp}->header_in('User-Agent'),
+		"r"             => $self->{mp}->{r}
+	};
+
 	my $c=0;
-	my $t_params = {};
-	# call each of the pre_include modules followed by our page specific module followed by our post_includes
-	foreach my $handle ( 
-		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'pre_include'}) ),
-		$app->map_uri($run->{'uri'}),
-		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'post_include'}) )
-		) {
-
-
-		if (defined($app->{'handlers'}->{$handle->[0]}) && $app->{'handlers'}->{$handle->[0]}->can($handle->[1])) {
-			my $obj    = $app->{'handlers'}->{$handle->[0]};
-			my $method = $handle->[1];
-
-			my $return;
-			eval {
-
-				$return = $obj->$method(
-					{
-						"dbh"           => $app->{'dbh'},
-						"document_root" => $app->{'template_dir'},
-						"params"        => $run->{'input_params'},
-						"session"       => $run->{'session'},
-						"template_conf" => $run->{'template_conf'},
-						"themes"        => $app->{'themes'},
-						"uri"           => $run->{'uri'},
-						"mp"            => $self->{mp},
-						# these are deprecated.  In the future get them from $p->{mp}
-						"dir_config"    => $self->{mp}->dir_config,
-						"user-agent"    => $self->{mp}->header_in('User-Agent'),
-						"r"             => $self->{mp}->{r}
-					}
-				);
-			};
-			if ($@) {
-				# caught a runtime error from perl
-				if ($app->{'devel_mode'}) {
-					return $self->display_host_error("Module: $handle->[0] $method\n$@");
-				}
-				else {
-					$self->{mp}->error("Module: $handle->[0] $method\n$@");
-					return $self->{mp}->server_error;
-				}
-			}
-
-			$debug->mark(Time::HiRes::time,"handler for ".$handle->[0]." ".$handle->[1]);
-			$debug->return_data($handle->[0],$handle->[1],$return);
-
-			if (ref($return) eq "ARRAY") {
-				if    ($return->[0] eq "REDIRECTED") {
-					if ($app->{'site_root'} ne "/" && $return->[1] =~ /^\//o) {
-						$return->[1] =~ s/^\//$app->{'site_root'}/;
-					}
-					return $self->{mp}->redirect($return->[1]);
-				}
-				elsif ($return->[0] eq "DISPLAY_ERROR") {     
-					my $ts = Time::HiRes::time;
-					$run->{'session'}->{"er_$ts"}->{'error'}  = $return->[1];
-					$run->{'session'}->{"er_$ts"}->{'return'} = $return->[2];
-					return $self->{mp}->redirect($app->{'site_root'}."display_error?error=$ts");
-				}
-				elsif ($return->[0] eq "ACCESS_DENIED") {
-					if (defined($return->[2])) {
-						# using the user supplied destination page
-						if ($return->[2] =~ /^\//o) {
-							$return->[2] =~ s/^/$app->{'site_root'}/;
-						}
-
-						if (defined($return->[1])) {
-							$return->[2] .= "?error=".$return->[1];
-						}
-						return $self->{mp}->redirect($return->[2]);
-					}
-					elsif (-e $app->{'template_dir'}."/access_denied.tmpl") {
-						# using the default destination page
-						if (defined($return->[1])) {
-							return $self->{mp}->redirect($app->{'site_root'}."access_denied?error=".$return->[1]);
-						}
-						else {
-							return $self->{mp}->redirect($app->{'site_root'}."access_denied");
-						}
-					}
-					else {
-						# fall back on ye olde apache forbidden
-						return $self->{mp}->forbidden;
-					}
-				}
-				elsif ($return->[0] eq "RAW_MODE") {
-					$self->{mp}->header_out(each %{$return->[3]}) if $return->[3];
-					$self->{mp}->content_type($return->[1] || "text/html");
-					$self->{mp}->print($return->[2]);
-					return $self->{mp}->ok;
-				}
-				else {
-					$self->{mp}->error("AIEEE!! $return->[0] is not a supported command");
-					$return = {};
-				}
-			}
-
-			foreach my $k ( keys %{$return}) {
-				$t_params->{$k} = $return->{$k};
-			}
-			$debug->mark(Time::HiRes::time,"result packing");
-		}
-	}
-
-
-	# pack up the params. note the presidence: module overrides template_conf
 	my $template_params = {};
-	foreach my $k (keys %{$run->{'template_conf'}}) { 
-		$template_params->{$k} = $run->{'template_conf'}->{$k};
-	}
-	foreach my $k (keys %{$t_params}) { 
-		$template_params->{$k} = $t_params->{$k};
-	}
-
-	my $skeleton_file;
-	if ($app->{'use_themes'}) {
-		# time to do the theme processing stuff.
-		my $return = $self->{'theme_handler'}->handle(
-			{
-				"document_root" => $app->{'template_dir'},
-				"themes"        => $app->{'themes'},
-				"session"       => $run->{'session'},
-				"uri"           => $run->{'uri'},
-			}
-		);
-
-		if (ref($return) eq "ARRAY") {
-			if ($return->[0] eq "DISPLAY_ERROR") {     
-				return $self->display_host_error($return->[1],1);
-			}
-			else {
-				return $self->display_host_error("theme handler returned an unsupported type");
-			}
-		}
-
-		while (my ($k,$v) = each %{$return}) { $template_params->{$k} = $v; }
-
-		$skeleton_file = $self->{'theme_handler'}->get_skeleton();
-	}
-	else {
-		$skeleton_file = $run->{'template_conf'}->{'skeleton'} || 'skeleton';
-	}
 
 	eval {
-		# load the template
-		$app->{'template_engine'}->template($run->{'uri'});
-		$debug->mark(Time::HiRes::time,"template open");
+		# call each of the pre_include modules followed by our page specific module followed by our post_includes
+		foreach my $handle ( 
+			( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'pre_include'}) ),
+			$app->map_uri($run->{'uri'}),
+			( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'post_include'}) )
+			) {
 
-		$template_params->{'SITE_ROOT'}  = $app->{'site_root'};
 
-		# remove once the debugging ui is complete.
-		$template_params->{'DEBUG_ROOT'} = $self->{'debug_root'};
+			if (defined($app->{'handlers'}->{$handle->[0]}) && $app->{'handlers'}->{$handle->[0]}->can($handle->[1])) {
+				my $obj    = $app->{'handlers'}->{$handle->[0]};
+				my $method = $handle->[1];
 
-		# pack up the params
-		$app->{'template_engine'}->params($template_params);
+				my $return = $obj->$method($p);
 
-		# generate the main body contents
-		$template_params->{'_MAIN_BODY_'} = $app->{'template_engine'}->output();
-		$debug->mark(Time::HiRes::time,"main body content");
+				$debug->mark(Time::HiRes::time,"handler for ".$handle->[0]." ".$handle->[1]);
+				$debug->return_data($handle->[0],$handle->[1],$return);
 
-		my %d = $debug->finalize();
-		foreach (keys %d) {
-			$template_params->{$_} = $d{$_};
+				if (ref($return) eq "ARRAY") {
+					if    ($return->[0] eq "REDIRECTED") {
+						return $self->{mp}->redirect($self->adjust_url($app->{'site_root'},$return->[1]));
+					}
+					elsif ($return->[0] eq "DISPLAY_ERROR") {     
+						$p->{'uri'} = 'display_error';
+						$template_params->{'error_string'} = $return->[1];
+						$template_params->{'error_url'}    = ($return->[2])?$return->[2]:$app->{'site_root'}."index";
+						last;
+					}
+					elsif ($return->[0] eq "ACCESS_DENIED") {
+						$p->{'uri'} = (defined($return->[2]))?$return->[2]:'access_denied';
+						$template_params->{'error_string'} = $return->[1];
+						last;
+					}
+					elsif ($return->[0] eq "RAW_MODE") {
+						$self->{mp}->header_out(each %{$return->[3]}) if $return->[3];
+						$self->{mp}->content_type($return->[1] || "text/html");
+						$self->{mp}->print($return->[2]);
+						return $self->{mp}->ok;
+					}
+					else {
+						$self->{mp}->error("AIEEE!! $return->[0] is not a supported command");
+						$return = {};
+					}
+				}
+
+				foreach my $k ( keys %{$return}) {
+					$template_params->{$k} = $return->{$k};
+				}
+				$debug->mark(Time::HiRes::time,"result packing");
+			}
 		}
+	}; 
+	my $e = $@;
 
-		# load the skeleton template
-		$app->{'template_engine'}->template($skeleton_file);
-		$debug->mark(Time::HiRes::time,"skeleton open");
-
-		# pack everything into the skeleton
-		$app->{'template_engine'}->params($template_params);
-	};
-	if ($@) {
+	if ($e) {
 		# caught a runtime error from perl
-		return $self->display_host_error($@);
+		unless ($app->{'devel_mode'}) {
+			$self->{mp}->error($e);
+			return $self->{mp}->server_error;
+		}
 	}
 
-	# output page
-	$self->{mp}->content_type($run->{'template_conf'}->{'content-type'} || "text/html");
+	my $te = $app->{'template_engine'};
+	$te->init($p);
+	$te->content_type($run->{'template_conf'}->{'content-type'});
 
-	$self->{mp}->print($app->{'template_engine'}->output());
+	if ($e) {
+		$te->exception($e);
+	}
 
-	$app->{'template_engine'}->finish();
+	# pack up the params. note the presidence: module overrides template_conf
+	$te->params($run->{template_conf});
+	$te->params($template_params);
+
+	# add any params from the debugging handlers
+	$te->params($debug->finalize());
+
+	# output content
+	$self->{mp}->content_type($te->content_type());
+	$self->{mp}->print($te->output());
+
+	$te->finish();
 
 	$self->{mp}->flush();
 
 	return $self->{mp}->ok;
+}
+
+sub adjust_url {
+	my $self = shift;
+
+	my $root = shift;
+	my $uri  = shift;
+
+	if ($root ne "/" && $uri =~ /^\//o) {
+		return $root.$uri;
+	}
+	else {
+		return $uri;
+	}
 }
 
 sub display_host_error {
@@ -545,7 +488,9 @@ sub restart {
 
 		# check to see if we can get a database connection
 		foreach (@{$app->{'dbs'}}) {
-			$app->{'dbh'} = DBI->connect_cached(@{$_});
+			eval {
+				$app->{'dbh'} = DBI->connect_cached(@{$_});
+			};
 			last if $app->{'dbh'};
 			
 			$self->{mp}->error("========================================================");
@@ -576,12 +521,6 @@ sub restart {
 		# ick..this feels wrong...don't know of a cleaner way yet.
 		unless (defined($app->{'handlers'}->{'display_error'})) {
 			$app->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
-		}
-
-		if ($app->{'use_themes'} && !defined($self->{'theme_handler'})) {
-			# we're using themes and the theme handler hasn't been initialized yet
-			require "Apache/Voodoo/Theme.pm";
-			$self->{'theme_handler'} = Apache::Voodoo::Theme->new();
 		}
 	}
 	closedir(DIR);
