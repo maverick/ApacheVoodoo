@@ -23,8 +23,12 @@ use warnings;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Session;
 use Apache::Voodoo::Debug;
+
 use Apache::Voodoo::Exception;
+use Exception::Class::DBI;
+
 use Apache::Voodoo::View::HtmlTemplate;
+use Apache::Voodoo::DisplayErrror;
 
 use Config::General;
 use Data::Dumper;
@@ -110,6 +114,11 @@ sub refresh {
 			delete $self->{'handlers'}->{$_};
 		}
 
+		# Insure that there is a handler for DisplayError
+		unless (defined($app->{'handlers'}->{'display_error'})) {
+			$app->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
+		}
+
 		$self->prep_template_engine();
 	}
 
@@ -184,7 +193,7 @@ sub load_config {
 				}
 				$_->{'extra'}->{PrintError}  = 0;
 				$_->{'extra'}->{RaiseError}  = 0;
-				$_->{'extra'}->{HandleError} = Apache::Voodoo::Exception::DBI->handler;
+				$_->{'extra'}->{HandleError} = Exception::Class::DBI->handler;
 
 				[ 
 					$_->{'connect'},

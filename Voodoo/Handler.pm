@@ -27,7 +27,7 @@ use Time::HiRes;
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Application;
-use Apache::Voodoo::DisplayError;
+use Apache::Voodoo::Exception;
 
 use Data::Dumper;
 
@@ -35,7 +35,7 @@ use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VE
 			  
 # setup primary hook to mod_perl depending on which version we're running
 BEGIN {
-	if (1) {
+	if (MP2) {
 		*handler = sub : method { shift()->handle_request(@_) };
 	}
 	else {
@@ -43,9 +43,11 @@ BEGIN {
 	}
 }
 
+# Setup signal handler for die so that all deaths become exception objects
+# This way we can get a stack trace from where the death occurred, not where it was caught.
 $SIG{__DIE__} = sub { 
-	if (ref($_[0]) =~ /^Apache::Voodoo::Exception/) {
-		# Already one of our exception classes, just pass it up the chain
+	if (ref($_[0]) =~ /^Apache::Voodoo::Exception/ || ref($_[0]) =~ /^Exception::Class::DBI/) {
+		# Already died using an exception class, just pass it up the chain
 		$_[0]->rethrow;
 	}
 	else {
@@ -516,11 +518,6 @@ sub restart {
 			else {
 				$self->{mp}->error(" (loading anyway)");
 			}
-		}
-
-		# ick..this feels wrong...don't know of a cleaner way yet.
-		unless (defined($app->{'handlers'}->{'display_error'})) {
-			$app->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
 		}
 	}
 	closedir(DIR);

@@ -24,6 +24,8 @@ use File::Spec;
 use HTML::Template;
 use Apache::Voodoo::Exception;
 
+use Exception::Class::DBI;
+
 use base ("Apache::Voodoo::View");
 
 sub new {
@@ -150,7 +152,7 @@ sub exception {
 
 	eval {
 		use Data::Dumper;
-		if ($e->isa("Apache::Voodoo::Exception::DBI")) {
+		if ($e->isa("Exception::Class::DBI")) {
 			$self->_load_internal_template("db_error");
 			$self->params(
 				'time' => scalar (localtime($e->time)),
