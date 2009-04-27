@@ -23,8 +23,6 @@ sub new {
 
 	bless $self, $class;
 
-	$self->init(@_);
-
 	return $self;
 }
 

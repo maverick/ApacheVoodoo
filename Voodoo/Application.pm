@@ -28,7 +28,6 @@ use Apache::Voodoo::Exception;
 use Exception::Class::DBI;
 
 use Apache::Voodoo::View::HtmlTemplate;
-use Apache::Voodoo::DisplayErrror;
 
 use Config::General;
 use Data::Dumper;
@@ -39,11 +38,16 @@ sub new {
 
 	bless $self, $class;
 
+#	$self->{'debug'} = 1;
+
 	$self->{'id'}        = shift;
 	$self->{'constants'} = shift || Apache::Voodoo::Constants->new();
 
 	$self->{'conf_mtime'} = 0;
-	$self->{'modules'}  = {};
+
+	$self->{'mmodules'} = {};
+	$self->{'vmodules'} = {};
+	$self->{'cmodules'} = {};
 	$self->{'includes'} = {};
 
 	if (defined($self->{'id'})) {
@@ -62,6 +66,32 @@ sub new {
 	return $self;
 }
 
+sub _reload_modules {
+	my $self = shift;
+	my $ns   = shift;
+	my $old  = shift;
+	my $new  = shift;
+
+	# check the new list of modules against the old list
+	foreach (sort keys %{$new}) {
+		unless (exists($old->{$_})) {
+			# new module (wasn't in the old list).
+			$self->debug("Adding new $ns module: $_");
+			$self->_prep_module($ns,$_);
+		}
+
+		# still a valid module, so remove it from this list.
+		delete $old->{$_};
+	}
+
+	# whatever is left in old are ones that weren't in the new list.
+	foreach (keys %{$old}) {
+		$self->debug("Removing old module: $_");
+		$_ =~ s/::/\//g;
+		delete $self->{'controllers'}->{$_};
+	}
+}
+
 sub refresh {
 	my $self    = shift;
 	my $initial = shift;
@@ -75,60 +105,57 @@ sub refresh {
 	if ($self->{'conf_mtime'} != (stat($self->{'conf_file'}))[9]) {
 		$self->debug("loading $self->{'conf_file'}");
 
-		my %old_module  = %{$self->{'modules'}};
-		my %old_include = %{$self->{'includes'}};
+		my %old_m = %{$self->{'mmodules'}};
+		my %old_v = %{$self->{'vmodules'}};
+		my %old_c = %{$self->{'cmodules'}};
+		my %old_i = %{$self->{'includes'}};
 
-		$self->load_config();
+		$self->_load_config();
 
-		# check the new list of modules against the old list
-		foreach (sort keys %{$self->{'modules'}}) {
-			unless (exists($old_module{$_})) {
-				# new module (wasn't in the old list).
-				$self->debug("Adding new module: $_");
-				$self->prep_module($_);
-			}
-
-			# still a valid module, so remove it from this list.
-			delete $old_module{$_};
-		}
-
-		# whatever is left in old_modules are ones that weren't in the new list.
-		foreach (keys %old_module) {
-			$self->debug("Removing old module: $_");
-			$_ =~ s/::/\//g;
-			delete $self->{'handlers'}->{$_};
-		}
+		$self->_reload_modules('m',\%old_m,$self->{'mmodules'});
+		$self->_reload_modules('v',\%old_v,$self->{'vmodules'});
+		$self->_reload_modules('c',\%old_i,$self->{'includes'});
 
 		# now we do exactly the same thing for the includes
-		foreach (sort keys %{$self->{'includes'}}) {
-			unless (exists($old_include{$_})) {
+		foreach (sort keys %{$self->{'cmodules'}}) {
+			unless (exists($old_c{$_})) {
 				# new module
-				$self->debug("Adding new include: $_");
-				$self->prep_include($_);
+				$self->debug("Adding new module: $_");
+				$self->_prep_page_module($_);
 			}
-			delete $old_include{$_};
+			delete $old_c{$_};
 		}
 
-		foreach (keys %old_include) {
-			$self->debug("Removing old include: $_");
-			delete $self->{'handlers'}->{$_};
+		foreach (keys %old_c) {
+			$self->debug("Removing old module: $_");
+			delete $self->{'controllers'}->{$_};
 		}
 
-		# Insure that there is a handler for DisplayError
-		unless (defined($app->{'handlers'}->{'display_error'})) {
-			$app->{'handlers'}->{'display_error'} = Apache::Voodoo::DisplayError->new();
+		foreach (values %{$self->{'models'}}, 
+		         values %{$self->{'views'}},
+		         values %{$self->{'controllers'}} ) {
+
+			eval {
+				$_->init($self->{config});
+			};
+			if ($@) {
+				warn "$@\n";
+				$self->{'errors'}++;
+			}
 		}
 
-		$self->prep_template_engine();
+		$self->_prep_template_engine();
 	}
 
 	unless($self->{'dynamic_loading'}) {
-		delete $self->{'modules'};
+		delete $self->{'mmodules'};
+		delete $self->{'vmodules'};
+		delete $self->{'cmodules'};
 		delete $self->{'includes'};
 	}
 }
 
-sub load_config {
+sub _load_config {
 	my $self = shift;
 
 	my $conf = Config::General->new(
@@ -221,8 +248,20 @@ sub load_config {
 		$self->{'errors'}++;
 	}
 
-	$self->{'modules'}  = $conf{'modules'}  || {};
-	$self->{'includes'} = $conf{'includes'} || {};
+	$self->{'mmodules'} = $conf{'models'} || {};
+	$self->{'vmodules'} = $conf{'views'}  || {};
+
+	$self->{'cmodules'} = {};
+	if ($conf{'controllers'}) {
+		$self->{'cmodules'} = $conf{'controllers'};
+		$self->{'old_ns'} = 0;
+	}
+	elsif ($conf{'modules'}) {
+		$self->{'cmodules'} = $conf{'modules'};
+		$self->{'old_ns'} = 1;
+	}
+
+	$self->{'includes'}  = $conf{'includes'} || {};
 
 	# make a dummy entry for default if it doesn't exists.
 	# save an if(defined blah blah) on every page request.
@@ -264,47 +303,67 @@ sub load_config {
 	$self->{'template_conf'}->{'display_error'}->{'post_include'} = "";
 }
 
-sub prep_module {
+sub _prep_module {
+	my $self   = shift;
+	my $ns     = shift;
+	my $module = shift;
+
+	my $obj = $self->_load_module($ns,$module);
+
+	my $n = ($ns eq "m")?"models":
+	        ($ns eq "v")?"views":"controllers";
+
+	$self->{$ns}->{$module} = $obj;
+}
+
+sub _prep_page_module {
 	my $self   = shift;
 	my $module = shift;
 
-	my $obj = $self->load_module($module);
+	my $obj = $self->_load_module('c',$module);
 	$module =~ s/::/\//g;
-	$self->{'handlers'}->{$module} = $obj;
+
+	$self->{'controllers'}->{$module} = $obj;
 }
 
-sub prep_include {
+sub _load_module {
+	my $self   = shift;
+	my $ns     = shift;
+	my $module = shift;
+
+	unless ($ns eq "c" and $self->{old_ns}) {
+		$module = uc($ns)."::".$module;
+	}
+
+	$module = $self->{'base_package'}."::".$module;
+
+	return $self->_load_module_abs($module);
+}
+
+sub _load_module_abs {
 	my $self   = shift;
 	my $module = shift;
 
-	my $obj = $self->load_module($module);
-
-	$self->{'handlers'}->{$module} = $obj;
-}
-
-sub load_module {
-	my $self   = shift;
-	my $module = shift;
-
+	my $obj;
 	if ($self->{'dynamic_loading'}) {
 		require "Apache/Voodoo/Loader/Dynamic.pm";
 
-		return Apache::Voodoo::Loader::Dynamic->new($self->{'base_package'}."::$module");
+		$obj = Apache::Voodoo::Loader::Dynamic->new($module);
 	}
 	else {
 		require "Apache/Voodoo/Loader/Static.pm";
 
-		my $obj = Apache::Voodoo::Loader::Static->new($self->{'base_package'}."::$module");
+		$obj = Apache::Voodoo::Loader::Static->new($module);
 		if (ref($obj) eq "Apache::Voodoo::Zombie") {
 			# doh! the module went boom
 			$self->{'errors'}++;
 		}
-
-		return $obj;
 	}
+
+	return $obj;
 }
 
-sub prep_template_engine { 
+sub _prep_template_engine { 
 	my $self = shift;
 
 	$self->{'template_engine'} = Apache::Voodoo::View::HtmlTemplate->new({
@@ -324,7 +383,7 @@ sub map_uri {
 	my $self = shift;
 	my $uri  = shift;
 
-	if (defined($self->{'handlers'}->{$uri})) {
+	if (defined($self->{'controllers'}->{$uri})) {
 		return [$uri,"handle"];
 	}
 	else {
@@ -335,7 +394,6 @@ sub map_uri {
 		return ["$p$o",$m];
 	}
 }
-
 
 sub debug { 
 	my $self = shift;

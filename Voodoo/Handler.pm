@@ -348,21 +348,20 @@ sub generate_content {
 
 	eval {
 		# call each of the pre_include modules followed by our page specific module followed by our post_includes
-		foreach my $handle ( 
+		foreach my $c ( 
 			( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'pre_include'}) ),
 			$app->map_uri($run->{'uri'}),
 			( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'post_include'}) )
 			) {
 
-
-			if (defined($app->{'handlers'}->{$handle->[0]}) && $app->{'handlers'}->{$handle->[0]}->can($handle->[1])) {
-				my $obj    = $app->{'handlers'}->{$handle->[0]};
-				my $method = $handle->[1];
+			if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
+				my $obj    = $app->{'controllers'}->{$c->[0]};
+				my $method = $c->[1];
 
 				my $return = $obj->$method($p);
 
-				$debug->mark(Time::HiRes::time,"handler for ".$handle->[0]." ".$handle->[1]);
-				$debug->return_data($handle->[0],$handle->[1],$return);
+				$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
+				$debug->return_data($c->[0],$c->[1],$return);
 
 				if (ref($return) eq "ARRAY") {
 					if    ($return->[0] eq "REDIRECTED") {

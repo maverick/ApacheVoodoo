@@ -25,6 +25,13 @@ sub new {
 	return $self;
 }
 
+sub init {
+	my $self = shift;
+
+	$self->{'config'} = \@_;
+	$self->{'object'}->init(@_);
+}
+
 sub get_mtime {
 	my $self = shift;
 	my $file = shift || $self->{'module'};
@@ -67,6 +74,7 @@ sub can {
 	# find out if this thing has changed
 	if ($self->{'mtime'} != $self->get_mtime) {
 		$self->refresh;
+		$self->{'object'}->init($self->{'config'});
 	}
 
 	if (defined $self->{'provides'}->{$method}) {
