@@ -20,6 +20,8 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 use warnings;
 
+use base("Apache::Voodoo");
+
 #
 # Gets or sets the returned content type
 #
@@ -36,7 +38,7 @@ sub content_type {
 #
 # Called at the begining of each request
 #
-sub init { }
+sub begin { }
 
 #
 # Called multiple times as each handler / controller produces data.

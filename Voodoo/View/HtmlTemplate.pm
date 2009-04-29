@@ -28,11 +28,9 @@ use Exception::Class::DBI;
 
 use base ("Apache::Voodoo::View");
 
-sub new {
-	my $class  = shift;
+sub init {
+	my $self   = shift;
 	my $config = shift;
-
-	my $self = {};
 
 	$self->{'template_dir'}  = $config->{'template_dir'};
 	$self->{'template_opts'} = $config->{'template_opts'};
@@ -52,14 +50,10 @@ sub new {
 		$self->{'theme_handler'} = new Apache::Voodoo::View::HtmlTemplate::Theme;
 	}
 
-	bless ($self,$class);
-
 	$self->content_type('text/html');
-
-	return $self;
 }
 
-sub init {
+sub begin {
 	my $self = shift;
 	my $p    = shift;
 
