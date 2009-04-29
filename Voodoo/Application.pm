@@ -21,12 +21,10 @@ use strict;
 use warnings;
 
 use Apache::Voodoo::Constants;
+use Apache::Voodoo::Application::ConfigParser;
+
 use Apache::Voodoo::Session;
 use Apache::Voodoo::Debug;
-
-use Apache::Voodoo::Exception;
-
-use Apache::Voodoo::View::HtmlTemplate;
 
 use Data::Dumper;
 
@@ -52,30 +50,8 @@ sub new {
 	return $self;
 }
 
-sub _reload_modules {
-	my $self = shift;
-	my $ns   = shift;
-	my $old  = shift;
-	my $new  = shift;
-
-	# check the new list of modules against the old list
-	foreach (sort keys %{$new}) {
-		unless (exists($old->{$_})) {
-			# new module (wasn't in the old list).
-			$self->debug("Adding new $ns module: $_");
-			$self->_prep_module($ns,$_);
-		}
-
-		# still a valid module, so remove it from this list.
-		delete $old->{$_};
-	}
-
-	# whatever is left in old are ones that weren't in the new list.
-	foreach (keys %{$old}) {
-		$self->debug("Removing old module: $_");
-		$_ =~ s/::/\//g;
-		delete $self->{'controllers'}->{$_};
-	}
+sub config {
+	return $_[0]->{'parser'}->config();
 }
 
 sub refresh {
@@ -87,27 +63,27 @@ sub refresh {
 		return;
 	}
 
-	my $parser = $self->{'parser'};
+	my $config = $self->{'parser'};
 
-	my %old_m = %{$parser->{'models'}};
-	my %old_v = %{$parser->{'views'}};
-	my %old_c = %{$parser->{'controllers'}};
-	my %old_i = %{$parser->{'includes'}};
+	my %old_m = %{$config->models()};
+	my %old_v = %{$config->views()};
+	my %old_c = %{$config->controllers()};
+	my %old_i = %{$config->includes()};
 	
-	my $old_ns = $parser->{'old_ns'};
+	my $old_ns = $config->old_ns();
 
-	$self->_load_config();
+	$config->parse();
 
-	$self->_reload_modules('m',\%old_m,$parser->{'models'});
-	$self->_reload_modules('v',\%old_v,$parser->{'views'});
+	$self->_reload_modules('m',\%old_m,$config->models());
+	$self->_reload_modules('v',\%old_v,$config->views());
 
-	if (defined($old_ns) && $old_ns != $self->{old_ns}) {
+	if (defined($old_ns) && $old_ns != $config->old_ns()) {
 		# They've swapped from the old style name for controller to the new syle
 		# (or vice versa).  Drop all the old controllers.
 
-		$self->debug("**Controller namespace has changed**");
+		$self->_debug("**Controller namespace has changed**");
 		foreach (keys %{$self->{'controllers'}}) {
-			$self->debug("Removing old module: $_");
+			$self->_debug("Removing old module: $_");
 			delete $self->{'controllers'}->{$_};
 		}
 		%old_c = ();
@@ -115,25 +91,26 @@ sub refresh {
 	}
 
 	# load the new includes
-	$self->_reload_modules('c',\%old_i,$parser->{'includes'});
+	$self->_reload_modules('c',\%old_i,$config->includes());
 
-	foreach (sort keys %{$parser->{'controllers'}}) {
+	foreach (sort keys %{$config->controllers()}) {
 		unless (exists($old_c{$_})) {
 			# new module
-			$self->debug("Adding new module: $_");
+			$self->_debug("Adding new module: $_");
 			$self->_prep_page_module($_);
 		}
 		delete $old_c{$_};
 	}
 
 	foreach (keys %old_c) {
-		$self->debug("Removing old module: $_");
+		$self->_debug("Removing old module: $_");
 		delete $self->{'controllers'}->{$_};
 	}
 
+	$self->_debug({id => $self->{id},views => $self->{views}});
 	foreach (values %{$self->{'models'}}, values %{$self->{'views'}}) {
 		eval {
-			$_->init($parser->{'config'});
+			$_->init($config->config());
 		};
 		if ($@) {
 			warn "$@\n";
@@ -143,7 +120,7 @@ sub refresh {
 
 	foreach (values %{$self->{'controllers'}}) {
 		eval {
-			$_->init($parser->{'config'},$self->{'models'});
+			$_->init($config->config(),$self->{'models'});
 		};
 		if ($@) {
 			warn "$@\n";
@@ -151,11 +128,8 @@ sub refresh {
 		}
 	}
 
-	# FIXME de-specialize
-	$self->_prep_template_engine();
-
 	eval {
-		$self->{'session_handler'} = Apache::Voodoo::Session->new(\%conf);
+		$self->{'session_handler'} = Apache::Voodoo::Session->new($config->config());
 	};
 	if ($@) {
 		warn "$@\n";
@@ -163,11 +137,54 @@ sub refresh {
 	}
 
 	eval {
-		$self->{'debug_handler'} = Apache::Voodoo::Debug->new(\%conf);
+		$self->{'debug_handler'} = Apache::Voodoo::Debug->new($config->config());
 	};
 	if ($@) {
 		warn "$@\n";
 		$self->{'errors'}++;
+	}
+
+}
+
+sub map_uri {
+	my $self = shift;
+	my $uri  = shift;
+
+	if (defined($self->{'controllers'}->{$uri})) {
+		return [$uri,"handle"];
+	}
+	else {
+		my $p='';
+		my $m='';
+		my $o='';
+		($p,$m,$o) = ($uri =~ /^(.*?)([a-z]+)_(\w+)$/);
+		return ["$p$o",$m];
+	}
+}
+
+sub _reload_modules {
+	my $self = shift;
+	my $ns   = shift;
+	my $old  = shift;
+	my $new  = shift;
+
+	# check the new list of modules against the old list
+	foreach (sort keys %{$new}) {
+		unless (exists($old->{$_})) {
+			# new module (wasn't in the old list).
+			$self->_debug("Adding new $ns module: $_");
+			$self->_prep_module($ns,$_);
+		}
+
+		# still a valid module, so remove it from this list.
+		delete $old->{$_};
+	}
+
+	# whatever is left in old are ones that weren't in the new list.
+	foreach (keys %{$old}) {
+		$self->_debug("Removing old module: $_");
+		$_ =~ s/::/\//g;
+		delete $self->{'controllers'}->{$_};
 	}
 }
 
@@ -180,6 +197,8 @@ sub _prep_module {
 
 	$ns = ($ns eq "m")?"models":
 	      ($ns eq "v")?"views":"controllers";
+
+	$module =~ s/^Apache::Voodoo::(View|Model):://;
 
 	$self->{$ns}->{$module} = $obj;
 }
@@ -199,21 +218,21 @@ sub _load_module {
 	my $ns     = shift;
 	my $module = shift;
 
-	unless ($ns eq "c" and $self->{old_ns}) {
-		$module = uc($ns)."::".$module;
+	my $dynamic = 0;
+
+	# if it's not one of our internal views or models,
+	if ($module !~ /^Apache::Voodoo::(View|Model)::/) {
+		$dynamic = $self->{'parser'}->config()->{'dynamic_loading'};
+
+		unless ($ns eq "c" and $self->{'parser'}->old_ns()) {
+			$module = uc($ns)."::".$module;
+		}
+
+		$module = $self->{'parser'}->config()->{'base_package'}."::".$module;
 	}
 
-	$module = $self->{'base_package'}."::".$module;
-
-	return $self->_load_module_abs($module);
-}
-
-sub _load_module_abs {
-	my $self   = shift;
-	my $module = shift;
-
 	my $obj;
-	if ($self->{'dynamic_loading'}) {
+	if ($dynamic) {
 		require "Apache/Voodoo/Loader/Dynamic.pm";
 
 		$obj = Apache::Voodoo::Loader::Dynamic->new($module);
@@ -231,29 +250,7 @@ sub _load_module_abs {
 	return $obj;
 }
 
-sub _prep_template_engine { 
-	my $self = shift;
-
-	$self->{'views'}->{'HTML'} = Apache::Voodoo::View::HtmlTemplate->new($self->{parser}->{config}):
-}
-
-sub map_uri {
-	my $self = shift;
-	my $uri  = shift;
-
-	if (defined($self->{'controllers'}->{$uri})) {
-		return [$uri,"handle"];
-	}
-	else {
-		my $p='';
-		my $m='';
-		my $o='';
-		($p,$m,$o) = ($uri =~ /^(.*?)([a-z]+)_(\w+)$/);
-		return ["$p$o",$m];
-	}
-}
-
-sub debug { 
+sub _debug { 
 	my $self = shift;
 
 	return unless $self->{'debug'};

@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Devel::StackTrace;
-use JSON;
+use JSON::DWIW;
 
 use constant {
 	DEBUG     => 'LOG',
@@ -36,11 +36,7 @@ sub new {
   	my $self = {};
 	bless $self,$class;
 
-	$self->{json} = new JSON;
-	$self->{json}->allow_nonref(1);
-	$self->{json}->allow_blessed(1);
-	$self->{json}->convert_blessed(1);
-	$self->{json}->utf8(1);
+	$self->{json} = JSON::DWIW->new({bad_char_policy => 'convert'});
 
 	$self->{setHeader} = sub { return; };
 	$self->{userAgent} = sub { return; };
@@ -289,7 +285,7 @@ sub jsonEncode {
 	my $self   = shift;
 	my $Object = shift;
 
-	return $self->{'json'}->encode($Object);
+	return $self->{'json'}->to_json($Object);
 }
   
 sub _stack_trace {

@@ -4,7 +4,7 @@ use base("Apache::Voodoo");
 use strict;
 use warnings;
 
-use JSON;
+use JSON::DWIW;
 
 sub get_request_id {
     my $self = shift;
@@ -45,11 +45,11 @@ sub get_request_id {
 }
 
 sub json_true {
-	return $JSON::true;
+	return $JSON::DWIW->true;
 }
 
 sub json_false {
-	return $JSON::false;
+	return $JSON::DWIW->false;
 }
 
 sub json_data {
@@ -58,9 +58,8 @@ sub json_data {
 	my $data = shift;
 
 	if (ref($data)) {
-		my $json = new JSON;
-		$json->pretty(1);
-		$data = $json->encode($data);
+		my $json = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});;
+		$data = $json->to_json($data);
 	}
 	elsif ($data !~ /^\s*[\[\{\"]/) {
 		$data = '"'.$data.'"';
@@ -73,20 +72,9 @@ sub json_return {
 	my $self = shift;
 	my $data = shift;
 
-	my $json = new JSON;
-	$json->pretty(1);
+	my $json = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});;
 
-	return $self->raw_mode('text/plain',$json->encode($data));
-}
-
-sub json_success {
-	my $self = shift;
-	my $data = shift;
-
-	$data->{'success'} = $self->json_true;
-	$data->{'errors'}  = [];
-	
-	return $self->raw_mode('text/plain',to_json($data));
+	return $self->raw_mode('text/plain',$json->to_json($data));
 }
 
 sub json_error {
@@ -106,21 +94,10 @@ sub json_error {
 	else {
 		push(@{$return->{errors}},{id => 'error', msg => $errors});
 	}
+
+	my $json = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});;
 	
-	return $self->raw_mode('text/plain',to_json($return));
+	return $self->raw_mode('text/plain',$json->to_json($return));
 }
-
-sub json_redirect {
-	my $self   = shift;
-	my $target = shift;
-
-	my $return = {
-		'success'  => 'true',
-		'redirect' => $target,
-	};
-
-	return $self->raw_mode('text/plain',to_json($return));
-}
-
 
 1;

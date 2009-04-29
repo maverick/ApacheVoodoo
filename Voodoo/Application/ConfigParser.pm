@@ -34,14 +34,19 @@ sub new {
 
 	$self->{'conf_mtime'} = 0;
 
+	$self->{'config'}        = {};
+	$self->{'models'}        = {};
+	$self->{'views'}         = {};
+	$self->{'controllers'}   = {};
+	$self->{'includes'}      = {};
+	$self->{'template_conf'} = {};
+
 	if (defined($self->{'id'})) {
 		$self->{'conf_file'} = File::Spec->catfile(
 			$self->{constants}->install_path(),
 			$self->{'id'},
 			$self->{constants}->conf_file()
 		);
-
-		$self->parse();
 	}
 	else {
 		die "ID is a requried parameter.";
@@ -53,8 +58,16 @@ sub new {
 sub changed {
 	my $self = shift;
 
-	return $self->{'conf'}->{'dynamic_loading'} && $self->{'conf_mtime'} != (stat($self->{'conf_file'}))[9];
+	return $self->{'conf_mtime'} != (stat($self->{'conf_file'}))[9];
 }
+
+sub old_ns        { return $_[0]->{'old_ns'}        };
+sub config        { return $_[0]->{'config'}        };
+sub models        { return $_[0]->{'models'}        };
+sub views         { return $_[0]->{'views'}         };
+sub controllers   { return $_[0]->{'controllers'}   };
+sub includes      { return $_[0]->{'includes'}      };
+sub template_conf { return $_[0]->{'template_conf'} };
 
 sub parse {
 	my $self = shift;
@@ -80,7 +93,6 @@ sub parse {
 
 	$conf{'https_cookies'} = ($conf{'https_cookies'})?1:0;
 
-	$conf{'template_conf'} ||= {};
 	$conf{'template_opts'} ||= {};
 
 	$conf{'template_dir'} = File::Spec->catfile(
@@ -142,34 +154,55 @@ sub parse {
 		];
 	}
 
-	$conf{'models'}   ||= {};
-	$conf{'views'}    ||= {};
-	$conf{'includes'} ||= {};
+	$self->{'models'}   = $conf{'models'}   || {};
+	$self->{'views'}    = $conf{'views'}    || {};
+	$self->{'includes'} = $conf{'includes'} || {};
 
 	if ($conf{'controllers'}) {
+		$self->{'controllers'} = $conf{'controllers'};
 		$self->{'old_ns'} = 0;
 	}
 	elsif ($conf{'modules'}) {
-		$conf{'controllers'} = $conf{'modules'};
-		delete $conf{'modules'};
+		$self->{'controllers'} = $conf{'modules'};
 		$self->{'old_ns'} = 1;
 	}
 	else {
-		$conf{'controllers'} = {};
+		$self->{'controllers'} = {};
 	}
 
-	# make a dummy entry for default if it doesn't exists.
-	# save an if(defined blah blah) on every page request.
-	unless (defined($conf{'template_conf'}->{'default'})) {
-		$conf{'template_conf'}->{'default'} = {};
+	delete $conf{'models'};
+	delete $conf{'views'};
+	delete $conf{'controllers'};
+	delete $conf{'modules'};
+	delete $conf{'includes'};
+
+	# If they didn't define their own HTML view, then we'll use our own;
+	# this is a web server after all :)
+	unless (defined($self->{'views'}->{'HTML'})) {
+		$self->{'views'}->{'Apache::Voodoo::View::HTML'} = 1;
+	}
+
+	# Same idea for JSON.  What website these days doesn't use even
+	# a little AJAX?
+	unless (defined($self->{'views'}->{'JSON'})) {
+		$self->{'views'}->{'Apache::Voodoo::View::JSON'} = 1;
+	}
+
+	$self->{'template_conf'} = $conf{'template_conf'} || {};
+	delete $conf{'template_conf'};
+
+	# make a dummy entry for default if it doesn't exists,
+	# this saves an if(defined blah blah) on every page request.
+	unless (defined($self->{'template_conf'}->{'default'})) {
+		$self->{'template_conf'}->{'default'} = {};
 	}
 
 	# merge in the default block to each of the others now so that we don't have to
 	# do it at page request time.
-	foreach my $key (grep {$_ ne 'default'} keys %{$conf{'template_conf'}}) {
-		$conf{'template_conf'}->{$key} = { 
-			%{$conf{'template_conf'}->{'default'}},
-			%{$conf{'template_conf'}->{$key}}
+	foreach my $key (grep {$_ ne 'default'} keys %{$self->{'template_conf'}}) {
+		$self->{'template_conf'}->{$key} = { 
+			%{$self->{'template_conf'}->{'default'}},
+			%{$self->{'template_conf'}->{$key}}
 		};
 	}
 

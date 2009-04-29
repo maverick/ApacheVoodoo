@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::View::HtmlTemplate
+Apache::Voodoo::View::HTML
 
 =head1 VERSION
 
@@ -13,7 +13,7 @@ $Id: Template.pm 12906 2009-02-20 23:08:10Z medwards $
 This modules is used internally by Voodoo for interfacing to HTML::Template.
 
 =cut ################################################################################
-package Apache::Voodoo::View::HtmlTemplate;
+package Apache::Voodoo::View::HTML;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
@@ -46,8 +46,8 @@ sub init {
 	$self->{'themes'}     = $config->{'themes'};
 
 	if ($self->{'use_themes'}) {
-		require Apache::Voodoo::View::HtmlTemplate::Theme;
-		$self->{'theme_handler'} = new Apache::Voodoo::View::HtmlTemplate::Theme;
+		require Apache::Voodoo::View::HTML::Theme;
+		$self->{'theme_handler'} = new Apache::Voodoo::View::HTML::Theme;
 	}
 
 	$self->content_type('text/html');
@@ -115,7 +115,7 @@ sub _load_internal_template {
 	my $self = shift;
 	my $u    = shift;
 
-	my $path = $INC{'Apache/Voodoo/View/HtmlTemplate.pm'};
+	my $path = $INC{'Apache/Voodoo/View/HTML.pm'};
 	$path =~ s/\.pm/\//o;
 
 	$self->{template} = HTML::Template->new(

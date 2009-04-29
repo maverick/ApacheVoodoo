@@ -1,13 +1,13 @@
 =pod #####################################################################################
 
-=head1 Apache::Voodoo::View::HtmlTemplate::Theme
+=head1 Apache::Voodoo::View::HTML::Theme
 
 $Id: Theme.pm 12906 2009-02-20 23:08:10Z medwards $
 
 =head1 Synopsis
 
 =cut ################################################################################
-package Apache::Voodoo::View::HtmlTemplate::Theme;
+package Apache::Voodoo::View::HTML::Theme;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 

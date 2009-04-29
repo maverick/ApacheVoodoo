@@ -43,17 +43,6 @@ BEGIN {
 	}
 }
 
-# Setup signal handler for die so that all deaths become exception objects
-# This way we can get a stack trace from where the death occurred, not where it was caught.
-$SIG{__DIE__} = sub { 
-	if (ref($_[0]) =~ /^Apache::Voodoo::Exception/ || ref($_[0]) =~ /^Exception::Class::DBI/) {
-		# Already died using an exception class, just pass it up the chain
-		$_[0]->rethrow;
-	}
-	else {
-		Apache::Voodoo::Exception::RunTime->throw( error => join '', @_ );
-	}
-};
 
 # *THE* one thing that has never made any sense to me about the mod_perl universe:
 # "How" to make method handlers is well documented, but MP doesn't call new() or provide
@@ -80,6 +69,18 @@ sub new {
 		$self->restart;
 	}
 
+	# Setup signal handler for die so that all deaths become exception objects
+	# This way we can get a stack trace from where the death occurred, not where it was caught.
+#	$SIG{__DIE__} = sub { 
+#		if (ref($_[0]) =~ /^Apache::Voodoo::Exception/ || ref($_[0]) =~ /^Exception::Class::DBI/) {
+#			# Already died using an exception class, just pass it up the chain
+#			$_[0]->rethrow;
+#		}
+#		else {
+#			Apache::Voodoo::Exception::RunTime->throw( error => join '', @_ );
+#		}
+#	};
+
 	return $self;
 }
 
@@ -104,29 +105,25 @@ sub handle_request {
 		return $self->{mp}->server_error;
 	}
 
-	# holds all vars associated with this page processing request
+	# holds all vars associated with this request
 	my $run = {};
-
-	$run->{'filename'} = $self->{mp}->filename();
-	$run->{'uri'}      = $self->{mp}->uri();
 
 	####################
 	# URI translation jazz to get down to a proper filename
 	####################
+	$run->{'uri'} = $self->{mp}->uri();
 	if ($run->{'uri'} =~ /\/$/o) {
 		return $self->{mp}->redirect($run->{'uri'}."index");
 	}
+
+	$run->{'filename'} = $self->{mp}->filename();
 
    	# remove the optional trailing .tmpl
    	$run->{'filename'} =~ s/\.tmpl$//o;
    	$run->{'uri'}      =~ s/\.tmpl$//o;
 
-	# FIXME here's where to break the requirement for .tmpl files
-	unless (-e "$run->{'filename'}.tmpl") {
-		return $self->{mp}->declined;
-	}
-
-	unless (-r "$run->{'filename'}.tmpl") { return $self->{mp}->forbidden; }
+	unless (-e "$run->{'filename'}.tmpl") { return $self->{mp}->declined;  }
+	unless (-r "$run->{'filename'}.tmpl") { return $self->{mp}->forbidden; } 
 
 	########################################
 	# We now know we have a valid file that we need to handle
@@ -138,6 +135,8 @@ sub handle_request {
 	if ($app->{'dynamic_loading'}) {
 		$app->refresh;
 	}
+
+	my $conf = $app->config();
 
 	# Get ready to start tracing what's going on
 	$run->{'app_id'}     = $id;
@@ -159,7 +158,6 @@ sub handle_request {
 		$run->{'uri'} =~ s/^$app->{'site_root'}//;
 	}
 
-	($app->{'template_dir'}) = ($run->{'filename'} =~ /^(.*)$run->{'uri'}$/);
 	$debug->url($run->{'uri'});
 
    	# remove the beginning /
@@ -170,25 +168,25 @@ sub handle_request {
 	####################
 	# Attach session
 	####################
-	$run->{session_handler} = $self->attach_session($app);
+	$run->{session_handler} = $self->attach_session($app,$conf);
 	$run->{session} = $run->{session_handler}->session;
 
 	$debug->mark(Time::HiRes::time,"session attachment");
 	$debug->session_id($run->{session}->{_session_id});
 
 	if ($run->{'uri'} eq "logout") {
-		# handle logout
-		$self->{mp}->set_cookie($app->{'cookie_name'},'!','now');
+		$self->{mp}->set_cookie($conf->{'cookie_name'},'!','now');
 		$run->{'session_handler'}->destroy();
-		return $self->{mp}->redirect($app->{'logout_target'});
-#		return $self->{mp}->redirect($app->{'site_root'}."index");
+
+		return $self->{mp}->redirect($conf->{'logout_target'});
 	}
 
 	####################
 	# connect to db
 	####################
-	foreach (@{$app->{'dbs'}}) {
+	foreach (@{$conf->{'dbs'}}) {
 		eval {
+			# we put this in app not run so that database connections persist across requests
 			$app->{'dbh'} = DBI->connect_cached(@{$_});
 		};
 		last if $app->{'dbh'};
@@ -204,7 +202,7 @@ sub handle_request {
 	####################
 	# get paramaters 
 	####################
-	$run->{'input_params'} = $self->{mp}->parse_params($app->{'upload_size_max'});
+	$run->{'input_params'} = $self->{mp}->parse_params($conf->{'upload_size_max'});
 	unless (ref($run->{'input_params'})) {
 		# something went boom
 		return $self->display_host_error($run->{'input_params'});
@@ -227,7 +225,7 @@ sub handle_request {
 	####################
 	# Get configuation for this template or section
 	####################
-	$run->{'template_conf'} = $self->resolve_conf_section($app,$run);
+	$run->{'template_conf'} = $self->resolve_conf_section($conf,$run);
 
 	$debug->mark(Time::HiRes::time,"config section resolution");
 	$debug->template_conf($run->{'template_conf'});
@@ -235,7 +233,7 @@ sub handle_request {
 	####################
 	# prepare main body contents
 	####################
-	my $return = $self->generate_content($app,$run);
+	my $return = $self->generate_content($app,$conf,$run);
 
 	$debug->session($run->{session});
 	$debug->status($return);
@@ -249,20 +247,21 @@ sub handle_request {
 sub attach_session {
 	my $self = shift;
 	my $app  = shift;
+	my $conf = shift;
 
-	my $session_id = $self->{mp}->get_cookie($app->{'cookie_name'});
-	my $session = $app->{session_handler}->attach($session_id,$app->{dbh});
+	my $session_id = $self->{'mp'}->get_cookie($conf->{'cookie_name'});
+	my $session = $app->{'session_handler'}->attach($session_id,$app->{'dbh'});
 
-	if (!defined($session_id) || $session->{id} ne $session_id) {
+	if (!defined($session_id) || $session->{'id'} ne $session_id) {
 		# This is a new session, or there was an old cookie from a previous sesion,
-		$self->{mp}->set_cookie($app->{'cookie_name'},$session->{id});
+		$self->{'mp'}->set_cookie($conf->{'cookie_name'},$session->{'id'});
 	}
-	elsif ($session->has_expired($app->{'session_timeout'})) {
+	elsif ($session->has_expired($conf->{'session_timeout'})) {
 		# the session has expired
-		$self->{mp}->set_cookie($app->{'cookie_name'},'!','now');
+		$self->{'mp'}->set_cookie($conf->{'cookie_name'},'!','now');
 		$session->destroy;
 
-		return $self->{mp}->redirect($app->{'site_root'}."timeout");
+		return $self->{'mp'}->redirect($app->{'site_root'}."timeout");
 	}
 
 	# update the session timer
@@ -325,22 +324,25 @@ sub resolve_conf_section {
 sub generate_content {
 	my $self = shift;
 	my $app  = shift;
+	my $conf = shift;
 	my $run  = shift;
 
 	my $p = {
+		"config"        => $conf,
 		"debug"         => $debug,
 		"dbh"           => $app->{'dbh'},
-		"document_root" => $app->{'template_dir'},
 		"params"        => $run->{'input_params'},
 		"session"       => $run->{'session'},
 		"template_conf" => $run->{'template_conf'},
-		"themes"        => $app->{'themes'},
 		"mp"            => $self->{'mp'},
 		"uri"           => $run->{'uri'},
-		# these are deprecated.  In the future get them from $p->{mp}
+
+		# these are deprecated.  In the future get them from $p->{mp} or $p->{config}
+		"document_root" => $conf->{'template_dir'},
 		"dir_config"    => $self->{mp}->dir_config,
 		"user-agent"    => $self->{mp}->header_in('User-Agent'),
-		"r"             => $self->{mp}->{r}
+		"r"             => $self->{mp}->{r},
+		"themes"        => $conf->{'themes'}
 	};
 
 	my $c=0;
@@ -401,14 +403,14 @@ sub generate_content {
 
 	if ($e) {
 		# caught a runtime error from perl
-		unless ($app->{'devel_mode'}) {
+		unless ($conf->{'devel_mode'}) {
 			$self->{mp}->error($e);
 			return $self->{mp}->server_error;
 		}
 	}
 
-	my $te = $app->{'views'}->{HTML};
-	$te->init($p);
+	my $te = $app->{'views'}->{'HTML'};
+	$te->begin($p);
 	$te->content_type($run->{'template_conf'}->{'content-type'});
 
 	if ($e) {
@@ -490,6 +492,7 @@ sub restart {
 		# check to see if we can get a database connection
 		foreach (@{$app->{'dbs'}}) {
 			eval {
+				# we put this in app not run so that database connections persist across requests
 				$app->{'dbh'} = DBI->connect_cached(@{$_});
 			};
 			last if $app->{'dbh'};

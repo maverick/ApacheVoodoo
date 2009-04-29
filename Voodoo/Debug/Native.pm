@@ -27,8 +27,8 @@ use Devel::StackTrace;
 use IO::Socket::UNIX;
 use IO::Handle::Record;
 use HTML::Template;
-use JSON;
 
+use JSON::DWIW;
 use Apache::Voodoo::Constants;
 
 sub new {
@@ -88,11 +88,7 @@ sub new {
 			app_id     => $self->{id}->{app_id}
 		);
 
-		$self->{json} = new JSON;
-		$self->{json}->allow_nonref(1);
-		$self->{json}->allow_blessed(1);
-		$self->{json}->convert_blessed(1);
-		$self->{json}->utf8(1);
+		$self->{json} = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});
 	}
 
 	# we always send this since is fundamental to identifying the request chain
@@ -305,10 +301,10 @@ sub _encode {
 	my $self = shift;
 	
 	if (scalar(@_) > 1) {
-		return $self->{json}->encode([@_]);
+		return $self->{json}->to_json([@_]);
 	}
 	else {
-		return $self->{json}->encode(@_);
+		return $self->{json}->to_json(@_);
 	}
 }
 
