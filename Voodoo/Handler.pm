@@ -407,7 +407,7 @@ sub generate_content {
 		}
 	}
 
-	my $te = $app->{'template_engine'};
+	my $te = $app->{'views'}->{HTML};
 	$te->init($p);
 	$te->content_type($run->{'template_conf'}->{'content-type'});
 

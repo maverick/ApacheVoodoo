@@ -25,11 +25,9 @@ use Apache::Voodoo::Session;
 use Apache::Voodoo::Debug;
 
 use Apache::Voodoo::Exception;
-use Exception::Class::DBI;
 
 use Apache::Voodoo::View::HtmlTemplate;
 
-use Config::General;
 use Data::Dumper;
 
 sub new {
@@ -38,25 +36,13 @@ sub new {
 
 	bless $self, $class;
 
-#	$self->{'debug'} = 1;
+	$self->{'debug'} = 1;
 
 	$self->{'id'}        = shift;
 	$self->{'constants'} = shift || Apache::Voodoo::Constants->new();
 
-	$self->{'conf_mtime'} = 0;
-
-	$self->{'mmodules'} = {};
-	$self->{'vmodules'} = {};
-	$self->{'cmodules'} = {};
-	$self->{'includes'} = {};
-
 	if (defined($self->{'id'})) {
-		$self->{'conf_file'} = File::Spec->catfile(
-			$self->{constants}->install_path(),
-			$self->{'id'},
-			$self->{constants}->conf_file()
-		);
-
+		$self->{'parser'} = Apache::Voodoo::Application::ConfigParser->new($self->{'id'},$self->{'constants'});
 		$self->refresh(1);
 	}
 	else {
@@ -96,141 +82,77 @@ sub refresh {
 	my $self    = shift;
 	my $initial = shift;
 
-	# Do nothing if this isn't the initial load, and we're not doing dynamic loading
-	unless ($initial || $self->{'dynamic_loading'}) {
+	# If this is the initial load, or the config file has changed continue.
+	unless ($initial || $self->{'parser'}->changed()) {
 		return;
 	}
 
-	# check to see if we need to refresh the config.
-	if ($self->{'conf_mtime'} != (stat($self->{'conf_file'}))[9]) {
-		$self->debug("loading $self->{'conf_file'}");
+	my $parser = $self->{'parser'};
 
-		my %old_m = %{$self->{'mmodules'}};
-		my %old_v = %{$self->{'vmodules'}};
-		my %old_c = %{$self->{'cmodules'}};
-		my %old_i = %{$self->{'includes'}};
+	my %old_m = %{$parser->{'models'}};
+	my %old_v = %{$parser->{'views'}};
+	my %old_c = %{$parser->{'controllers'}};
+	my %old_i = %{$parser->{'includes'}};
+	
+	my $old_ns = $parser->{'old_ns'};
 
-		$self->_load_config();
+	$self->_load_config();
 
-		$self->_reload_modules('m',\%old_m,$self->{'mmodules'});
-		$self->_reload_modules('v',\%old_v,$self->{'vmodules'});
-		$self->_reload_modules('c',\%old_i,$self->{'includes'});
+	$self->_reload_modules('m',\%old_m,$parser->{'models'});
+	$self->_reload_modules('v',\%old_v,$parser->{'views'});
 
-		# now we do exactly the same thing for the includes
-		foreach (sort keys %{$self->{'cmodules'}}) {
-			unless (exists($old_c{$_})) {
-				# new module
-				$self->debug("Adding new module: $_");
-				$self->_prep_page_module($_);
-			}
-			delete $old_c{$_};
-		}
+	if (defined($old_ns) && $old_ns != $self->{old_ns}) {
+		# They've swapped from the old style name for controller to the new syle
+		# (or vice versa).  Drop all the old controllers.
 
-		foreach (keys %old_c) {
+		$self->debug("**Controller namespace has changed**");
+		foreach (keys %{$self->{'controllers'}}) {
 			$self->debug("Removing old module: $_");
 			delete $self->{'controllers'}->{$_};
 		}
-
-		foreach (values %{$self->{'models'}}, 
-		         values %{$self->{'views'}},
-		         values %{$self->{'controllers'}} ) {
-
-			eval {
-				$_->init($self->{config});
-			};
-			if ($@) {
-				warn "$@\n";
-				$self->{'errors'}++;
-			}
-		}
-
-		$self->_prep_template_engine();
+		%old_c = ();
+		%old_i = ();
 	}
 
-	unless($self->{'dynamic_loading'}) {
-		delete $self->{'mmodules'};
-		delete $self->{'vmodules'};
-		delete $self->{'cmodules'};
-		delete $self->{'includes'};
-	}
-}
+	# load the new includes
+	$self->_reload_modules('c',\%old_i,$parser->{'includes'});
 
-sub _load_config {
-	my $self = shift;
-
-	my $conf = Config::General->new(
-		'-ConfigFile' => $self->{'conf_file'},
-		'-IncludeRelative' => 1,
-		'-UseApacheInclude' => 1
-	);
-
-	my %conf = $conf->getall();
-
-	$conf{id} = $self->{id};
-
-	$self->{'base_package'} = $conf{'base_package'} || $self->{'id'};
-
-	$self->{'session_timeout'} = $conf{'session_timeout'} || 0;
-	$self->{'upload_size_max'} = $conf{'upload_size_max'} || 5242880;
-
-	$self->{'cookie_name'}   = $conf{'cookie_name'}     || uc($self->{'id'}). "_SID";
-	$self->{'https_cookies'} = ($conf{'https_cookies'})?1:0;
-
-	$self->{'template_conf'} = $conf{'template_conf'} || {};
-	$self->{'template_opts'} = $conf{'template_opts'} || {};
-
-	$self->{'logout_target'} = $conf{'logout_target'} || "/index";
-
-	if (defined($conf{'devel_mode'})) {
-		if ($conf{'devel_mode'}) {
-			$self->{'devel_mode'}      = 1;
-			$self->{'dynamic_loading'} = 1;
-			$self->{'halt_on_errors'}  = 0;
+	foreach (sort keys %{$parser->{'controllers'}}) {
+		unless (exists($old_c{$_})) {
+			# new module
+			$self->debug("Adding new module: $_");
+			$self->_prep_page_module($_);
 		}
-		else {
-			$self->{'devel_mode'}      = 0;
-			$self->{'dynamic_loading'} = 0;
-			$self->{'halt_on_errors'}  = 1;
+		delete $old_c{$_};
+	}
+
+	foreach (keys %old_c) {
+		$self->debug("Removing old module: $_");
+		delete $self->{'controllers'}->{$_};
+	}
+
+	foreach (values %{$self->{'models'}}, values %{$self->{'views'}}) {
+		eval {
+			$_->init($parser->{'config'});
+		};
+		if ($@) {
+			warn "$@\n";
+			$self->{'errors'}++;
 		}
 	}
-	else {
-		$self->{'devel_mode'}      = 0;
-		$self->{'dynamic_loading'} = $conf{'dynamic_loading'} || 0;
-		$self->{'halt_on_errors'}  = defined($conf{'halt_on_errors'})?$conf{'halt_on_errors'}:1;
-	}
 
-	if ($self->{'dynamic_loading'}) {
-		$self->{'conf_mtime'}  = (stat($self->{'conf_file'}))[9];
-	}
-
-	if (defined($conf{'database'})) {
-		my $db;
-		if (ref($conf{'database'}) eq "ARRAY") {
-			$db = $conf{'database'};
+	foreach (values %{$self->{'controllers'}}) {
+		eval {
+			$_->init($parser->{'config'},$self->{'models'});
+		};
+		if ($@) {
+			warn "$@\n";
+			$self->{'errors'}++;
 		}
-		else {
-			$db = [ $conf{'database'} ];
-		} 
-
-		# make the connect string a perl array ref
-		$self->{'dbs'} = [ 
-			map {
-				unless (ref ($_->{'extra'}) eq "HASH") {
-					$_->{'extra'} = {};
-				}
-				$_->{'extra'}->{PrintError}  = 0;
-				$_->{'extra'}->{RaiseError}  = 0;
-				$_->{'extra'}->{HandleError} = Exception::Class::DBI->handler;
-
-				[ 
-					$_->{'connect'},
-					$_->{'username'},
-					$_->{'password'},
-					$_->{'extra'}
-				]
-			} @{$db} 
-		];
 	}
+
+	# FIXME de-specialize
+	$self->_prep_template_engine();
 
 	eval {
 		$self->{'session_handler'} = Apache::Voodoo::Session->new(\%conf);
@@ -247,60 +169,6 @@ sub _load_config {
 		warn "$@\n";
 		$self->{'errors'}++;
 	}
-
-	$self->{'mmodules'} = $conf{'models'} || {};
-	$self->{'vmodules'} = $conf{'views'}  || {};
-
-	$self->{'cmodules'} = {};
-	if ($conf{'controllers'}) {
-		$self->{'cmodules'} = $conf{'controllers'};
-		$self->{'old_ns'} = 0;
-	}
-	elsif ($conf{'modules'}) {
-		$self->{'cmodules'} = $conf{'modules'};
-		$self->{'old_ns'} = 1;
-	}
-
-	$self->{'includes'}  = $conf{'includes'} || {};
-
-	# make a dummy entry for default if it doesn't exists.
-	# save an if(defined blah blah) on every page request.
-	unless (defined($self->{'template_conf'}->{'default'})) {
-		$self->{'template_conf'}->{'default'} = {};
-	}
-
-	# merge in the default block to each of the others now so that we don't have to
-	# do it at page request time.
-	foreach my $key (grep {$_ ne 'default'} keys %{$self->{'template_conf'}}) {
-		$self->{'template_conf'}->{$key} = { 
-			%{$self->{'template_conf'}->{'default'}},
-			%{$self->{'template_conf'}->{$key}}
-		};
-	}
-
-	#
-	# Theme support
-	#
-	if (defined($conf{'themes'}) && $conf{'themes'}->{'use_themes'} == 1) {
-		$self->{'use_themes'} = 1;
-		$self->{'themes'}->{'__default__'} = $conf{'themes'}->{'default'};
-		$self->{'themes'}->{'__userset__'} = $conf{'themes'}->{'user_can_choose'};
-		my $has_one = 0;
-		foreach (@{$conf{'themes'}->{'theme'}}) {
-			$self->{'themes'}->{$_->{'name'}} = $_->{'dir'};
-			$has_one = 1;
-		}
-		
-		unless($has_one) {
-			$self->{'errors'}++;
-			warn "You must define at least one theme block\n";
-		}
-	}
-
-	# remove pre/post includes from display error...if one of them had 
-	# the error you'd have an infinite redirect loop :)
-	$self->{'template_conf'}->{'display_error'}->{'pre_include'}  = "";
-	$self->{'template_conf'}->{'display_error'}->{'post_include'} = "";
 }
 
 sub _prep_module {
@@ -310,8 +178,8 @@ sub _prep_module {
 
 	my $obj = $self->_load_module($ns,$module);
 
-	my $n = ($ns eq "m")?"models":
-	        ($ns eq "v")?"views":"controllers";
+	$ns = ($ns eq "m")?"models":
+	      ($ns eq "v")?"views":"controllers";
 
 	$self->{$ns}->{$module} = $obj;
 }
@@ -366,17 +234,7 @@ sub _load_module_abs {
 sub _prep_template_engine { 
 	my $self = shift;
 
-	$self->{'template_engine'} = Apache::Voodoo::View::HtmlTemplate->new({
-		template_dir  => File::Spec->catfile(
-			$self->{'constants'}->install_path(),
-			$self->{'id'},
-			$self->{'constants'}->tmpl_path()
-		),
-		template_opts => $self->{'template_opts'},
-		use_themes    => $self->{'use_themes'},
-		themes        => $self->{'themes'},
-		site_root     => $self->{'site_root'}
-	});
+	$self->{'views'}->{'HTML'} = Apache::Voodoo::View::HtmlTemplate->new($self->{parser}->{config}):
 }
 
 sub map_uri {

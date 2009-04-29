@@ -62,39 +62,71 @@ sub refresh {
 # 
 # Override the built in 'can' to allow:
 #   a) trigger dynamically reloading the module as needed
-#   b) dynamically create closures to link Apache::Voodoo::Handler with userland modules
-# 
-# This has some nice side effects.  
-#   Static vs Dynamic loading is totally transparent to the interaction between Voodoo and userland modules.  
+#   b) dynamically create closures to link Apache::Voodoo::Handler with the controllers
 #
 sub can {
-	my $self = shift;
+	my $self   = shift;
 	my $method = shift;
+	my $nosub  = shift;
 
 	# find out if this thing has changed
 	if ($self->{'mtime'} != $self->get_mtime) {
 		$self->refresh;
-		$self->{'object'}->init($self->{'config'});
+		$self->{'object'}->init(@{$self->{'config'}});
 	}
 
 	if (defined $self->{'provides'}->{$method}) {
 		return 1;
 	}
 	elsif ($self->{'object'}->isa("Apache::Voodoo::Zombie") || $self->{'object'}->can($method)) {
-		# either we have a dead module and we map whatever was requested or
-		# we have a live one and it can do the requested method
+		# Either we have a dead module and we map whatever was requested or
+		# we have a live one and has the requested method.
 
 		# cache the existance of this method
 		$self->{'provides'}->{$method} = 1;
 
-		# create a closeure for this method (a little help from the Cookbook 10.14)
-		no strict 'refs';
-		*$method = sub { my $self = shift; return $self->_handle($method,@_); };
+		# If we used the autoloader to get here, then we want to keep using
+		# it. Bypass the creation of the closure.
+		unless ($nosub) {
+			# create a closeure for this method (a little help from the Cookbook 10.14)
+			no strict 'refs';
+			*$method = sub { my $self = shift; return $self->_handle($method,@_); };
+		}
 		return 1;
 	}
 
 	return 0;
 }
+
+#
+# In scnearios where the caller doesn't know that can has been overloaded, we'll use
+# autoload to catch it and call our overloaded can.  We unfortunately end up with two 
+# different ways to do a very similar task because the constraints are slightly different.
+# We want the calls from the A::V::Handler to the controllers to be aware of what methods
+# actually exist so it can either call them or not.  The controllers talking to the models
+# shouldn't have to do anything special or even be aware that they're talking to this 
+# proxy object, thus the need for a autoload variation.
+#
+sub AUTOLOAD {
+	next unless ref($_[0]);
+
+	our $AUTOLOAD;
+	my $name = $AUTOLOAD;
+	$name =~ s/.*:://;
+	print STDERR $name;
+
+	my $self = shift;
+
+	if ($self->can($name,'1')) {
+		return $self->_handle($name,@_);
+	}
+
+	# we don't handle this one
+	next;
+}
+
+# now we need a stub for destroy to keep autoloader happy.
+sub DESTROY { }
 
 sub _handle {
 	my $self = shift;

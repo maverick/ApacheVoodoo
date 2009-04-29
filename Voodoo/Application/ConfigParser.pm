@@ -1,0 +1,207 @@
+=pod #####################################################################################
+
+=head1 NAME
+
+Apache::Voodoo::Application::ConfigParser
+
+=head1 VERSION
+
+$Id: Application.pm 12906 2009-02-20 23:08:10Z medwards $
+
+=cut ################################################################################
+package Apache::Voodoo::Application::ConfigParser;
+
+$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+
+use strict;
+use warnings;
+
+use Apache::Voodoo::Constants;
+use Config::General;
+use File::Spec;
+use Exception::Class::DBI;
+
+use Data::Dumper;
+
+sub new {
+	my $class = shift;
+   	my $self = {};
+
+	bless $self, $class;
+
+	$self->{'id'}        = shift;
+	$self->{'constants'} = shift || Apache::Voodoo::Constants->new();
+
+	$self->{'conf_mtime'} = 0;
+
+	if (defined($self->{'id'})) {
+		$self->{'conf_file'} = File::Spec->catfile(
+			$self->{constants}->install_path(),
+			$self->{'id'},
+			$self->{constants}->conf_file()
+		);
+
+		$self->parse();
+	}
+	else {
+		die "ID is a requried parameter.";
+	}
+
+	return $self;
+}
+
+sub changed {
+	my $self = shift;
+
+	return $self->{'conf'}->{'dynamic_loading'} && $self->{'conf_mtime'} != (stat($self->{'conf_file'}))[9];
+}
+
+sub parse {
+	my $self = shift;
+
+	my $conf = Config::General->new(
+		'-ConfigFile' => $self->{'conf_file'},
+		'-IncludeRelative' => 1,
+		'-UseApacheInclude' => 1
+	);
+
+	my %conf = $conf->getall();
+
+	$conf{'id'} = $self->{'id'};
+
+	$conf{'base_package'} ||= $self->{'id'};
+
+	# PCI says that sessions should expire after 15 minutes, this should be a sesable default
+	$conf{'session_timeout'} ||= 900;
+
+	$conf{'upload_size_max'} ||= 5242880;
+
+	$conf{'cookie_name'} ||= uc($self->{'id'}). "_SID";
+
+	$conf{'https_cookies'} = ($conf{'https_cookies'})?1:0;
+
+	$conf{'template_conf'} ||= {};
+	$conf{'template_opts'} ||= {};
+
+	$conf{'template_dir'} = File::Spec->catfile(
+		$self->{'constants'}->install_path(),
+		$self->{'id'},
+		$self->{'constants'}->tmpl_path()
+	);
+
+	$conf{'logout_target'} ||= "/index";
+
+	if (defined($conf{'devel_mode'})) {
+		if ($conf{'devel_mode'}) {
+			$conf{'devel_mode'}      = 1;
+			$conf{'dynamic_loading'} = 1;
+			$conf{'halt_on_errors'}  = 0;
+		}
+		else {
+			$conf{'devel_mode'}      = 0;
+			$conf{'dynamic_loading'} = 0;
+			$conf{'halt_on_errors'}  = 1;
+		}
+	}
+	else {
+		$conf{'devel_mode'}      = 0;
+		$conf{'dynamic_loading'} = $conf{'dynamic_loading'} || 0;
+		$conf{'halt_on_errors'}  = defined($conf{'halt_on_errors'})?$conf{'halt_on_errors'}:1;
+	}
+
+	if ($conf{'dynamic_loading'}) {
+		$self->{'conf_mtime'}  = (stat($self->{'conf_file'}))[9];
+	}
+
+	if (defined($conf{'database'})) {
+		my $db;
+		if (ref($conf{'database'}) eq "ARRAY") {
+			$db = $conf{'database'};
+		}
+		else {
+			$db = [ $conf{'database'} ];
+		} 
+
+		# make the connect string a perl array ref
+		$self->{'dbs'} = [ 
+			map {
+				unless (ref ($_->{'extra'}) eq "HASH") {
+					$_->{'extra'} = {};
+				}
+				$_->{'extra'}->{PrintError}  = 0;
+				$_->{'extra'}->{RaiseError}  = 0;
+				$_->{'extra'}->{HandleError} = Exception::Class::DBI->handler;
+
+				[ 
+					$_->{'connect'},
+					$_->{'username'},
+					$_->{'password'},
+					$_->{'extra'}
+				]
+			} @{$db} 
+		];
+	}
+
+	$conf{'models'}   ||= {};
+	$conf{'views'}    ||= {};
+	$conf{'includes'} ||= {};
+
+	if ($conf{'controllers'}) {
+		$self->{'old_ns'} = 0;
+	}
+	elsif ($conf{'modules'}) {
+		$conf{'controllers'} = $conf{'modules'};
+		delete $conf{'modules'};
+		$self->{'old_ns'} = 1;
+	}
+	else {
+		$conf{'controllers'} = {};
+	}
+
+	# make a dummy entry for default if it doesn't exists.
+	# save an if(defined blah blah) on every page request.
+	unless (defined($conf{'template_conf'}->{'default'})) {
+		$conf{'template_conf'}->{'default'} = {};
+	}
+
+	# merge in the default block to each of the others now so that we don't have to
+	# do it at page request time.
+	foreach my $key (grep {$_ ne 'default'} keys %{$conf{'template_conf'}}) {
+		$conf{'template_conf'}->{$key} = { 
+			%{$conf{'template_conf'}->{'default'}},
+			%{$conf{'template_conf'}->{$key}}
+		};
+	}
+
+	#
+	# Theme support
+	# FIXME: something seems borked here.
+	#
+	if (defined($conf{'themes'}) && $conf{'themes'}->{'use_themes'} == 1) {
+		unless (scalar(@{$conf{'themes'}->{'theme'}})) {
+			$self->{'errors'}++;
+			warn "You must define at least one theme block\n";
+		}
+	}
+
+	$self->{config} = \%conf;
+}
+
+
+1;
+
+=pod ################################################################################
+
+=head1 AUTHOR
+
+Maverick, /\/\averick@smurfbaneDOTorg
+
+=head1 COPYRIGHT
+
+Copyright (c) 2005 Steven Edwards.  All rights reserved.
+
+You may use and distribute Voodoo under the terms described in the LICENSE file include
+in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
+of the Artistic License :)
+
+=cut ################################################################################

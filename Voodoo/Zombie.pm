@@ -32,6 +32,8 @@ sub error  { my $self = shift; $self->{'error'}  = shift; }
 # in the dead module.
 #
 sub AUTOLOAD { 
+	next unless ref($_[0]);
+
 	my $self = shift;
 	my $p    = shift;
 
@@ -55,6 +57,9 @@ sub AUTOLOAD {
 
 	return $self->display_error($error,"/$link");
 }
+
+# keeps autoloader from making one
+sub DESTROY {}
 
 1;
 
