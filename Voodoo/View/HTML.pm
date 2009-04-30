@@ -187,6 +187,7 @@ sub finish {
 	my $self = shift;
 
 	$self->{template} = undef;
+	$self->{skeletong_template} = undef;
 	$self->{internal_error} = 0;
 	$self->{error_msg} = undef;
 }

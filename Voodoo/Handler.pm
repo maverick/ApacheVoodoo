@@ -388,26 +388,25 @@ sub generate_content {
 		}
 	}
 
-	my $te = $app->{'views'}->{'HTML'};
-	$te->begin($p);
-	$te->content_type($run->{'template_conf'}->{'content-type'});
+	my $view = $app->{'views'}->{'HTML'};
+	$view->begin($p);
 
 	if ($e) {
-		$te->exception($e);
+		$view->exception($e);
 	}
 
 	# pack up the params. note the presidence: module overrides template_conf
-	$te->params($run->{template_conf});
-	$te->params($template_params);
+	$view->params($run->{template_conf});
+	$view->params($template_params);
 
 	# add any params from the debugging handlers
-	$te->params($debug->finalize());
+	$view->params($debug->finalize());
 
 	# output content
-	$self->{mp}->content_type($te->content_type());
-	$self->{mp}->print($te->output());
+	$self->{mp}->content_type($view->content_type());
+	$self->{mp}->print($view->output());
 
-	$te->finish();
+	$view->finish();
 
 	$self->{mp}->flush();
 
