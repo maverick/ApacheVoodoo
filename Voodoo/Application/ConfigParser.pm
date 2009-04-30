@@ -21,8 +21,6 @@ use Config::General;
 use File::Spec;
 use Exception::Class::DBI;
 
-use Data::Dumper;
-
 sub new {
 	my $class = shift;
    	my $self = {};

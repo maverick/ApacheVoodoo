@@ -225,7 +225,7 @@ sub handle_request {
 	####################
 	# Get configuation for this template or section
 	####################
-	$run->{'template_conf'} = $self->resolve_conf_section($conf,$run);
+	$run->{'template_conf'} = $app->resolve_conf_section($run->{'uri'});
 
 	$debug->mark(Time::HiRes::time,"config section resolution");
 	$debug->template_conf($run->{'template_conf'});
@@ -298,27 +298,6 @@ sub history_queue {
 		# keep the queue at 10 items
 		pop @{$session->{'history'}};
 	}
-}
-
-sub resolve_conf_section {
-	my $self = shift;
-	my $app  = shift;
-	my $run  = shift;
-
-	if (exists($app->{'template_conf'}->{$run->{'uri'}})) {
-		# one specific to this page
-		return $app->{'template_conf'}->{$run->{'uri'}};
-	}
-
-	foreach (sort { length($b) <=> length($a) } keys %{$app->{'template_conf'}}) {
-		if ($run->{'uri'} =~ /^$_$/) {
-			# match by uri regexp
-			return $app->{'template_conf'}->{$_};
-		}
-	}
-
-	# not one, return the default
-	return $app->{'template_conf'}->{'default'};
 }
 
 sub generate_content {

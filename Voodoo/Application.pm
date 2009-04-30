@@ -34,7 +34,7 @@ sub new {
 
 	bless $self, $class;
 
-	$self->{'debug'} = 1;
+#	$self->{'debug'} = 1;
 
 	$self->{'id'}        = shift;
 	$self->{'constants'} = shift || Apache::Voodoo::Constants->new();
@@ -160,6 +160,28 @@ sub map_uri {
 		($p,$m,$o) = ($uri =~ /^(.*?)([a-z]+)_(\w+)$/);
 		return ["$p$o",$m];
 	}
+}
+
+sub resolve_conf_section {
+	my $self = shift;
+	my $uri  = shift;
+
+	my $template_conf = $self->{'parser'}->template_conf();
+
+	if (exists($template_conf->{$uri})) {
+		# one specific to this page
+		return $template_conf->{$uri};
+	}
+
+	foreach (sort { length($b) <=> length($a) } keys %{$template_conf}) {
+		if ($uri =~ /^$_$/) {
+			# match by uri regexp
+			return $template_conf->{$_};
+		}
+	}
+
+	# not one, return the default
+	return $template_conf->{'default'};
 }
 
 sub _reload_modules {

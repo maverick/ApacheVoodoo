@@ -300,12 +300,15 @@ sub _log {
 sub _encode {
 	my $self = shift;
 	
+	my $j;
 	if (scalar(@_) > 1) {
-		return $self->{json}->to_json([@_]);
+		$j = $self->{json}->to_json(\@_);
 	}
 	else {
-		return $self->{json}->to_json(@_);
+		$j = $self->{json}->to_json($_[0]);
 	}
+
+	return $j;
 }
 
 
