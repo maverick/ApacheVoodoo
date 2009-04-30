@@ -174,18 +174,6 @@ sub parse {
 	delete $conf{'modules'};
 	delete $conf{'includes'};
 
-	# If they didn't define their own HTML view, then we'll use our own;
-	# this is a web server after all :)
-	unless (defined($self->{'views'}->{'HTML'})) {
-		$self->{'views'}->{'Apache::Voodoo::View::HTML'} = 1;
-	}
-
-	# Same idea for JSON.  What website these days doesn't use even
-	# a little AJAX?
-	unless (defined($self->{'views'}->{'JSON'})) {
-		$self->{'views'}->{'Apache::Voodoo::View::JSON'} = 1;
-	}
-
 	$self->{'template_conf'} = $conf{'template_conf'} || {};
 	delete $conf{'template_conf'};
 

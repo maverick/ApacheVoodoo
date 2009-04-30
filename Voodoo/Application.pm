@@ -107,7 +107,20 @@ sub refresh {
 		delete $self->{'controllers'}->{$_};
 	}
 
-	$self->_debug({id => $self->{id},views => $self->{views}});
+	# If they didn't define their own HTML view, then we'll use our own;
+	# this is a web server after all :)
+	unless (defined($self->{'views'}->{'HTML'})) {
+		require Apache::Voodoo::View::HTML;
+		$self->{'views'}->{'HTML'} = Apache::Voodoo::View::HTML->new();
+	}
+
+	# Same idea for JSON.  What website these days doesn't use even
+	# a little AJAX?
+	unless (defined($self->{'views'}->{'JSON'})) {
+		require Apache::Voodoo::View::JSON;
+		$self->{'views'}->{'JSON'} = Apache::Voodoo::View::JSON->new();
+	}
+
 	foreach (values %{$self->{'models'}}, values %{$self->{'views'}}) {
 		eval {
 			$_->init($config->config());
@@ -127,6 +140,7 @@ sub refresh {
 			$self->{'errors'}++;
 		}
 	}
+
 
 	eval {
 		$self->{'session_handler'} = Apache::Voodoo::Session->new($config->config());
@@ -220,8 +234,6 @@ sub _prep_module {
 	$ns = ($ns eq "m")?"models":
 	      ($ns eq "v")?"views":"controllers";
 
-	$module =~ s/^Apache::Voodoo::(View|Model):://;
-
 	$self->{$ns}->{$module} = $obj;
 }
 
@@ -240,21 +252,15 @@ sub _load_module {
 	my $ns     = shift;
 	my $module = shift;
 
-	my $dynamic = 0;
 
-	# if it's not one of our internal views or models,
-	if ($module !~ /^Apache::Voodoo::(View|Model)::/) {
-		$dynamic = $self->{'parser'}->config()->{'dynamic_loading'};
-
-		unless ($ns eq "c" and $self->{'parser'}->old_ns()) {
-			$module = uc($ns)."::".$module;
-		}
-
-		$module = $self->{'parser'}->config()->{'base_package'}."::".$module;
+	unless ($ns eq "c" and $self->{'parser'}->old_ns()) {
+		$module = uc($ns)."::".$module;
 	}
 
+	$module = $self->{'parser'}->config()->{'base_package'}."::".$module;
+
 	my $obj;
-	if ($dynamic) {
+	if ($self->{'parser'}->config()->{'dynamic_loading'}) {
 		require "Apache/Voodoo/Loader/Dynamic.pm";
 
 		$obj = Apache::Voodoo::Loader::Dynamic->new($module);
