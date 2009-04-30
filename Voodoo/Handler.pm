@@ -307,7 +307,6 @@ sub generate_content {
 	my $run  = shift;
 
 	my $p = {
-		"config"        => $conf,
 		"debug"         => $debug,
 		"dbh"           => $app->{'dbh'},
 		"params"        => $run->{'input_params'},
