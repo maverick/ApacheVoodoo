@@ -113,7 +113,6 @@ sub AUTOLOAD {
 	our $AUTOLOAD;
 	my $name = $AUTOLOAD;
 	$name =~ s/.*:://;
-	print STDERR $name;
 
 	my $self = shift;
 

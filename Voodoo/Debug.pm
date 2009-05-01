@@ -12,27 +12,21 @@ sub new {
 	unless (ref($conf->{'debug'}) eq "HASH") {
 		# old style config, so we'll go full monty for devel and silence for production.
 		$conf->{'debug'} = {
-			'FirePHP' => {
-				'devel' => { all => 1}
-			},
-			'Native' => {
-				'devel' => { all => 1}
-			}
+			'FirePHP' => { all => 1 },
+			'Native'  => { all => 1 }
 		};
 	}
 
-	my $type = ($conf->{'devel_mode'})?'devel':'production';
-
 	my @handlers;
 	foreach (keys %{$conf->{'debug'}}) {
-		if ($conf->{'debug'}->{$_}->{$type}) {
+		if ($conf->{'debug'}->{$_}) {
 			my $package = 'Apache::Voodoo::Debug::'.$_;
 			my $file = $package.'.pm';
 
 			$file =~ s/::/\//g;
 
 			require $file;
-			push(@handlers, $package->new($conf->{'id'},$conf->{'debug'}->{$_}->{$type}));
+			push(@handlers, $package->new($conf->{'id'},$conf->{'debug'}->{$_}));
 		}
 	}
 

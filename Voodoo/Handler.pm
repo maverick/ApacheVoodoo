@@ -71,15 +71,15 @@ sub new {
 
 	# Setup signal handler for die so that all deaths become exception objects
 	# This way we can get a stack trace from where the death occurred, not where it was caught.
-#	$SIG{__DIE__} = sub { 
-#		if (ref($_[0]) =~ /^Apache::Voodoo::Exception/ || ref($_[0]) =~ /^Exception::Class::DBI/) {
-#			# Already died using an exception class, just pass it up the chain
-#			$_[0]->rethrow;
-#		}
-#		else {
-#			Apache::Voodoo::Exception::RunTime->throw( error => join '', @_ );
-#		}
-#	};
+	$SIG{__DIE__} = sub { 
+		if (ref($_[0]) =~ /^Apache::Voodoo::Exception/ || ref($_[0]) =~ /^Exception::Class::DBI/) {
+			# Already died using an exception class, just pass it up the chain
+			$_[0]->rethrow;
+		}
+		else {
+			Apache::Voodoo::Exception::RunTime->throw( error => join '', @_ );
+		}
+	};
 
 	return $self;
 }
