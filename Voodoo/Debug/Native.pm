@@ -21,7 +21,6 @@ package Apache::Voodoo::Debug::Native;
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
-use warnings;
 
 use Devel::StackTrace;
 use IO::Socket::UNIX;
@@ -300,6 +299,7 @@ sub _log {
 sub _encode {
 	my $self = shift;
 	
+
 	my $j;
 	if (scalar(@_) > 1) {
 		$j = $self->{json}->to_json(\@_);

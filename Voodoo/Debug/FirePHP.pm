@@ -3,7 +3,6 @@ package Apache::Voodoo::Debug::FirePHP;
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
-use warnings;
 
 use Devel::StackTrace;
 use JSON::DWIW;
@@ -27,6 +26,8 @@ use constant WF_PROTOCOL   => 'http://meta.wildfirehq.org/Protocol/JsonStream/0.
 use constant WF_PLUGIN     => 'http://meta.firephp.org/Wildfire/Plugin/FirePHP/Library-FirePHPCore/'.WF_VERSION;
 use constant WF_STRUCTURE1 => 'http://meta.firephp.org/Wildfire/Structure/FirePHP/FirebugConsole/0.1';
 use constant WF_STRUCTURE2 => 'http://meta.firephp.org/Wildfire/Structure/FirePHP/Dump/0.1';
+
+use constant BLOCK_LENGTH => 5000;
   
 sub new {
 	my $class = shift;
@@ -237,31 +238,37 @@ sub _fb {
 		$msg = '['.$self->jsonEncode(\%meta).','.$self->jsonEncode($Object).']';
 	}
     
-	#
-	# Ugh, this could be handled so much better.
-	# oh well...this is how the php version does it.
-	#
-	$msg =~ s/(.{5000})/$1\n/g;
-	my @parts = split(/\n/,$msg);
-	my $c_parts = scalar(@parts);
+	my $l = length($msg);
+	if ($l < BLOCK_LENGTH) {
+		# The message can be send in one block
+		$self->setHeader(
+			'X-Wf-1-'.$structure_index.'-1-'.$self->{'messageIndex'},
+			$l . '|' . $msg . '|'
+		);
 
-	foreach (my $i=0; $i < $c_parts; $i++) {
-		my $part = $parts[$i];
-		if ($part) {
-			if ($c_parts > 2) {
-				# Message needs to be split into multiple parts
-				$self->setHeader('X-Wf-1-'.$structure_index.'-'.'1-'.$self->{'messageIndex'},
-					(($i==0)?length($msg):'')
-					. '|' . $part . '|'
-					. ($i<($c_parts-2)?'\\':''));
-			}
-			else {
-				$self->setHeader('X-Wf-1-'.$structure_index.'-'.'1-'.$self->{'messageIndex'},
-					length($part) . '|' . $part . '|');
-			}
-            
+		$self->{'messageIndex'}++;
+	}
+	else {
+		# Message needs to be split into multiple parts
+		my $c = ($l % BLOCK_LENGTH)?int($l/BLOCK_LENGTH)+1:$l/BLOCK_LENGTH;
+
+		foreach (my $i=0; $i < $c; $i++) {
+			my $part = substr($msg, $i*BLOCK_LENGTH, BLOCK_LENGTH);
+
+			my $v;
+			# length prefix on the first part
+			$v .= $l if ($i==0);
+
+			# the data
+			$v .= '|'.$part.'|';
+
+			# \ on the end of the line, on all but the last part
+			$v .= '\\' if ($i < ($c-1));
+
+			$self->setHeader('X-Wf-1-'.$structure_index.'-1-'.$self->{'messageIndex'}, $v);
+
 			$self->{'messageIndex'}++;
-            
+			
 			if ($self->{'messageIndex'} > 99999) {
 				#throw new Exception('Maximum number (99,999) of messages reached!');             
 			}
