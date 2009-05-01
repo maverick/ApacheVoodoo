@@ -3,6 +3,8 @@ package Apache::Voodoo::Debug::FirePHP;
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
+use warnings;
+no warnings 'uninitialized';
 
 use Devel::StackTrace;
 use JSON::DWIW;
