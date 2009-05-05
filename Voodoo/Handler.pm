@@ -29,8 +29,6 @@ use Apache::Voodoo::Constants;
 use Apache::Voodoo::Application;
 use Apache::Voodoo::Exception;
 
-use Data::Dumper;
-
 use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2 ); 
 			  
 # setup primary hook to mod_perl depending on which version we're running
@@ -96,12 +94,12 @@ sub handle_request {
 
 	my $id = $self->{mp}->get_app_id();
 	unless (defined($id)) {
-		$self->{mp}->error("PerlSetVar ID not present in configuration.  Giving up");
+		warn "PerlSetVar ID not present in configuration.  Giving up\n";
 		return $self->{mp}->server_error;
 	}
 
 	unless (defined($self->{'apps'}->{$id})) {
-		$self->{mp}->error("application id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'apps'}}));
+		warn "application id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'apps'}})."\n";
 		return $self->{mp}->server_error;
 	}
 
@@ -182,7 +180,7 @@ sub handle_request {
 	}
 
 	####################
-	# connect to db
+	# Connect to db
 	####################
 	foreach (@{$conf->{'dbs'}}) {
 		eval {
@@ -200,7 +198,7 @@ sub handle_request {
 	}
 
 	####################
-	# get paramaters 
+	# Get paramaters 
 	####################
 	$run->{'input_params'} = $self->{mp}->parse_params($conf->{'upload_size_max'});
 	unless (ref($run->{'input_params'})) {
@@ -212,7 +210,7 @@ sub handle_request {
 	$debug->params($run->{'input_params'});
 
 	####################
-	# history capture 
+	# History capture 
 	####################
 	if ($self->{mp}->is_get && 
 		!$run->{input_params}->{ajax_mode} &&
@@ -231,16 +229,22 @@ sub handle_request {
 	$debug->template_conf($run->{'template_conf'});
 
 	####################
-	# prepare main body contents
+	# Generate the content
 	####################
 	my $return = $self->generate_content($app,$conf,$run);
 
 	$debug->session($run->{session});
 	$debug->status($return);
+
+
+	####################
+	# Clean up
+	####################
 	$run->{session_handler}->disconnect();
 
 	$debug->mark(Time::HiRes::time,'END');
 	$debug->shutdown();
+
 	return $return;
 }
 
@@ -307,7 +311,6 @@ sub generate_content {
 	my $run  = shift;
 
 	my $p = {
-		"debug"         => $debug,
 		"dbh"           => $app->{'dbh'},
 		"params"        => $run->{'input_params'},
 		"session"       => $run->{'session'},
@@ -365,7 +368,7 @@ sub generate_content {
 						return $self->{mp}->ok;
 					}
 					else {
-						$self->{mp}->error("AIEEE!! $return->[0] is not a supported command");
+						warn "AIEEE!! $return->[0] is not a supported command\n";
 						$return = {};
 					}
 				}
@@ -374,6 +377,8 @@ sub generate_content {
 					$template_params->{$k} = $return->{$k};
 				}
 				$debug->mark(Time::HiRes::time,"result packing");
+
+				last if $p->{_stop_chain_};
 			}
 		}
 	}; 
@@ -382,12 +387,26 @@ sub generate_content {
 	if ($e) {
 		# caught a runtime error from perl
 		unless ($conf->{'devel_mode'}) {
-			$self->{mp}->error($e);
+			warn $e;
 			return $self->{mp}->server_error;
 		}
 	}
 
-	my $view = $app->{'views'}->{'HTML'};
+	my $view;
+	if (defined($p->{'_view_'}) && 
+		defined($app->{'views'}->{$p->{'_view_'}})) {
+
+		$view = $app->{'views'}->{$p->{'_view_'}};
+	}
+	elsif (defined($run->{'template_conf'}->{'default_view'}) && 
+	       defined($app->{'views'}->{$run->{'template_conf'}->{'default_view'}})) {
+
+		$view = $app->{'views'}->{$run->{'template_conf'}->{'default_view'}};
+	}	
+	else {
+		$view = $app->{'views'}->{'HTML'};
+	}	
+
 	$view->begin($p);
 
 	if ($e) {
@@ -411,6 +430,7 @@ sub generate_content {
 
 	return $self->{mp}->ok;
 }
+
 
 sub adjust_url {
 	my $self = shift;
@@ -444,15 +464,15 @@ sub restart {
 	# wipe / initialize host information
 	$self->{'apps'} = {};
 
-	$self->{mp}->error("Voodoo starting...");
+	warn "Voodoo starting...\n";
 
 	my $cf_name      = $self->{'constants'}->conf_file();
 	my $install_path = $self->{'constants'}->install_path();
 
-	$self->{mp}->error("Scanning: $install_path");
+	warn "Scanning: $install_path\n";
 
 	unless (opendir(DIR,$install_path)) {
-		$self->{mp}->error("Can't open dir: $!");
+		warn "Can't open dir: $!\n";
 		return;
 	}
 
@@ -462,7 +482,7 @@ sub restart {
 		next unless -f $fp;
 		next unless -r $fp;
 
-		$self->{mp}->error("starting host $id");
+		warn "starting host $id\n";
 
 		my $app = Apache::Voodoo::Application->new($id,$self->{'constants'});
 
@@ -474,10 +494,10 @@ sub restart {
 			};
 			last if $app->{'dbh'};
 			
-			$self->{mp}->error("========================================================");
-			$self->{mp}->error("DB CONNECT FAILED FOR $id");
-			$self->{mp}->error("$DBI::errstr");
-			$self->{mp}->error("========================================================");
+			warn "========================================================\n";
+			warn "DB CONNECT FAILED FOR $id\n";
+			warn "$DBI::errstr\n";
+			warn "========================================================\n";
 		}
 
 		$self->{'apps'}->{$id} = $app;
@@ -486,16 +506,16 @@ sub restart {
 		$self->{'apps'}->{$id}->{"DEAD"} = 0;
 
 		if ($app->{'errors'}) {
-			$self->{mp}->error("$id has ".$app->{'errors'}." errors");
+			warn "$id has ".$app->{'errors'}." errors\n";
 			if ($app->{'halt_on_errors'}) {
-				$self->{mp}->error(" (dropping this site)");
+				warn " (dropping this site)\n";
 
 				$self->{'apps'}->{$app->{'id'}}->{"DEAD"} = 1;
 
 				return;
 			}
 			else {
-				$self->{mp}->error(" (loading anyway)");
+				warn " (loading anyway)\n";
 			}
 		}
 	}

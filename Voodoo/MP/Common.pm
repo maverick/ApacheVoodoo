@@ -48,37 +48,6 @@ sub if_modified_since {
 	return $self->{r}->meets_conditions;
 }
 
-sub warn  { shift()->_log('warn',@_);  }
-sub error { shift()->_log('error',@_); }
-
-sub _log {
-	my $self  = shift;
-	my $level = shift;
-
-	if (defined($self->{r})) {
-		foreach (@_) {
-			if (ref($_)) {
-				$self->{r}->log->$level(Dumper $_);
-			}
-			else {
-				$self->{r}->log->$level($_);
-			}
-		}
-	}
-	else {
-		# Neither request nor server are present.  Fall back to
-		# ye olde STDERR
-		foreach (@_) {
-			if (ref($_)) {
-				CORE::warn(Dumper($_),"\n");
-			}
-			else {
-				CORE::warn($_."\n");
-			}
-		}
-	}
-}
-
 1;
 
 =pod ################################################################################

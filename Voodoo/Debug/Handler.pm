@@ -53,7 +53,7 @@ sub new {
 
 	$self->{debug_root} = $self->{constants}->debug_path();
 
-	$self->{mp}->error("Voodoo Debugging Handler Starting...");
+	warn "Voodoo Debugging Handler Starting...\n";
 
 	$self->{template_dir} = $INC{"Apache/Voodoo/Debug/Handler.pm"};
 	$self->{template_dir} =~ s/Handler.pm$/html/;

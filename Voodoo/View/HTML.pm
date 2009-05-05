@@ -42,12 +42,11 @@ sub init {
 	$self->{'template_opts'}->{'path'} = [ $config->{'template_dir'} ];
 
 	$self->{'site_root'}  = $config->{'site_root'};
-	$self->{'use_themes'} = $config->{'use_themes'};
-	$self->{'themes'}     = $config->{'themes'};
+	$self->{'use_themes'} = $config->{'themes'}->{'use_themes'};
 
 	if ($self->{'use_themes'}) {
 		require Apache::Voodoo::View::HTML::Theme;
-		$self->{'theme_handler'} = new Apache::Voodoo::View::HTML::Theme;
+		$self->{'theme_handler'} = Apache::Voodoo::View::HTML::Theme->new($config->{'themes'});
 	}
 
 	$self->content_type('text/html');
@@ -67,7 +66,6 @@ sub begin {
 			$return = $self->{'theme_handler'}->handle(
 				{
 					"document_root" => $self->{'template_dir'},
-					"themes"        => $self->{'themes'},
 					"session"       => $p->{'session'},
 					"uri"           => $p->{'uri'},
 				}

@@ -194,7 +194,6 @@ sub parse {
 
 	#
 	# Theme support
-	# FIXME: something seems borked here.
 	#
 	if (defined($conf{'themes'}) && $conf{'themes'}->{'use_themes'} == 1) {
 		unless (scalar(@{$conf{'themes'}->{'theme'}})) {

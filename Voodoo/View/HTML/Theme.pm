@@ -19,9 +19,17 @@ use IPC::SharedCache;
 use HTML::Template;
 
 sub new {
-	my $class = shift;
+	my $class  = shift;
+	my $config = shift;
 
 	my $self = {};
+
+	$self->{default}  = $config->{default};
+	$self->{user_set} = $config->{user_can_choose};
+
+	foreach (@{$config->{'theme'}}) {
+		$self->{'themes'}->{$_->{'name'}} = $_->{'dir'};
+	}
 
 	bless $self,$class;
 
@@ -32,17 +40,15 @@ sub handle {
 	my $self = shift;
 	my $p    = shift;
 
-	my $themes = $p->{'themes'};
-
 	my $chosen_theme = $self->choose_theme($p);
 
 	my $return = {};
 
 	# URL relative
-	$return->{'THEME_DIR'} = $themes->{$chosen_theme};
+	$return->{'THEME_DIR'} = $self->{'themes'}->{$chosen_theme};
 	
 	# FILE system relative
-	my $theme_dir = $p->{'document_root'}."/".$themes->{$chosen_theme};
+	my $theme_dir = $p->{'document_root'}."/".$self->{'themes'}->{$chosen_theme};
 
 	my %cache;
 	tie(%cache, 'IPC::SharedCache', ipc_key => 'VTHM', load_callback => \&load_cache, validate_callback => \&validate_cache);
@@ -51,7 +57,7 @@ sub handle {
 
 	# find which style section this page is under
 	my $style = $conf->{'pages'}->{$p->{'uri'}}->{'__style__'};
-	$self->{'skeleton'} = $themes->{$chosen_theme}."/";
+	$self->{'skeleton'} = $self->{'themes'}->{$chosen_theme}."/";
 
 	unless (defined($style)) {
 		# not listed.  no theme for you!
@@ -88,17 +94,16 @@ sub choose_theme {
 	my $p    = shift;
 
 	my $session = $p->{'session'};
-	my $themes  = $p->{'themes'};
 
 	# check for an override of what's in the template conf file.
 	my $sys_override = $p->{'document_root'}."/.theme_conf";
 
-	my $chosen_theme = $themes->{'__default__'};
+	my $chosen_theme = $self->{'default'};
 
 	if (-e $sys_override && -s $sys_override) {
 		my $mtime = (stat($sys_override))[9];
 
-		if ($self->{'sys_theme'}->{'mtime'} ne $mtime) {
+		if (!defined($self->{'sys_theme'}->{'mtime'}) || $self->{'sys_theme'}->{'mtime'} ne $mtime) {
 			unless(open(T,$sys_override)) {
 				die "Can't open $sys_override: $!";
 			}
@@ -106,7 +111,7 @@ sub choose_theme {
 			chomp($t);
 			close(T);
 			
-			if ($t ne "__default__" && defined($themes->{$t})) {
+			if ($t ne "default" && defined($self->{'themes'}->{$t})) {
 				$chosen_theme = $t;
 				$self->{'sys_theme'}->{'name'} = $t;
 			}
@@ -118,10 +123,10 @@ sub choose_theme {
 		}
 	}
 
-	if ($themes->{'__userset__'}) {
+	if ($self->{'user_set'}) {
 		my $user_theme = $session->{'user_theme'};
-		if (defined($user_theme) && $user_theme ne "__default__") {
-			if (defined($themes->{$user_theme})) {
+		if (defined($user_theme) && $user_theme ne "default") {
+			if (defined($self->{'themes'}->{$user_theme})) {
 				$chosen_theme = $user_theme;
 			}
 			else {

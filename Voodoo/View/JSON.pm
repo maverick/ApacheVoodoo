@@ -38,15 +38,19 @@ sub init {
 sub params {
 	my $self = shift;
 
-	$self->{data} = shift;
+	if (defined($_[0])) {
+		$self->{data} = shift;
+	}
 } 
 
 sub exception {
+
 }
 
 sub output {
 	my $self = shift;
-	return $self->{json}->to_json($self->{data});
+
+	return scalar($self->{json}->to_json($self->{data}));
 }
 
 sub finish {
