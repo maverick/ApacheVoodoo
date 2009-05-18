@@ -182,7 +182,7 @@ sub handle_request {
 	####################
 	# Connect to db
 	####################
-	foreach (@{$conf->{'dbs'}}) {
+	foreach (@{$app->databases}) {
 		eval {
 			# we put this in app not run so that database connections persist across requests
 			$app->{'dbh'} = DBI->connect_cached(@{$_});
@@ -329,60 +329,66 @@ sub generate_content {
 	my $c=0;
 	my $template_params = {};
 
-	eval {
-		# call each of the pre_include modules followed by our page specific module followed by our post_includes
-		foreach my $c ( 
-			( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'pre_include'}) ),
-			$app->map_uri($run->{'uri'}),
-			( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'post_include'}) )
-			) {
+	my $e;
 
-			if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
-				my $obj    = $app->{'controllers'}->{$c->[0]};
-				my $method = $c->[1];
+	# call each of the pre_include modules followed by our page specific module followed by our post_includes
+	foreach my $c ( 
+		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'pre_include'}) ),
+		$app->map_uri($run->{'uri'}),
+		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'post_include'}) )
+		) {
 
-				my $return = $obj->$method($p);
+		if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
+			my $obj    = $app->{'controllers'}->{$c->[0]};
+			my $method = $c->[1];
 
-				$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
-				$debug->return_data($c->[0],$c->[1],$return);
-
-				if (ref($return) eq "ARRAY") {
-					if    ($return->[0] eq "REDIRECTED") {
-						return $self->{mp}->redirect($self->adjust_url($app->{'site_root'},$return->[1]));
-					}
-					elsif ($return->[0] eq "DISPLAY_ERROR") {     
-						$p->{'uri'} = 'display_error';
-						$template_params->{'error_string'} = $return->[1];
-						$template_params->{'error_url'}    = ($return->[2])?$return->[2]:$app->{'site_root'}."index";
-						last;
-					}
-					elsif ($return->[0] eq "ACCESS_DENIED") {
-						$p->{'uri'} = (defined($return->[2]))?$return->[2]:'access_denied';
-						$template_params->{'error_string'} = $return->[1];
-						last;
-					}
-					elsif ($return->[0] eq "RAW_MODE") {
-						$self->{mp}->header_out(each %{$return->[3]}) if $return->[3];
-						$self->{mp}->content_type($return->[1] || "text/html");
-						$self->{mp}->print($return->[2]);
-						return $self->{mp}->ok;
-					}
-					else {
-						warn "AIEEE!! $return->[0] is not a supported command\n";
-						$return = {};
-					}
-				}
-
-				foreach my $k ( keys %{$return}) {
-					$template_params->{$k} = $return->{$k};
-				}
-				$debug->mark(Time::HiRes::time,"result packing");
-
-				last if $p->{_stop_chain_};
+			my $return;
+			eval {
+				$return = $obj->$method($p);
+			}; 
+			if ($@) {
+				$e = $@;
+				last;
 			}
+
+			$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
+			$debug->return_data($c->[0],$c->[1],$return);
+
+			if (ref($return) eq "ARRAY") {
+				if    ($return->[0] eq "REDIRECTED") {
+					return $self->{mp}->redirect($self->adjust_url($app->{'site_root'},$return->[1]));
+				}
+				elsif ($return->[0] eq "DISPLAY_ERROR") {     
+					$p->{'uri'} = 'display_error';
+					$template_params->{'error_string'} = $return->[1];
+					$template_params->{'error_url'}    = ($return->[2])?$return->[2]:$app->{'site_root'}."index";
+					last;
+				}
+				elsif ($return->[0] eq "ACCESS_DENIED") {
+					$p->{'uri'} = (defined($return->[2]))?$return->[2]:'access_denied';
+					$template_params->{'error_string'} = $return->[1];
+					last;
+				}
+				elsif ($return->[0] eq "RAW_MODE") {
+					$self->{mp}->header_out(each %{$return->[3]}) if $return->[3];
+					$self->{mp}->content_type($return->[1] || "text/html");
+					$self->{mp}->print($return->[2]);
+					return $self->{mp}->ok;
+				}
+				else {
+					warn "AIEEE!! $return->[0] is not a supported command\n";
+					$return = {};
+				}
+			}
+
+			foreach my $k ( keys %{$return}) {
+				$template_params->{$k} = $return->{$k};
+			}
+			$debug->mark(Time::HiRes::time,"result packing");
+
+			last if $p->{_stop_chain_};
 		}
-	}; 
-	my $e = $@;
+	}
 
 	if ($e) {
 		# caught a runtime error from perl
@@ -487,7 +493,7 @@ sub restart {
 		my $app = Apache::Voodoo::Application->new($id,$self->{'constants'});
 
 		# check to see if we can get a database connection
-		foreach (@{$app->{'dbs'}}) {
+		foreach (@{$app->databases}) {
 			eval {
 				# we put this in app not run so that database connections persist across requests
 				$app->{'dbh'} = DBI->connect_cached(@{$_});

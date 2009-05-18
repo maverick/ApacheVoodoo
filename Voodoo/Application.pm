@@ -54,6 +54,10 @@ sub config {
 	return $_[0]->{'parser'}->config();
 }
 
+sub databases {
+	return $_[0]->{'parser'}->databases();
+}
+
 sub refresh {
 	my $self    = shift;
 	my $initial = shift;
@@ -168,6 +172,7 @@ sub map_uri {
 		return [$uri,"handle"];
 	}
 	else {
+		no warnings 'uninitialized';
 		my $p='';
 		my $m='';
 		my $o='';

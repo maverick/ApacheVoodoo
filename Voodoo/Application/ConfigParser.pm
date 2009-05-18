@@ -66,6 +66,7 @@ sub views         { return $_[0]->{'views'}         };
 sub controllers   { return $_[0]->{'controllers'}   };
 sub includes      { return $_[0]->{'includes'}      };
 sub template_conf { return $_[0]->{'template_conf'} };
+sub databases     { return $_[0]->{'dbs'}           };
 
 sub parse {
 	my $self = shift;
