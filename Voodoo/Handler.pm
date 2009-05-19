@@ -29,26 +29,6 @@ use Apache::Voodoo::Constants;
 use Apache::Voodoo::Application;
 use Apache::Voodoo::Exception;
 
-use constant MP2 => ( exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2 ); 
-			  
-# setup primary hook to mod_perl depending on which version we're running
-BEGIN {
-	if (MP2) {
-		*handler = sub : method { shift()->handle_request(@_) };
-	}
-	else {
-		*handler = sub ($$) { shift()->handle_request(@_) };
-	}
-}
-
-
-# *THE* one thing that has never made any sense to me about the mod_perl universe:
-# "How" to make method handlers is well documented, but MP doesn't call new() or provide
-# any way of making that happen...and weirder yet, no one seems to notice.
-# Thus we're left with leaving a global $self hanging around long enough to copy
-# replace the first arg to our handler with it.
-my $self_init = Apache::Voodoo::Handler->new();
-
 # Debugging object.  I don't like using an 'our' variable, but it is just too much
 # of a pain to pass this thing around to everywhere it needs to go. So, I just tell
 # myself that this is STDERR on god's own steroids so I can sleep at night.
@@ -82,13 +62,9 @@ sub new {
 	return $self;
 }
 
-sub handle_request {
+sub handler {
 	my $self = shift;
 	my $r    = shift;
-
-	unless (ref($self)) {
-		$self = $self_init;
-	};
 
 	$self->{mp}->set_request($r);
 
