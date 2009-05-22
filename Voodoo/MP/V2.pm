@@ -5,7 +5,8 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 use warnings;
 
-use Apache2::Const;
+use Apache2::Const qw(OK REDIRECT DECLINED FORBIDDEN SERVER_ERROR NOT_FOUND M_GET);
+
 use Apache2::RequestRec;
 use Apache2::RequestIO;
 use Apache2::SubRequest;
@@ -18,12 +19,12 @@ use Apache2::Cookie;
 
 use base("Apache::Voodoo::MP::Common");
 
-Apache2::Const->import(-compile => qw(OK REDIRECT DECLINED FORBIDDEN SERVER_ERROR M_GET));
 
-sub declined     { return Apache2::Const::DECLINED();     }
-sub forbidden    { return Apache2::Const::FORBIDDEN();    }
-sub ok           { return Apache2::Const::OK();           }
-sub server_error { return Apache2::Const::SERVER_ERROR(); }
+sub declined     { return Apache2::Const::DECLINED;     }
+sub forbidden    { return Apache2::Const::FORBIDDEN;    }
+sub ok           { return Apache2::Const::OK;           }
+sub server_error { return Apache2::Const::SERVER_ERROR; }
+sub not_found    { return Apache2::Const::NOT_FOUND;    }
 
 sub content_type   { shift()->{'r'}->content_type(@_); }
 sub err_header_out { shift()->{'r'}->err_headers_out->add(@_); }
@@ -36,18 +37,18 @@ sub redirect {
 
 	my $r = $self->{'r'};
 	if ($r->method eq "POST") {
-		$r->method_number(Apache2::Const::M_GET());
+		$r->method_number(Apache2::Const::M_GET);
 		$r->method('GET');
 		$r->headers_in->unset('Content-length');
 
 		$r->headers_out->add("Location" => $loc);
-		$r->status(Apache2::Const::REDIRECT());
+		$r->status(Apache2::Const::REDIRECT);
 		$r->content_type;
-		return Apache2::Const::REDIRECT();
+		return Apache2::Const::REDIRECT;
 	}
 	else {
 		$r->headers_out->add("Location" => $loc);
-		return Apache2::Const::REDIRECT();
+		return Apache2::Const::REDIRECT;
 	}
 }
 
@@ -103,8 +104,8 @@ sub set_cookie {
 		-name     => $name,
 		-value    => $value,
 		-path     => '/',
-		-domain   => $self->{'r'}->get_server_name(),
-		-version  => 1);
+		-domain   => $self->{'r'}->get_server_name()
+	);
 
 	if ($expires) {
 		$c->expires($expires);

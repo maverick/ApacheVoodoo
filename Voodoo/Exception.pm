@@ -15,6 +15,44 @@ use Exception::Class (
 		isa => 'Apache::Voodoo::Exception',
 		description => 'Run time exception from perl'
 	},
+	'Apache::Voodoo::Exception::DBIConnect' => {
+		isa => 'Apache::Voodoo::Exception',
+		description => 'Failed to connect to the database'
+	},
+	'Apache::Voodoo::Exception::Application' => {
+		isa => 'Apache::Voodoo::Exception',
+		description => 'Application Error'
+	},
+	'Apache::Voodoo::Exception::Application::BadCommand' => {
+		isa => 'Apache::Voodoo::Exception::Application',
+		description => "Controller returned an unsupported command",
+		fields => ['module', 'method', 'command']
+	},
+	'Apache::Voodoo::Exception::Application::BadReturn' => {
+		isa => 'Apache::Voodoo::Exception::Application',
+		description => "Controller didn't return a hash reference",
+		fields => ['module', 'method', 'data']
+	},
+	'Apache::Voodoo::Exception::Application::Redirect' => {
+		isa => 'Apache::Voodoo::Exception::Application',
+		description => "Controller redirected the request to another location",
+		fields => ['target']
+	},
+	'Apache::Voodoo::Exception::Application::DisplayError' => {
+		isa => 'Apache::Voodoo::Exception::Application',
+		description => "Controller request the display of an error message",
+		fields => ['target']
+	},
+	'Apache::Voodoo::Exception::Application::AccessDenied' => {
+		isa => 'Apache::Voodoo::Exception::Application',
+		description => "Access to the requested resource has been denied",
+		fields => ['target']
+	},
+	'Apache::Voodoo::Exception::Application::RawData' => {
+		isa => 'Apache::Voodoo::Exception::Application',
+		description => "Controller returned a raw data stream",
+		fields => ['headers','content_type','data']
+	},
 );
 
 Apache::Voodoo::Exception::RunTime->Trace(1);

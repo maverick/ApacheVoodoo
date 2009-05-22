@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::Handler - Main interface between mod_perl and Voodoo
+Apache::Voodoo::Engine
 
 =head1 VERSION
 
@@ -10,12 +10,8 @@ $Id: Handler.pm 11537 2008-12-11 21:36:23Z medwards $
 
 =head1 SYNOPSIS
  
-This is the main generic presentation module that interfaces with apache, 
-handles session control, database connections, and interfaces with the 
-application's page handling modules.
-
 =cut ################################################################################
-package Apache::Voodoo::Handler;
+package Apache::Voodoo::Engine;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
@@ -34,18 +30,22 @@ use Apache::Voodoo::Exception;
 # myself that this is STDERR on god's own steroids so I can sleep at night.
 our $debug;
 
+my $i_am_a_singleton;
+
 sub new {
 	my $class = shift;
+	my %opts  = @_;
+
+	if (ref($i_am_a_singleton)) {
+		return $i_am_a_singleton;
+	}
+
 	my $self = {};
 	bless $self, $class;
 
-	$self->{mp}        = Apache::Voodoo::MP->new();
-	$self->{constants} = Apache::Voodoo::Constants->new();
+	$self->{mp} = $opts{'mp'} || Apache::Voodoo::MP->new();
 
-	if (exists $ENV{'MOD_PERL'}) {
-		# let's us do a compile check outside of mod_perl
-		$self->restart;
-	}
+	$self->{constants} = Apache::Voodoo::Constants->new();
 
 	# Setup signal handler for die so that all deaths become exception objects
 	# This way we can get a stack trace from where the death occurred, not where it was caught.
@@ -59,169 +59,101 @@ sub new {
 		}
 	};
 
+	if (exists $ENV{'MOD_PERL'}) {
+		# let's us do a compile check outside of mod_perl
+		$self->restart;
+	}
+
+	$i_am_a_singleton = $self;
+
 	return $self;
 }
 
-sub handler {
+sub valid_app {
+	my $self   = shift;
+	my $app_id = shift;
+
+	return (defined($self->{'apps'}->{$app_id}))?1:0;
+}
+
+sub get_apps {
 	my $self = shift;
-	my $r    = shift;
 
-####
-#### not env specific
-####
-	$self->{mp}->set_request($r);
+	return keys %{$self->{'apps'}};
+}
 
-	my $id = $self->{mp}->get_app_id();
-	unless (defined($id)) {
-		warn "PerlSetVar ID not present in configuration.  Giving up\n";
-		return $self->{mp}->server_error;
+sub init_app {
+	my $self   = shift;
+	my $app_id = shift;
+
+	# app exists?
+	unless ($self->valid_app($app_id)) {
+		delete $self->{'run'};
+		Apache::Voodoo::Exception::Application->throw("No such application");
 	}
 
-	unless (defined($self->{'apps'}->{$id})) {
-		warn "application id '$id' unknown. Valid ids are: ".join(",",keys %{$self->{'apps'}})."\n";
-		return $self->{mp}->server_error;
-	}
-
-	# holds all vars associated with this request
 	my $run = {};
+	$run->{'app_id'} = $app_id;
+	$run->{'app'}    = $self->{'apps'}->{$app_id};
 
-####
-#### env specific
-####
-
-	####################
-	# URI translation jazz to get down to a proper filename
-	####################
-	$run->{'uri'} = $self->{mp}->uri();
-	if ($run->{'uri'} =~ /\/$/o) {
-		return $self->{mp}->redirect($run->{'uri'}."index");
+	if ($run->{'app'}->{'dynamic_loading'}) {
+		$run->{'app'}->refresh();
 	}
 
-	$run->{'filename'} = $self->{mp}->filename();
-
-####
-#### not env specific
-####
-
-   	# remove the optional trailing .tmpl
-   	$run->{'filename'} =~ s/\.tmpl$//o;
-   	$run->{'uri'}      =~ s/\.tmpl$//o;
-
-	unless (-e "$run->{'filename'}.tmpl") { return $self->{mp}->declined;  }
-	unless (-r "$run->{'filename'}.tmpl") { return $self->{mp}->forbidden; } 
-
-	########################################
-	# We now know we have a valid file that we need to handle
-	########################################
-
-
-	# local copy of currently processing host, save a few reference lookups (and a bunch o' typing)
-	my $app = $self->{'apps'}->{$id};
-
-	if ($app->{'dynamic_loading'}) {
-		$app->refresh;
+	if ($run->{'app'}->{'DEAD'}) {
+		Apache::Voodoo::Exception::Application->throw("Application failed to load");
 	}
 
-	my $conf = $app->config();
+	$run->{'config'} = $run->{'app'}->config();
 
-	# Get ready to start tracing what's going on
-	$run->{'app_id'}     = $id;
-
-	$debug = $app->{'debug_handler'};
-
-	$debug->init($self->{mp});
-
-	if ($app->{"DEAD"}) {
-		return $self->{mp}->server_error;
-	}
-
+	# setup debugging
+	$debug = $run->{'app'}->{'debug_handler'};
+	$debug->init($self->{'mp'});
 	$debug->mark(Time::HiRes::time,"START");
 
-	$app->{'site_root'} = $self->{mp}->site_root;
-	if ($app->{'site_root'} ne "/") {
-		$app->{'site_root'} =~ s:/$::;
-		$run->{'uri'} =~ s/^$app->{'site_root'}//;
-	}
+	$run->{'session_handler'} = $self->attach_session($run->{app},$run->{config});
+	$run->{'session'} = $run->{session_handler}->session;
 
-	$debug->url($run->{'uri'});
-
-   	# remove the beginning /
-   	$run->{'uri'} =~ s/^\///o;
-
-	$debug->mark(Time::HiRes::time,"template dir resolution");
-
-	####################
-	# Attach session
-	####################
-	$run->{session_handler} = $self->attach_session($app,$conf);
-	$run->{session} = $run->{session_handler}->session;
-
-	$debug->mark(Time::HiRes::time,"session attachment");
-	$debug->session_id($run->{session}->{_session_id});
-
-	if ($run->{'uri'} eq "logout") {
-		$self->{mp}->set_cookie($conf->{'cookie_name'},'!','now');
-		$run->{'session_handler'}->destroy();
-
-		return $self->{mp}->redirect($conf->{'logout_target'});
-	}
-
-	####################
-	# Connect to db
-	####################
-	foreach (@{$app->databases}) {
+	foreach (@{$run->{'app'}->databases}) {
 		eval {
 			# we put this in app not run so that database connections persist across requests
-			$app->{'dbh'} = DBI->connect_cached(@{$_});
+			$run->{'app'}->{'dbh'} = DBI->connect_cached(@{$_});
 		};
-		last if $app->{'dbh'};
+		last if $run->{'app'}->{'dbh'};
 	
-		return $self->display_host_error(
-			"========================================================\n" .
-			"DB CONNECT FAILED\n" .
-			"$DBI::errstr\n" .
-			"========================================================\n"
-		);
+		Apache::Voodoo::Exception::DBIConnect->throw($DBI::errstr);
 	}
 
-####
-#### Env specific
-####
+	$self->{'run'} = $run;
 
-	####################
-	# Get paramaters 
-	####################
-	$run->{'input_params'} = $self->{mp}->parse_params($conf->{'upload_size_max'});
-	unless (ref($run->{'input_params'})) {
-		# something went boom
-		return $self->display_host_error($run->{'input_params'});
-	}
+	return 1;
+}
 
-	$debug->mark(Time::HiRes::time,"parameter parsing");
-	$debug->params($run->{'input_params'});
+sub finish {
+	my $self = shift;
 
-	####################
-	# History capture 
-	####################
-	if ($self->{mp}->is_get && 
-		!$run->{input_params}->{ajax_mode} &&
-		!$run->{input_params}->{return}
-		) {
-		$self->history_queue($run);
-		$debug->mark(Time::HiRes::time,"history capture");
-	}
+	$self->{'run'}->{'session_handler'}->disconnect();
 
-####
-#### Not env specific
-####
+	$debug->mark(Time::HiRes::time,'END');
+	$debug->shutdown();
+
+	delete $self->{'run'};
+}
+
+=pod
+sub execute {
+	my $self = shift;
+	my $uri  = shift;
+
+	$self->{'run'}->{'uri'} = $uri;
 
 	####################
 	# Get configuation for this template or section
 	####################
-	$run->{'template_conf'} = $app->resolve_conf_section($run->{'uri'});
+	$self->{'run'}->{'template_conf'} = $self->{'app'}->resolve_conf_section($self->{'run'}->{'uri'});
 
 	$debug->mark(Time::HiRes::time,"config section resolution");
-	$debug->template_conf($run->{'template_conf'});
+	$debug->template_conf($self->{'run'}->{'template_conf'});
 
 	####################
 	# Generate the content
@@ -231,17 +163,9 @@ sub handler {
 	$debug->session($run->{session});
 	$debug->status($return);
 
-
-	####################
-	# Clean up
-	####################
-	$run->{session_handler}->disconnect();
-
-	$debug->mark(Time::HiRes::time,'END');
-	$debug->shutdown();
-
 	return $return;
 }
+=cut
 
 sub attach_session {
 	my $self = shift;
@@ -299,104 +223,113 @@ sub history_queue {
 	}
 }
 
-sub generate_content {
-	my $self = shift;
-	my $app  = shift;
-	my $conf = shift;
-	my $run  = shift;
+sub execute_controllers {
+	my $self   = shift;
+	my $uri    = shift;
+	my $params = shift;
+
+	$uri =~ s/^\///;
+	warn "am here $uri";
+
+	my $run           = $self->{'run'};
+	my $app           = $self->{'run'}->{'app'};
+	my $template_conf = $self->{'run'}->{'template_conf'};
 
 	my $p = {
-		"dbh"           => $app->{'dbh'},
-		"params"        => $run->{'input_params'},
-		"session"       => $run->{'session'},
-		"template_conf" => $run->{'template_conf'},
+		"dbh"           => $self->{'run'}->{'app'}->{'dbh'},
+		"params"        => $params,
+		"session"       => $self->{'run'}->{'session'},
+		"template_conf" => $template_conf,
 		"mp"            => $self->{'mp'},
-		"uri"           => $run->{'uri'},
+		"uri"           => $uri,
 
 		# these are deprecated.  In the future get them from $p->{mp} or $p->{config}
-		"document_root" => $conf->{'template_dir'},
+		"document_root" => $self->{'run'}->{'conf'}->{'template_dir'},
 		"dir_config"    => $self->{mp}->dir_config,
 		"user-agent"    => $self->{mp}->header_in('User-Agent'),
 		"r"             => $self->{mp}->{r},
-		"themes"        => $conf->{'themes'}
+		"themes"        => $self->{'run'}->{'conf'}->{'themes'}
 	};
 
-	my $c=0;
 	my $template_params = {};
-
-	my $e;
 
 	# call each of the pre_include modules followed by our page specific module followed by our post_includes
 	foreach my $c ( 
-		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'pre_include'}) ),
-		$app->map_uri($run->{'uri'}),
-		( map { [ $_, "handle"] } split(/\s*,\s*/o, $run->{'template_conf'}->{'post_include'}) )
+		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}) ),
+		$app->map_uri($uri),
+		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'}) )
 		) {
 
+		use Data::Dumper;
+		warn "and here".Dumper($c)."\n";
 		if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
+			warn "here too";
 			my $obj    = $app->{'controllers'}->{$c->[0]};
 			my $method = $c->[1];
 
-			my $return;
-			eval {
-				$return = $obj->$method($p);
-			}; 
-			if ($@) {
-				$e = $@;
-				last;
-			}
+			my $return = $obj->$method($p);
 
 			$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
 			$debug->return_data($c->[0],$c->[1],$return);
 
 			if (ref($return) eq "ARRAY") {
-				if    ($return->[0] eq "REDIRECTED") {
-					return $self->{mp}->redirect($self->adjust_url($app->{'site_root'},$return->[1]));
+				if ($return->[0] eq "REDIRECTED") {
+					Apache::Voodoo::Exception::Application::Redirect->throw(target => $return->[1]);
 				}
 				elsif ($return->[0] eq "DISPLAY_ERROR") {     
-					$p->{'uri'} = 'display_error';
-					$template_params->{'error_string'} = $return->[1];
-					$template_params->{'error_url'}    = ($return->[2])?$return->[2]:$app->{'site_root'}."index";
-					last;
+					Apache::Voodoo::Exception::Application::DisplayError->throw(
+						message => $return->[1],
+						target  => ($return->[2])?$return->[2]:"index"
+					);
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
-					$p->{'uri'} = (defined($return->[2]))?$return->[2]:'access_denied';
-					$template_params->{'error_string'} = $return->[1];
-					last;
+					Apache::Voodoo::Exception::Application::DisplayError->throw(
+						message => $return->[1],
+						target  => ($return->[2])?$return->[2]:"access_denied"
+					);
 				}
 				elsif ($return->[0] eq "RAW_MODE") {
-					$self->{mp}->header_out(each %{$return->[3]}) if $return->[3];
-					$self->{mp}->content_type($return->[1] || "text/html");
-					$self->{mp}->print($return->[2]);
-					return $self->{mp}->ok;
+					Apache::Voodoo::Exception::Application::RawData->throw(
+						"content_type" => $return->[1] || "text/html",
+						"data"         => $return->[2],
+						"headers"      => $return->[3]
+					);
 				}
 				else {
-					warn "AIEEE!! $return->[0] is not a supported command\n";
-					$return = {};
+					warn "Controller return an unsupported command in module($c->[0]) method($c->[1]): $return->[0]\n";
+					Apache::Voodoo::Exception::Application::BadCommand->throw(
+						module  => $c->[0],
+						method  => $c->[1],
+						command => $return->[0]
+					);
 				}
 			}
-
-			foreach my $k ( keys %{$return}) {
-				$template_params->{$k} = $return->{$k};
+			elsif (ref($return) eq "HASH") {
+				foreach my $k ( keys %{$return}) {
+					$template_params->{$k} = $return->{$k};
+				}
+				$debug->mark(Time::HiRes::time,"result packing");
 			}
-			$debug->mark(Time::HiRes::time,"result packing");
+			else {
+				warn "Controller didn't return a hash reference in module($c->[0]) method($c->[1])\n";
+				Apache::Voodoo::Exception::Application::BadReturn->throw(
+					module  => $c->[0],
+					method  => $c->[1],
+					data    => $return
+				);
+			}
 
 			last if $p->{_stop_chain_};
 		}
 	}
 
-	if ($e) {
-		# caught a runtime error from perl
-		unless ($conf->{'devel_mode'}) {
-			warn $e;
-			return $self->{mp}->server_error;
-		}
-	}
+	return $template_params;
+}
 
-####
-#### Env specific
-####
+sub execute_view {
+	my $self = shift;
 
+=pod
 	my $view;
 	if (defined($p->{'_view_'}) && 
 		defined($app->{'views'}->{$p->{'_view_'}})) {
@@ -434,33 +367,7 @@ sub generate_content {
 	$self->{mp}->flush();
 
 	return $self->{mp}->ok;
-}
-
-
-sub adjust_url {
-	my $self = shift;
-
-	my $root = shift;
-	my $uri  = shift;
-
-	if ($root ne "/" && $uri =~ /^\//o) {
-		return $root.$uri;
-	}
-	else {
-		return $uri;
-	}
-}
-
-sub display_host_error {
-	my $self  = shift;
-	my $error = shift;
-
-	$self->{'mp'}->content_type("text/html");
-	$self->{'mp'}->print("<h2>The following error was encountered while processing this request:</h2>");
-	$self->{'mp'}->print("<pre>$error</pre>");
-	$self->{'mp'}->flush();
-
-	return $self->{mp}->ok;
+=cut
 }
 
 sub restart { 

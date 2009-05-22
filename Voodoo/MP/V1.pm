@@ -13,10 +13,11 @@ use Apache::Cookie;
 
 use base("Apache::Voodoo::MP::Common");
 
-sub declined     { return Apache::Constants::DECLINED;  }
-sub forbidden    { return Apache::Constants::FORBIDDEN; }
-sub ok           { return Apache::Constants::OK;        }
-sub server_error { return Apache::Constants::FORBIDDEN; }
+sub declined     { return Apache::Constants::DECLINED;     }
+sub forbidden    { return Apache::Constants::FORBIDDEN;    }
+sub ok           { return Apache::Constants::OK;           }
+sub server_error { return Apache::Constants::SERVER_ERROR; }
+sub not_found    { return Apache::Constants::NOT_FOUND;    }
 
 sub content_type   { shift()->{'r'}->send_http_header(@_); }
 sub err_header_out { shift()->{'r'}->err_header_out(@_); }
