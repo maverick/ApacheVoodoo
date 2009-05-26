@@ -162,7 +162,14 @@ sub handler {
 	if ($run->{'uri'} eq "logout") {
 		$self->{mp}->set_cookie($conf->{'cookie_name'},'!','now');
 		$run->{'session_handler'}->destroy();
-
+		if($app->{'logout_is_handled'}){
+			#Quick and fast, but this prevents possble sessionless processing.
+			#Intended for the event that you need to handle the logout process
+			#in order to return UI directives as  part of logout 
+			$run->{'template_conf'} = $self->resolve_conf_section($app,$run);
+			my $return = $self->generate_content($app,$run);
+			return $return;
+		}
 		return $self->{mp}->redirect($conf->{'logout_target'});
 	}
 
