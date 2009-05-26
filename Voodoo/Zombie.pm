@@ -43,10 +43,7 @@ sub AUTOLOAD {
 
 	# ya, I know...it's embeded HTML...I don't feel too bad 
 	# about it though...this is a development tool after all
-	my $error = "<pre>\n";
-	$error .= "There was an error loading the module for this page ($self->{'module'}):\n\n";
-	$error .= "$self->{'error'}\n";
-	$error .= "</pre>";
+	my $error = "There was an error loading the module $self->{'module'}:\n\n".$self->{'error'};
 
 	my $link = $self->{'module'};
 	

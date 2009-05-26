@@ -42,16 +42,15 @@ sub load_module {
 	my $obj;
 	eval {
 		require $file;
-		$obj = $module->new;
+		$obj = $module->new();
 	};
 	if ($@) {
-		print STDERR "Failed to load $module: $@";
+		warn "Failed to load $module: $@";
 		my $error = $@;
 
 		$module =~ s/^[^:]+:://;
 
-		require "Apache/Voodoo/Zombie.pm";
-		import Apache::Voodoo::Zombie;
+		require Apache::Voodoo::Zombie;
 		$obj = Apache::Voodoo::Zombie->new();
 
 		$obj->module($module);

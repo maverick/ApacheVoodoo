@@ -266,12 +266,12 @@ sub _load_module {
 
 	my $obj;
 	if ($self->{'parser'}->config()->{'dynamic_loading'}) {
-		require "Apache/Voodoo/Loader/Dynamic.pm";
+		require Apache::Voodoo::Loader::Dynamic;
 
 		$obj = Apache::Voodoo::Loader::Dynamic->new($module);
 	}
 	else {
-		require "Apache/Voodoo/Loader/Static.pm";
+		require Apache::Voodoo::Loader::Static;
 
 		$obj = Apache::Voodoo::Loader::Static->new($module);
 		if (ref($obj) eq "Apache::Voodoo::Zombie") {

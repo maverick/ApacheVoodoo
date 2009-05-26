@@ -306,7 +306,7 @@ sub _stack_trace {
 
 	my $st = Devel::StackTrace->new();
     while (my $frame = $st->frame($i++)) {
-		last if ($frame->package =~ /^Apache::Voodoo::Handler/);
+		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
         next if ($frame->package =~ /^Apache::Voodoo/);
         next if ($frame->package =~ /(eval)/);
 

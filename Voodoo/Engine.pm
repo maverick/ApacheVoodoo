@@ -17,6 +17,7 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 
+use File::Spec;
 use DBI;
 use Time::HiRes;
 
@@ -260,10 +261,9 @@ sub execute_controllers {
 		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'}) )
 		) {
 
-		use Data::Dumper;
-		warn "and here".Dumper($c)."\n";
+		$debug->debug("here");
 		if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
-			warn "here too";
+			$debug->debug("here too");
 			my $obj    = $app->{'controllers'}->{$c->[0]};
 			my $method = $c->[1];
 
@@ -283,7 +283,7 @@ sub execute_controllers {
 					);
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
-					Apache::Voodoo::Exception::Application::DisplayError->throw(
+					Apache::Voodoo::Exception::Application::AccessDenied->throw(
 						message => $return->[1],
 						target  => ($return->[2])?$return->[2]:"access_denied"
 					);

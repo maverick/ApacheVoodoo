@@ -26,6 +26,7 @@ sub new {
 		sub {
 			my $req = shift;
 			$self->{'run'}->{'method'} = $req->dataof->name;
+			$self->{'run'}->{'uri'}    = $req->dataof->uri;
 			return ("Apache/Voodoo/Soap","handle_request");
 		}
 	);
@@ -56,7 +57,7 @@ sub handler {
 
 	my $return = $self->{soap}->handle($r);
 
-	$self->{'engine'}->finish();
+#	$self->{'engine'}->finish();
 
 	return $return;
 }
@@ -64,14 +65,29 @@ sub handler {
 sub handle_request {
 	my $self = shift;
 
-	my @params = @_;
-
-	my $uri = $self->{'mp'}->uri();
-	if ($uri =~ /\/$/) {
-		$self->make_404;
+	my $params = {};
+	my $c=0;
+	foreach (@_) {
+		if (ref($_) eq "HASH") {
+			while (my ($k,$v) = each %{$_}) {
+				$params->{$k} = $v;
+			}
+		}
+		$params->{'ARGV'}->[$c] = $_;
+		$c++;
 	}
 
+	my $uri      = $self->{'mp'}->uri();
 	my $filename = $self->{'mp'}->filename();
+	if (defined($self->{'run'}->{'uri'})) {
+		$uri      = File::Spec->catfile($uri,     $self->{'run'}->{'uri'});
+		$filename = File::Spec->catfile($filename,$self->{'run'}->{'uri'});
+	}
+
+	if ($uri =~ /\/$/) {
+		die SOAP::Fault->new(faultcode => $self->{mp}->not_found(), faultstring => 'No such service.');
+	}
+
 	$filename =~ s/\.tmpl$//;
 	unless ($self->{'run'}->{'method'} eq 'handle') {
 		$filename =~ s/([\w_]+)$/$self->{'run'}->{'method'}_$1/i;
@@ -80,38 +96,20 @@ sub handle_request {
 
 	unless (-e "$filename.tmpl" && 
 	        -r "$filename.tmpl") {
-		$self->make_404;
+		die SOAP::Fault->new(faultcode => $self->{mp}->not_found(), faultstring => 'No such service.');
 	};
-
-	$self->{'engine'}->init_app($self->{'run'}->{'id'});
-
-	$self->{'engine'}->{'run'}->{'session'}->{'value'}++;
-
-	open(DUMP,">>/tmp/soap.dump");
-	print DUMP $filename,"\n";
-	print DUMP $uri,"\n";
-	print DUMP $self->{'run'}->{'method'},"\n";
-	print DUMP Dumper \@params;
-	print DUMP Dumper $self->{'engine'}->{'run'}->{'session'};
 
 	my $content;
 	eval {
-		$content = $self->{'engine'}->execute_controllers($uri,\@params);
+		$self->{'engine'}->init_app($self->{'run'}->{'id'});
+
+		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};
 	if ($@) {
-		die SOAP::Fault->new(faultcode => $self->{mp}->server_error(), faulstring => scalar($@));
+		die SOAP::Fault->new(faultcode => 500, faultstring => "$@");
 	}
-	print DUMP Dumper $content;
-
-	close(DUMP);
 
 	return $content;
 }
-
-sub make_404 {
-	my $self = shift;
-	die SOAP::Fault->new(faultcode => $self->{mp}->not_found(), faultstring => 'No such service.');
-}
-
 
 1;

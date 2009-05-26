@@ -36,17 +36,17 @@ use Exception::Class (
 	'Apache::Voodoo::Exception::Application::Redirect' => {
 		isa => 'Apache::Voodoo::Exception::Application',
 		description => "Controller redirected the request to another location",
-		fields => ['target']
+		fields => ['target','message']
 	},
 	'Apache::Voodoo::Exception::Application::DisplayError' => {
 		isa => 'Apache::Voodoo::Exception::Application',
 		description => "Controller request the display of an error message",
-		fields => ['target']
+		fields => ['target','message']
 	},
 	'Apache::Voodoo::Exception::Application::AccessDenied' => {
 		isa => 'Apache::Voodoo::Exception::Application',
 		description => "Access to the requested resource has been denied",
-		fields => ['target']
+		fields => ['target','message']
 	},
 	'Apache::Voodoo::Exception::Application::RawData' => {
 		isa => 'Apache::Voodoo::Exception::Application',

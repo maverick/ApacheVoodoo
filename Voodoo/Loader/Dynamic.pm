@@ -8,6 +8,7 @@ use base("Apache::Voodoo::Loader");
 
 sub new {
 	my $class = shift;
+
 	my $self = {};
 	bless $self,$class;
 
@@ -111,13 +112,13 @@ sub AUTOLOAD {
 	next unless ref($_[0]);
 
 	our $AUTOLOAD;
-	my $name = $AUTOLOAD;
-	$name =~ s/.*:://;
+	my $method = $AUTOLOAD;
+	$method =~ s/.*:://;
 
 	my $self = shift;
 
-	if ($self->can($name,'1')) {
-		return $self->_handle($name,@_);
+	if ($self->can($method,'1')) {
+		return $self->_handle($method,@_);
 	}
 
 	# we don't handle this one
@@ -146,10 +147,7 @@ sub _handle {
 				require $file;
 			};
 			if ($@) {
-				my $error = "<pre>\n";
-				$error .= "There was an error loading one of the base classes for this page ($_):\n\n";
-				$error .= "$@\n";
-				$error .= "</pre>";
+				my $error= "There was an error loading one of the base classes for this page ($_):\n\n$@\n";
 
 				my $link = $self->{'module'};
 				
