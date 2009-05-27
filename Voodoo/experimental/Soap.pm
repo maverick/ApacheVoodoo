@@ -41,23 +41,19 @@ sub handler {
 	my $r    = shift;
 
 	$self->{'mp'}->set_request($r);
+	$self->{'engine'}->set_request($r);
 
-	my $id = $self->{'mp'}->get_app_id();
-	unless (defined($id)) {
-		print STDERR  "PerlSetVar ID not present in configuration.  Giving up\n";
+	eval {
+		$self->{'engine'}->init_app();
+	};
+	if ($@) {
+		warn "$@";
 		return $self->{'mp'}->server_error();
 	}
 
-	unless ($self->{'engine'}->valid_app($id)) {
-		warn "application id '$id' unknown. Valid ids are: ".join(",",$self->{engine}->get_apps())."\n";
-		return $self->{'mp'}->server_error();
-	}
+	my $return = $self->{'soap'}->handle($r);
 
-	$self->{'run'}->{'id'} = $id;
-
-	my $return = $self->{soap}->handle($r);
-
-#	$self->{'engine'}->finish();
+	$self->{'engine'}->finish();
 
 	return $return;
 }
@@ -101,7 +97,7 @@ sub handle_request {
 
 	my $content;
 	eval {
-		$self->{'engine'}->init_app($self->{'run'}->{'id'});
+		$self->{'engine'}->begin_run();
 
 		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};

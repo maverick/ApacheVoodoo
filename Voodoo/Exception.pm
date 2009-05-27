@@ -23,6 +23,10 @@ use Exception::Class (
 		isa => 'Apache::Voodoo::Exception',
 		description => 'Application Error'
 	},
+	'Apache::Voodoo::Exception::ParamParse' => {
+		isa => 'Apache::Voodoo::Exception',
+		description => 'Parameters failed to parse'
+	},
 	'Apache::Voodoo::Exception::Application::BadCommand' => {
 		isa => 'Apache::Voodoo::Exception::Application',
 		description => "Controller returned an unsupported command",

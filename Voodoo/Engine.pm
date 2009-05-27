@@ -21,7 +21,6 @@ use File::Spec;
 use DBI;
 use Time::HiRes;
 
-use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Application;
 use Apache::Voodoo::Exception;
@@ -44,7 +43,7 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 
-	$self->{mp} = $opts{'mp'} || Apache::Voodoo::MP->new();
+	$self->{'mp'} = $opts{'mp'};
 
 	$self->{constants} = Apache::Voodoo::Constants->new();
 
@@ -83,51 +82,93 @@ sub get_apps {
 	return keys %{$self->{'apps'}};
 }
 
+sub is_devel_mode {
+	my $self = shift;
+
+	return ($self->{'run'}->{'config'}->{'devel_mode'})?1:0;
+}
+
+sub set_request {
+	my $self = shift;
+	$self->{'mp'}->set_request(shift);
+}
+
 sub init_app {
-	my $self   = shift;
-	my $app_id = shift;
+	my $self = shift;
+
+	my $id = shift || $self->{'mp'}->get_app_id();
+
+	unless (defined($id)) {
+		Apache::Voodoo::Exception::Application->throw(
+			"PerlSetVar ID not present in configuration.  Giving up."
+		);
+	}
 
 	# app exists?
-	unless ($self->valid_app($app_id)) {
+	unless ($self->valid_app($id)) {
 		delete $self->{'run'};
-		Apache::Voodoo::Exception::Application->throw("No such application");
+		Apache::Voodoo::Exception::Application->throw(
+			"Application id '$id' unknown. Valid ids are: ".join(",",$self->get_apps())
+		);
 	}
 
 	my $run = {};
-	$run->{'app_id'} = $app_id;
-	$run->{'app'}    = $self->{'apps'}->{$app_id};
+	$run->{'app_id'} = $id;
+	$run->{'app'}    = $self->{'apps'}->{$id};
 
 	if ($run->{'app'}->{'dynamic_loading'}) {
 		$run->{'app'}->refresh();
 	}
 
 	if ($run->{'app'}->{'DEAD'}) {
-		Apache::Voodoo::Exception::Application->throw("Application failed to load");
+		Apache::Voodoo::Exception::Application->throw("Application $id failed to load.");
 	}
 
-	$run->{'config'} = $run->{'app'}->config();
-
-	# setup debugging
-	$debug = $run->{'app'}->{'debug_handler'};
-	$debug->init($self->{'mp'});
-	$debug->mark(Time::HiRes::time,"START");
-
-	$run->{'session_handler'} = $self->attach_session($run->{app},$run->{config});
-	$run->{'session'} = $run->{session_handler}->session;
-
-	foreach (@{$run->{'app'}->databases}) {
-		eval {
-			# we put this in app not run so that database connections persist across requests
-			$run->{'app'}->{'dbh'} = DBI->connect_cached(@{$_});
-		};
-		last if $run->{'app'}->{'dbh'};
-	
-		Apache::Voodoo::Exception::DBIConnect->throw($DBI::errstr);
-	}
+	$run->{'config'}    = $run->{'app'}->config();
+	$run->{'site_root'} = $self->{mp}->site_root();
 
 	$self->{'run'} = $run;
 
 	return 1;
+}
+
+sub begin_run {
+	my $self = shift;
+
+	my $run = $self->{'run'};
+	my $app = $run->{'app'};
+
+	# setup debugging
+	$debug = $app->{'debug_handler'};
+	$debug->init($self->{'mp'});
+	$debug->mark(Time::HiRes::time,"START");
+
+	$run->{'session_handler'} = $self->attach_session($app,$run->{'config'});
+	$run->{'session'} = $self->{'run'}->{'session_handler'}->session;
+
+	foreach (@{$self->{'run'}->{'app'}->databases}) {
+		eval {
+			# we put this in app not run so that database connections persist across requests
+			$self->{'run'}->{'app'}->{'dbh'} = DBI->connect_cached(@{$_});
+		};
+		last if $self->{'run'}->{'app'}->{'dbh'};
+	
+		Apache::Voodoo::Exception::DBIConnect->throw($DBI::errstr);
+	}
+
+	return 1;
+}
+
+sub parse_params {
+	my $self = shift;
+
+	my $params = $self->{mp}->parase_params($self->{run}->{config}->{upload_size_max});
+	unless (ref($params)) {
+		Apache::Voodoo::Exception::ParamParse->throw($params);
+	}
+	$debug->mark(Time::HiRes::time,"parameter parsing");
+	$debug->params($params);
+	return $params;
 }
 
 sub finish {
@@ -140,33 +181,6 @@ sub finish {
 
 	delete $self->{'run'};
 }
-
-=pod
-sub execute {
-	my $self = shift;
-	my $uri  = shift;
-
-	$self->{'run'}->{'uri'} = $uri;
-
-	####################
-	# Get configuation for this template or section
-	####################
-	$self->{'run'}->{'template_conf'} = $self->{'app'}->resolve_conf_section($self->{'run'}->{'uri'});
-
-	$debug->mark(Time::HiRes::time,"config section resolution");
-	$debug->template_conf($self->{'run'}->{'template_conf'});
-
-	####################
-	# Generate the content
-	####################
-	my $return = $self->generate_content($app,$conf,$run);
-
-	$debug->session($run->{session});
-	$debug->status($return);
-
-	return $return;
-}
-=cut
 
 sub attach_session {
 	my $self = shift;
@@ -185,7 +199,10 @@ sub attach_session {
 		$self->{'mp'}->set_cookie($conf->{'cookie_name'},'!','now');
 		$session->destroy;
 
-		return $self->{'mp'}->redirect($app->{'site_root'}."timeout");
+		Apache::Voodoo::Exception::Application::SessionTimeout->throw(
+			target  => $self->_adjust_url("/timeout"),
+			message => "Session has expired"
+		);
 	}
 
 	# update the session timer
@@ -194,13 +211,12 @@ sub attach_session {
 	return $session;
 }
 
-sub history_queue {
-	my $self = shift;
-	my $p    = shift;
+sub history_capture {
+	my $self   = shift;
+	my $uri    = shift;
+	my $params = shift;
 
-	my $session = $p->{'session'};
-	my $params  = $p->{'input_params'};
-	my $uri     = $p->{'uri'};
+	my $session = $self->{'run'}->{'session'};
 
 	$uri = "/".$uri if $uri !~ /^\//;
 
@@ -222,6 +238,8 @@ sub history_queue {
 		# keep the queue at 10 items
 		pop @{$session->{'history'}};
 	}
+
+	$debug->mark(Time::HiRes::time,"history capture");
 }
 
 sub execute_controllers {
@@ -234,7 +252,10 @@ sub execute_controllers {
 
 	my $run           = $self->{'run'};
 	my $app           = $self->{'run'}->{'app'};
-	my $template_conf = $self->{'run'}->{'template_conf'};
+	my $template_conf = $self->{'run'}->{'app'}->resolve_conf_section($uri);
+
+	$debug->mark(Time::HiRes::time,"config section resolution");
+	$debug->template_conf($run->{'template_conf'});
 
 	my $p = {
 		"dbh"           => $self->{'run'}->{'app'}->{'dbh'},
@@ -274,18 +295,18 @@ sub execute_controllers {
 
 			if (ref($return) eq "ARRAY") {
 				if ($return->[0] eq "REDIRECTED") {
-					Apache::Voodoo::Exception::Application::Redirect->throw(target => $return->[1]);
+					Apache::Voodoo::Exception::Application::Redirect->throw(target => $self->_adjust_url($return->[1]));
 				}
 				elsif ($return->[0] eq "DISPLAY_ERROR") {     
 					Apache::Voodoo::Exception::Application::DisplayError->throw(
 						message => $return->[1],
-						target  => ($return->[2])?$return->[2]:"index"
+						target  => $self->_adjust_url(($return->[2])?$return->[2]:"index")
 					);
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
 					Apache::Voodoo::Exception::Application::AccessDenied->throw(
 						message => $return->[1],
-						target  => ($return->[2])?$return->[2]:"access_denied"
+						target  => $self->_adjust_url(($return->[2])?$return->[2]:"access_denied")
 					);
 				}
 				elsif ($return->[0] eq "RAW_MODE") {
@@ -434,6 +455,18 @@ sub restart {
 	closedir(DIR);
 }
 
+sub _adjust_url {
+	my $self = shift;
+	my $uri  = shift;
+
+	if ($self->{'run'}->{'site_root'} ne "/" && $uri =~ /^\//o) {
+		return $self->{'run'}->{'site_root'}.$uri;
+	}
+	else {
+		return $uri;
+	}
+
+}
 1;
 
 =pod ################################################################################
