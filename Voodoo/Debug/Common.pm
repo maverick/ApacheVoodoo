@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Apache::Voodoo::Debug::Null
+Apache::Voodoo::Debug::Common
 
 =head1 VERSION
 
@@ -13,12 +13,14 @@ $Id: Null.pm 12906 2009-02-20 23:08:10Z medwards $
 Does nothing gracefully
 
 =cut ###########################################################################
-package Apache::Voodoo::Debug::Null;
+package Apache::Voodoo::Debug::Common;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
 use warnings;
+
+use Devel::StackTrace;
 
 sub new {
 	my $class = shift;
@@ -50,6 +52,50 @@ sub template_conf { return; }
 sub session       { return; }
 
 sub finalize { return (); }
+
+sub stack_trace {
+	my $self = shift;
+	my $full = shift;
+
+	my @trace;
+	my $i = 1;
+
+	my $st = Devel::StackTrace->new();
+    while (my $frame = $st->frame($i++)) {
+		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
+        next if ($frame->package =~ /^Apache::Voodoo/);
+        next if ($frame->package =~ /(eval)/);
+
+		my $f = {
+			'class'    => $frame->package,
+			'function' => $st->frame($i)->subroutine,
+			'file'     => $frame->filename,
+			'line'     => $frame->line,
+		};
+		$f->{'function'} =~ s/^$f->{'class'}:://;
+
+		my @a = $st->frame($i)->args;
+
+		# if the first item is a reference to same class, then this was a method call
+		if (ref($a[0]) eq $f->{'class'}) {
+			shift @a;
+			$f->{'type'} = '->';
+		}
+		else {
+			$f->{'type'} = '::';
+		}
+
+		push(@trace,$f);
+
+		if ($full) {
+			$f->{'args'} = \@a;
+		}
+		else {
+			last;
+		}
+    }
+	return @trace;
+}
 
 1;
 

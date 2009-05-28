@@ -18,6 +18,8 @@ $VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/core/Voodoo/D
 use strict;
 use warnings;
 
+use base("Apache::Voodoo::Debug::Common");
+
 use File::Spec;
 use Log::Log4perl;
 use Data::Dumper; $Data::Dumper::Terse = 1; $Data::Dumper::Indent = 1;
@@ -39,7 +41,6 @@ sub new {
 	}
 
 	Log::Log4perl->init($conf->{config_file});
-	$self->{logger} = Log::Log4perl->get_logger("Apache.Voodoo");
 
 	return $self;
 }
@@ -57,14 +58,14 @@ sub shutdown {
 	return;
 }
 
-sub debug     { my $self = shift; $self->{logger}->debug($self->_dumper(@_)); }
-sub info      { my $self = shift; $self->{logger}->info( $self->_dumper(@_)); }
-sub warn      { my $self = shift; $self->{logger}->warn( $self->_dumper(@_)); }
-sub error     { my $self = shift; $self->{logger}->error($self->_dumper(@_)); }
-sub exception { my $self = shift; $self->{logger}->fatal($self->_dumper(@_)); }
+sub debug     { my $self = shift; $self->_get_logger->debug($self->_dumper(@_)); }
+sub info      { my $self = shift; $self->_get_logger->info( $self->_dumper(@_)); }
+sub warn      { my $self = shift; $self->_get_logger->warn( $self->_dumper(@_)); }
+sub error     { my $self = shift; $self->_get_logger->error($self->_dumper(@_)); }
+sub exception { my $self = shift; $self->_get_logger->fatal($self->_dumper(@_)); }
 
-sub trace     { my $self = shift; $self->{logger}->trace($self->_dumper(@_)); }
-sub table     { my $self = shift; $self->{logger}->debug($self->_dump_table(@_)); }
+sub trace     { my $self = shift; $self->_get_logger->trace($self->_dumper(@_)); }
+sub table     { my $self = shift; $self->_get_logger->debug($self->_dump_table(@_)); }
 
 sub mark          { my $self = shift; $self->debug('mark',          @_); }
 sub return_data   { my $self = shift; $self->debug('return_data',   @_); }
@@ -91,6 +92,14 @@ sub _dumper {
 
 sub _get_logger {
 	my $self = shift;
+
+	my @stack = $self->stack_trace();
+	if (scalar(@stack)) {
+		return Log::Log4perl->get_logger($stack[-1]->{class});
+	}
+	else {
+		return Log::Log4perl->get_logger("Apache::Voodoo");
+	}
 }
 
 sub _dump_table {
@@ -134,8 +143,6 @@ sub _dump_table {
 		return "\n".join("\n",@return);
 	};
 }
-
-sub finalize { return (); }
 
 1;
 

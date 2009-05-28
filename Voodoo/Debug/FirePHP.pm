@@ -6,7 +6,8 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
-use Devel::StackTrace;
+use base("Apache::Voodoo::Debug::Common");
+
 use JSON::DWIW;
 
 use constant {
@@ -190,7 +191,7 @@ sub _fb {
 	my %meta = ();
   
     if ($Type eq EXCEPTION || $Type eq TRACE) {
-		my @trace = $self->_stack_trace(1);
+		my @trace = $self->stack_trace(1);
 
 		my $t = shift @trace;
 
@@ -209,7 +210,7 @@ sub _fb {
 		};
     }
 	else {
-		my @trace = $self->_stack_trace(1);
+		my @trace = $self->stack_trace(1);
 		
 		$meta{'File'} = $trace[0]->{class}.$trace[0]->{type}.$trace[0]->{function};
 		$meta{'Line'} = $trace[0]->{line};
@@ -297,48 +298,4 @@ sub jsonEncode {
 	return $self->{'json'}->to_json($Object);
 }
   
-sub _stack_trace {
-	my $self = shift;
-	my $full = shift;
-
-	my @trace;
-	my $i = 1;
-
-	my $st = Devel::StackTrace->new();
-    while (my $frame = $st->frame($i++)) {
-		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
-        next if ($frame->package =~ /^Apache::Voodoo/);
-        next if ($frame->package =~ /(eval)/);
-
-		my $f = {
-			'class'    => $frame->package,
-			'function' => $st->frame($i)->subroutine,
-			'file'     => $frame->filename,
-			'line'     => $frame->line,
-		};
-		$f->{'function'} =~ s/^$f->{'class'}:://;
-
-		my @a = $st->frame($i)->args;
-
-		# if the first item is a reference to same class, then this was a method call
-		if (ref($a[0]) eq $f->{'class'}) {
-			shift @a;
-			$f->{'type'} = '->';
-		}
-		else {
-			$f->{'type'} = '::';
-		}
-
-		push(@trace,$f);
-
-		if ($full) {
-			$f->{'args'} = \@a;
-		}
-		else {
-			last;
-		}
-    }
-	return @trace;
-}
-
 1;

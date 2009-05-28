@@ -21,8 +21,10 @@ package Apache::Voodoo::Debug::Native;
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
+use warnings;
 
-use Devel::StackTrace;
+use base("Apache::Voodoo::Debug::Common");
+
 use IO::Socket::UNIX;
 use IO::Handle::Record;
 use HTML::Template;
@@ -120,7 +122,7 @@ sub init {
 			!defined($self->{'socket'}) ||
 			!$self->{'socket'}->connected) {
 
-			warn("Failed to open socket.  Debug info will be lost. $@ $!\n");
+			CORE::warn "Failed to open socket.  Debug info will be lost. $@ $!\n";
 			$self->{enable}  = undef;
 			$self->{enabled} = 0;
 			return;
@@ -130,9 +132,7 @@ sub init {
 	# socket looks good, enable the public facing calls.
 	$self->{enable} = $self->{conf};
 
-	# FIXME: if the daemon goes away after the server starts, the socket is stale.
-	# we need to pick that condition up correctly.
-	$self->{'socket'}->write_record({
+	$self->_write({
 		type => 'request',
 		id   => $self->{'id'}
 	});
@@ -156,50 +156,6 @@ sub exception { my $self = shift; $self->_debug('exception',@_); }
 sub trace     { my $self = shift; $self->_debug('trace',    @_); }
 sub table     { my $self = shift; $self->_debug('table',    @_); }
 
-sub _stack_trace {
-	my $self = shift;
-	my $full = shift;
-
-	my @trace;
-	my $i = 1;
-
-	my $st = Devel::StackTrace->new();
-	while (my $frame = $st->frame($i++)) {
-		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
-		next if ($frame->package =~ /^Apache::Voodoo/);
-		next if ($frame->package =~ /(eval)/);
-
-		my $f = {
-			'class'    => $frame->package,
-			'function' => $st->frame($i)->subroutine,
-			'file'     => $frame->filename,
-			'line'     => $frame->line,
-		};
-		$f->{'function'} =~ s/^$f->{'class'}:://;
-
-		my @a = $st->frame($i)->args;
-
-		# if the first item is a reference to same class, then this was a method call
-		if (ref($a[0]) eq $f->{'class'}) {
-			shift @a;
-			$f->{'type'} = '->';
-		}
-		else {
-			$f->{'type'} = '::';
-		}
-
-		push(@trace,$f);
-
-		if ($full) {
-			$f->{'args'} = \@a;
-		}
-		else {
-			last;
-		}
-	}
-	return [reverse @trace];
-}
-
 sub _debug {
 	my $self = shift;
 	my $type = shift;
@@ -219,11 +175,11 @@ sub _debug {
 
 	my $full = ($type =~ /(exception|trace)/)?1:0;
 
-	$self->{'socket'}->write_record({
+	$self->_write({
 		type  => 'debug',
 		id    => $self->{id},
 		level => $type,
-		stack => $self->_encode($self->_stack_trace($full)),
+		stack => $self->_encode($self->stack_trace($full)),
 		data  => $data
 	});
 }
@@ -233,7 +189,7 @@ sub mark {
 
 	return unless $self->{'enable'}->{'profile'};
 
-	$self->{'socket'}->write_record({
+	$self->_write({
 		type      => 'profile',
 		id        => $self->{id},
 		timestamp => shift,
@@ -246,7 +202,7 @@ sub return_data {
 
 	return unless $self->{'enable'}->{'return_data'};
 
-	$self->{'socket'}->write_record({
+	$self->_write({
 		type    => 'return_data',
 		id      => $self->{id},
 		handler => shift,
@@ -289,7 +245,7 @@ sub _log {
 		$data = $_[0];
 	}
 
-	$self->{'socket'}->write_record({
+	$self->_write({
 		type => $type,
 		id   => $self->{id},
 		data => $data
@@ -299,7 +255,6 @@ sub _log {
 sub _encode {
 	my $self = shift;
 	
-
 	my $j;
 	if (scalar(@_) > 1) {
 		$j = $self->{json}->to_json(\@_);
@@ -311,6 +266,22 @@ sub _encode {
 	return $j;
 }
 
+
+sub _write {
+	my $self = shift;
+	my $data = shift;
+
+	eval {
+		$self->{'socket'}->write_record($data);
+
+		# might be unneccessary, being paranoid
+		$self->{'socket'}->sync;
+		$self->{'socket'}->flush;
+	};
+	if ($@) {
+		CORE::warn "Failed to write to debug database: $@ $!\n";
+	}
+}
 
 sub finalize {
 	my $self = shift;

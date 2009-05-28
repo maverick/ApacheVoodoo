@@ -95,17 +95,52 @@ sub handle_request {
 		die SOAP::Fault->new(faultcode => $self->{mp}->not_found(), faultstring => 'No such service.');
 	};
 
+	my $e;
 	my $content;
 	eval {
 		$self->{'engine'}->begin_run();
 
 		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};
-	if ($@) {
-		die SOAP::Fault->new(faultcode => 500, faultstring => "$@");
+	if    ($e = Apache::Voodoo::Exception::Application::Redirect->caught()) {
+		$self->_make_fault($self->{mp}->redirect, "Redirected",$e->target);
+	}
+	elsif ($e = Apache::Voodoo::Exception::Application::DisplayError->caught()) {
+		$self->_make_fault(600, $e->message, {nextservice => $e->target});
+	}
+	elsif ($e = Apache::Voodoo::Exception::Application::AccessDenied->caught()) {
+		$self->_make_fault($self->{mp}->forbidden, $e->message);
+	}
+	elsif ($e = Apache::Voodoo::Exception::Application::RawData->caught()) {
+		return {
+			'error'        => 0,
+			'success'      => 1,
+			'rawdata'      => 1,
+			'content-type' => $e->content_type,
+			'headers'      => $e->headers,
+			'data'         => $e->data
+		};
+	}
+	elsif ($@) {
+		# Apache::Voodoo::Exception::RunTime
+		# Apache::Voodoo::Exception::Application::BadCommand
+		# Apache::Voodoo::Exception::Application::BadReturn
+		# Exception::Class::DBI
+		$self->_make_fault($self->{mp}->server_error, "$@");
 	}
 
 	return $content;
+}
+
+sub _make_fault {
+	my $self = shift;
+
+	my %msg;
+	$msg{faultcode}   = shift;
+	$msg{faultstring} = shift;
+	$msg{detail}      = shift if $_[0];
+	
+	die SOAP::Fault->new(%msg);
 }
 
 1;

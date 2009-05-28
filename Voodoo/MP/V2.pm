@@ -35,21 +35,22 @@ sub redirect {
 	my $self = shift;
 	my $loc  = shift;
 
-	my $r = $self->{'r'};
-	if ($r->method eq "POST") {
-		$r->method_number(Apache2::Const::M_GET);
-		$r->method('GET');
-		$r->headers_in->unset('Content-length');
+	if ($loc) {
+		my $r = $self->{'r'};
+		if ($r->method eq "POST") {
+			$r->method_number(Apache2::Const::M_GET);
+			$r->method('GET');
+			$r->headers_in->unset('Content-length');
 
-		$r->headers_out->add("Location" => $loc);
-		$r->status(Apache2::Const::REDIRECT);
-		$r->content_type;
-		return Apache2::Const::REDIRECT;
+			$r->headers_out->add("Location" => $loc);
+			$r->status(Apache2::Const::REDIRECT);
+			$r->content_type;
+		}
+		else {
+			$r->headers_out->add("Location" => $loc);
+		}
 	}
-	else {
-		$r->headers_out->add("Location" => $loc);
-		return Apache2::Const::REDIRECT;
-	}
+	return Apache2::Const::REDIRECT;
 }
 
 sub parse_params {

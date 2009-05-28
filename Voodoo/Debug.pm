@@ -38,8 +38,10 @@ sub new {
 		return $handlers[0];
 	}
 	else {
-		require Apache::Voodoo::Debug::Null;
-		return Apache::Voodoo::Debug::Null->new();
+		# Common implements the api, but doesn't do any logging of any sort.
+		# So we can use it as a sink if debugging is turned off.
+		require Apache::Voodoo::Debug::Common;
+		return Apache::Voodoo::Debug::Common->new();
 	}
 }
 

@@ -305,7 +305,7 @@ sub execute_controllers {
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
 					Apache::Voodoo::Exception::Application::AccessDenied->throw(
-						message => $return->[1],
+						message => $return->[1] || "Access Denied",
 						target  => $self->_adjust_url(($return->[2])?$return->[2]:"access_denied")
 					);
 				}
