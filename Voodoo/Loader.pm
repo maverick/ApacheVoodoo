@@ -35,9 +35,9 @@ sub load_module {
 	# we're running multiple instances of the same application, then we're just wasting time
 	# recompiling the same modules over and over, and "warnings" will sometimes (uselessly) yell about
 	# modules being redefined.
-	unless ($self->{'bootstrapping'}) {
+	#unless ($self->{'bootstrapping'}) {
 		delete $INC{$file};
-	}
+	#}
 
 	my $obj;
 	eval {

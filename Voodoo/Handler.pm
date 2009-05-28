@@ -72,9 +72,7 @@ sub handler {
 		$self->{'engine'}->init_app();
 		$self->{'engine'}->begin_run();
 	};
-	warn "after run";
 	if (my $e = Apache::Voodoo::Exception::Application::SessionTimeout->caught()) {
-		warn "timeout";
 		return $self->{'mp'}->redirect($e->target());
 	}
 	elsif (my $e = Apache::Voodoo::Exception->caught()) {
@@ -82,7 +80,6 @@ sub handler {
 		return $self->{'mp'}->server_error;
 	}
 
-	warn "before params";
 	####################
 	# Get paramaters 
 	####################
@@ -93,7 +90,6 @@ sub handler {
 	if ($@) {
 		return $self->display_host_error($@);
 	}
-	warn "after params";
 
 	####################
 	# History capture 
@@ -108,6 +104,7 @@ sub handler {
 	####################
 	# Execute the controllers
 	####################
+	warn ($uri);
 	my $content;
 	my $e;
 	eval {

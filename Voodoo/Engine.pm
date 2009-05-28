@@ -30,7 +30,7 @@ use Apache::Voodoo::Exception;
 # myself that this is STDERR on god's own steroids so I can sleep at night.
 our $debug;
 
-my $i_am_a_singleton;
+our $i_am_a_singleton;
 
 sub new {
 	my $class = shift;
@@ -55,7 +55,7 @@ sub new {
 			$_[0]->rethrow;
 		}
 		else {
-			Apache::Voodoo::Exception::RunTime->throw( error => join '', @_ );
+			Apache::Voodoo::Exception::RunTime->throw(error => join("\n", @_));
 		}
 	};
 
@@ -177,10 +177,17 @@ sub finish {
 	my $self   = shift;
 	my $status = shift;
 
-	$self->{'run'}->{'session_handler'}->disconnect();
-
 	$debug->session($self->{'run'}->{'session'});
 	$debug->status($status);
+
+	if ($self->{'run'}->{'p'}->{'uri'} eq '/logout') {
+		$self->{'mp'}->err_header_out("Set-Cookie" => $self->{'run'}->{'config'}->{'cookie_name'} . "='!'; path=/");
+		$self->{'run'}->{'session_handler'}->destroy();
+	}
+	else {
+		$self->{'run'}->{'session_handler'}->disconnect();
+	}
+
 	$debug->mark(Time::HiRes::time,'END');
 	$debug->shutdown();
 
@@ -284,6 +291,8 @@ sub execute_controllers {
 
 	my $template_params = {};
 
+	$debug->debug(sort keys %{$app->{'controllers'}});
+
 	# call each of the pre_include modules followed by our page specific module followed by our post_includes
 	foreach my $c ( 
 		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}) ),
@@ -291,9 +300,7 @@ sub execute_controllers {
 		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'}) )
 		) {
 
-		$debug->debug("here");
 		if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
-			$debug->debug("here too");
 			my $obj    = $app->{'controllers'}->{$c->[0]};
 			my $method = $c->[1];
 
@@ -341,7 +348,7 @@ sub execute_controllers {
 				$debug->mark(Time::HiRes::time,"result packing");
 			}
 			else {
-				warn "Controller didn't return a hash reference in module($c->[0]) method($c->[1])\n";
+				warn "Controller didn't return a hash reference in module($c->[0]) method($c->[1]) ($return)\n";
 				Apache::Voodoo::Exception::RunTime::BadReturn->throw(
 					module  => $c->[0],
 					method  => $c->[1],
@@ -375,7 +382,6 @@ sub execute_view {
 		$view = $self->{'run'}->{'app'}->{'views'}->{'HTML'};
 	}	
 
-	$debug->debug('URI',$self->{'run'}->{'uri'});
 	$view->begin($self->{'run'}->{'p'});
 
 	if (ref($content) eq "HASH") {
