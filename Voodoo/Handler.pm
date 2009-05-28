@@ -72,14 +72,17 @@ sub handler {
 		$self->{'engine'}->init_app();
 		$self->{'engine'}->begin_run();
 	};
+	warn "after run";
 	if (my $e = Apache::Voodoo::Exception::Application::SessionTimeout->caught()) {
+		warn "timeout";
 		return $self->{'mp'}->redirect($e->target());
 	}
-	elsif ($@) {
-		warn "$@";
+	elsif (my $e = Apache::Voodoo::Exception->caught()) {
+		warn "$e";
 		return $self->{'mp'}->server_error;
 	}
 
+	warn "before params";
 	####################
 	# Get paramaters 
 	####################
@@ -90,6 +93,7 @@ sub handler {
 	if ($@) {
 		return $self->display_host_error($@);
 	}
+	warn "after params";
 
 	####################
 	# History capture 
@@ -105,103 +109,54 @@ sub handler {
 	# Execute the controllers
 	####################
 	my $content;
+	my $e;
 	eval {
-		$content = $self->execute_controllers($uri,$params);
+		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};
-	if (my $e = Apache::Voodoo::Exception::Application::Redirect->caught()) {
+	if ($e = Apache::Voodoo::Exception::Application::Redirect->caught()) {
+		$self->{'engine'}->finish($self->{mp}->redirect);
 		return $self->{'mp'}->redirect($e->target());
 	}
-	elsif (my $e = Apache::Voodoo::Exception::Application::DisplayError->caught()) {
-		$uri = "display_error";
-		$content->{error_url}    = $e->target();
-		$content->{error_string} = $e->message();
-	}
-	elsif (my $e = Apache::Voodoo::Exception::Application::AccessDenied->caught()) {
-		$uri = $e->target();
-		$content->{error_string} = $e->message();
-	}
-	elsif (my $e = Apache::Voodoo::Exception::Application::RawData->caught()) {
+	elsif ($e = Apache::Voodoo::Exception::Application::RawData->caught()) {
 		$self->{mp}->header_out(each %{$e->headers}) if (ref($e->headers) eq "HASH");
 		$self->{mp}->content_type($e->content_type);
 		$self->{mp}->print($e->data);
+
+		$self->{'engine'}->finish($self->{mp}->ok);
 		return $self->{mp}->ok;
 	}
-	elsif (my $e = Apache::Voodoo::Exception::Application::BadCommand->caught()) {
-	}
-	elsif (my $e = Apache::Voodoo::Exception::Application::BadReturn->caught()) {
+	elsif ($e = Apache::Voodoo::Exception::Application->caught()) {
+		$content = $e;
 	}
 	elsif ($@) {
-		warn "$@";
-	}
-
-	if ($self->{'engine'}->is_devel_mode()) {
-
-	}
-
-#	$debug->status($return);
-
-	####################
-	# Clean up
-	####################
-	$self->{'engine'}->finish();
-
-	return $self->{mp}->ok;
-}
-
-=pod
-sub generate_content {
-
-	if ($e) {
-		# caught a runtime error from perl
-		unless ($conf->{'devel_mode'}) {
-			warn $e;
+		# Apache::Voodoo::Exception::RunTime
+		# Apache::Voodoo::Exception::RunTime::BadCommand
+		# Apache::Voodoo::Exception::RunTime::BadReturn
+		# Exception::Class::DBI
+		unless ($self->{'engine'}->is_devel_mode()) {
+			warn "$@";
+			$self->{'engine'}->finish($self->{mp}->server_error);
 			return $self->{mp}->server_error;
 		}
+
+		$content = $@;
 	}
 
-####
-#### Env specific
-####
-
-	my $view;
-	if (defined($p->{'_view_'}) && 
-		defined($app->{'views'}->{$p->{'_view_'}})) {
-
-		$view = $app->{'views'}->{$p->{'_view_'}};
-	}
-	elsif (defined($run->{'template_conf'}->{'default_view'}) && 
-	       defined($app->{'views'}->{$run->{'template_conf'}->{'default_view'}})) {
-
-		$view = $app->{'views'}->{$run->{'template_conf'}->{'default_view'}};
-	}	
-	else {
-		$view = $app->{'views'}->{'HTML'};
-	}	
-
-	$view->begin($p);
-
-	if ($e) {
-		$view->exception($e);
-	}
-
-	# pack up the params. note the presidence: module overrides template_conf
-	$view->params($run->{template_conf});
-	$view->params($template_params);
-
-	# add any params from the debugging handlers
-	$view->params($debug->finalize());
+	my $view = $self->{'engine'}->execute_view($content);
 
 	# output content
 	$self->{mp}->content_type($view->content_type());
 	$self->{mp}->print($view->output());
-
-	$view->finish();
-
 	$self->{mp}->flush();
+
+	####################
+	# Clean up
+	####################
+	$self->{'engine'}->finish($self->{mp}->ok);
+	$view->finish();
 
 	return $self->{mp}->ok;
 }
-=cut
 
 sub display_host_error {
 	my $self  = shift;

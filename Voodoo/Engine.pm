@@ -84,7 +84,7 @@ sub get_apps {
 
 sub is_devel_mode {
 	my $self = shift;
-
+	return 1;
 	return ($self->{'run'}->{'config'}->{'devel_mode'})?1:0;
 }
 
@@ -144,17 +144,18 @@ sub begin_run {
 	$debug->mark(Time::HiRes::time,"START");
 
 	$run->{'session_handler'} = $self->attach_session($app,$run->{'config'});
-	$run->{'session'} = $self->{'run'}->{'session_handler'}->session;
+	$run->{'session'} = $run->{'session_handler'}->session;
 
-	foreach (@{$self->{'run'}->{'app'}->databases}) {
+	foreach (@{$app->databases}) {
 		eval {
 			# we put this in app not run so that database connections persist across requests
-			$self->{'run'}->{'app'}->{'dbh'} = DBI->connect_cached(@{$_});
+			$app->{'dbh'} = DBI->connect_cached(@{$_});
 		};
-		last if $self->{'run'}->{'app'}->{'dbh'};
+		last if $app->{'dbh'};
 	
 		Apache::Voodoo::Exception::DBIConnect->throw($DBI::errstr);
 	}
+	$debug->mark(Time::HiRes::time,'DB Connect');
 
 	return 1;
 }
@@ -162,20 +163,24 @@ sub begin_run {
 sub parse_params {
 	my $self = shift;
 
-	my $params = $self->{mp}->parase_params($self->{run}->{config}->{upload_size_max});
+	my $params = $self->{mp}->parse_params($self->{'run'}->{'config'}->{'upload_size_max'});
 	unless (ref($params)) {
 		Apache::Voodoo::Exception::ParamParse->throw($params);
 	}
-	$debug->mark(Time::HiRes::time,"parameter parsing");
+	$debug->mark(Time::HiRes::time,"Parameter parsing");
 	$debug->params($params);
+
 	return $params;
 }
 
 sub finish {
-	my $self = shift;
+	my $self   = shift;
+	my $status = shift;
 
 	$self->{'run'}->{'session_handler'}->disconnect();
 
+	$debug->session($self->{'run'}->{'session'});
+	$debug->status($status);
 	$debug->mark(Time::HiRes::time,'END');
 	$debug->shutdown();
 
@@ -207,6 +212,9 @@ sub attach_session {
 
 	# update the session timer
 	$session->touch();
+
+	$debug->session_id($session->{'id'});
+	$debug->mark(Time::HiRes::time,'Session Attachment');
 
 	return $session;
 }
@@ -248,16 +256,17 @@ sub execute_controllers {
 	my $params = shift;
 
 	$uri =~ s/^\///;
-	warn "am here $uri";
+	$debug->url($uri);
 
-	my $run           = $self->{'run'};
-	my $app           = $self->{'run'}->{'app'};
-	my $template_conf = $self->{'run'}->{'app'}->resolve_conf_section($uri);
+	my $run = $self->{'run'};
+	my $app = $self->{'run'}->{'app'};
+
+	my $template_conf = $app->resolve_conf_section($uri);
 
 	$debug->mark(Time::HiRes::time,"config section resolution");
-	$debug->template_conf($run->{'template_conf'});
+	$debug->template_conf($template_conf);
 
-	my $p = {
+	$self->{'run'}->{'p'} = {
 		"dbh"           => $self->{'run'}->{'app'}->{'dbh'},
 		"params"        => $params,
 		"session"       => $self->{'run'}->{'session'},
@@ -288,7 +297,7 @@ sub execute_controllers {
 			my $obj    = $app->{'controllers'}->{$c->[0]};
 			my $method = $c->[1];
 
-			my $return = $obj->$method($p);
+			my $return = $obj->$method($self->{'run'}->{'p'});
 
 			$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
 			$debug->return_data($c->[0],$c->[1],$return);
@@ -318,7 +327,7 @@ sub execute_controllers {
 				}
 				else {
 					warn "Controller return an unsupported command in module($c->[0]) method($c->[1]): $return->[0]\n";
-					Apache::Voodoo::Exception::Application::BadCommand->throw(
+					Apache::Voodoo::Exception::RunTime::BadCommand->throw(
 						module  => $c->[0],
 						method  => $c->[1],
 						command => $return->[0]
@@ -333,14 +342,14 @@ sub execute_controllers {
 			}
 			else {
 				warn "Controller didn't return a hash reference in module($c->[0]) method($c->[1])\n";
-				Apache::Voodoo::Exception::Application::BadReturn->throw(
+				Apache::Voodoo::Exception::RunTime::BadReturn->throw(
 					module  => $c->[0],
 					method  => $c->[1],
 					data    => $return
 				);
 			}
 
-			last if $p->{_stop_chain_};
+			last if $self->{'run'}->{'p'}->{'_stop_chain_'};
 		}
 	}
 
@@ -348,47 +357,40 @@ sub execute_controllers {
 }
 
 sub execute_view {
-	my $self = shift;
+	my $self    = shift;
+	my $content = shift;
 
-=pod
 	my $view;
-	if (defined($p->{'_view_'}) && 
-		defined($app->{'views'}->{$p->{'_view_'}})) {
+	if (defined($self->{'run'}->{'p'}->{'_view_'}) && 
+		defined($self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'p'}->{'_view_'}})) {
 
-		$view = $app->{'views'}->{$p->{'_view_'}};
+		$view = $self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'p'}->{'_view_'}};
 	}
-	elsif (defined($run->{'template_conf'}->{'default_view'}) && 
-	       defined($app->{'views'}->{$run->{'template_conf'}->{'default_view'}})) {
+	elsif (defined($self->{'run'}->{'template_conf'}->{'default_view'}) && 
+	       defined($self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'template_conf'}->{'default_view'}})) {
 
-		$view = $app->{'views'}->{$run->{'template_conf'}->{'default_view'}};
+		$view = $self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'template_conf'}->{'default_view'}};
 	}	
 	else {
-		$view = $app->{'views'}->{'HTML'};
+		$view = $self->{'run'}->{'app'}->{'views'}->{'HTML'};
 	}	
 
-	$view->begin($p);
+	$debug->debug('URI',$self->{'run'}->{'uri'});
+	$view->begin($self->{'run'}->{'p'});
 
-	if ($e) {
-		$view->exception($e);
+	if (ref($content) eq "HASH") {
+		# pack up the params. note the presidence: module overrides template_conf
+		$view->params($self->{'run'}->{'template_conf'});
+		$view->params($content);
 	}
-
-	# pack up the params. note the presidence: module overrides template_conf
-	$view->params($run->{template_conf});
-	$view->params($template_params);
+	else {
+		$view->exception($content);
+	}
 
 	# add any params from the debugging handlers
 	$view->params($debug->finalize());
 
-	# output content
-	$self->{mp}->content_type($view->content_type());
-	$self->{mp}->print($view->output());
-
-	$view->finish();
-
-	$self->{mp}->flush();
-
-	return $self->{mp}->ok;
-=cut
+	return $view;
 }
 
 sub restart { 

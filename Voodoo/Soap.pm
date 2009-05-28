@@ -103,13 +103,13 @@ sub handle_request {
 		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};
 	if    ($e = Apache::Voodoo::Exception::Application::Redirect->caught()) {
-		$self->_make_fault($self->{mp}->redirect, "Redirected",$e->target);
+		return $self->_make_fault($self->{mp}->redirect, "Redirected",$e->target);
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::DisplayError->caught()) {
-		$self->_make_fault(600, $e->message, {nextservice => $e->target});
+		return $self->_make_fault(600, $e->message, {nextservice => $e->target});
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::AccessDenied->caught()) {
-		$self->_make_fault($self->{mp}->forbidden, $e->message);
+		return $self->_make_fault($self->{mp}->forbidden, $e->message);
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::RawData->caught()) {
 		return {
@@ -123,10 +123,10 @@ sub handle_request {
 	}
 	elsif ($@) {
 		# Apache::Voodoo::Exception::RunTime
-		# Apache::Voodoo::Exception::Application::BadCommand
-		# Apache::Voodoo::Exception::Application::BadReturn
+		# Apache::Voodoo::Exception::RunTime::BadCommand
+		# Apache::Voodoo::Exception::RunTime::BadReturn
 		# Exception::Class::DBI
-		$self->_make_fault($self->{mp}->server_error, "$@");
+		return $self->_make_fault($self->{mp}->server_error, "$@");
 	}
 
 	return $content;
@@ -135,12 +135,25 @@ sub handle_request {
 sub _make_fault {
 	my $self = shift;
 
-	my %msg;
-	$msg{faultcode}   = shift;
-	$msg{faultstring} = shift;
-	$msg{detail}      = shift if $_[0];
-	
-	die SOAP::Fault->new(%msg);
+
+	if ($self->{use_faults}) {
+		my %msg;
+		$msg{faultcode}   = shift;
+		$msg{faultstring} = shift;
+		$msg{detail}      = shift if $_[0];
+
+		die SOAP::Fault->new(%msg);
+	}
+	else {
+		my $msg = {
+			success => 0,
+			error   => shift,
+			message => shift
+		};
+
+		$msg->{detail} = shift if $_[0];
+		return $msg;
+	}
 }
 
 1;
