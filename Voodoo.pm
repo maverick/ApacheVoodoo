@@ -35,64 +35,64 @@ sub init { }
 sub debug { 
 	my $self = shift;
 
-	if (ref($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->debug(@_);
+	if (ref($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->debug(@_);
 	}
 }
 
 sub info {
 	my $self = shift;
 
-	if (ref($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->info(@_);
+	if (ref($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->info(@_);
 	}
 }
 
 sub warn {
 	my $self = shift;
 
-	if (ref($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->warn(@_);
+	if (ref($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->warn(@_);
 	}
 }
 
 sub error {
 	my $self = shift;
 
-	if (ref($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->error(@_);
+	if (ref($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->error(@_);
 	}
 }
 
 sub exception {
 	my $self = shift;
 
-	if (ref($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->exception(@_);
+	if (ref($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->exception(@_);
 	}
 }
 
 sub trace { 
 	my $self = shift;
 
-	if (ref($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->trace(@_);
+	if (ref($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->trace(@_);
 	}
 }
 
 sub table { 
 	my $self = shift;
 
-	if (ref($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->table(@_);
+	if (ref($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->table(@_);
 	}
 }
 
 sub mark {
 	my $self = shift;
 
-	if (defined($Apache::Voodoo::Handler::debug)) {
-		$Apache::Voodoo::Handler::debug->mark(Time::HiRes::time, @_);
+	if (defined($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->mark(Time::HiRes::time, @_);
 	}
 }
 

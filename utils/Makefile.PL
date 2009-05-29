@@ -48,9 +48,9 @@ else {
 	print STDERR "==WARNING== \n";
 	print STDERR "Can't find mod_perl.pm or mod_perl2.pm. I'm going to assume you're running Apache 2.X\n";
 	print STDERR "==WARNING==\n\n";
-	$required_modules{Apache2::Request} = 0;
+	$required_modules{Apache2::Request} = 2.08;
+	$required_modules{Apache2::Cookie}  = 2.08;
 }
-
 
 WriteMakefile(
 	NAME          => 'Apache::Voodoo',
