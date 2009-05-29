@@ -6,7 +6,7 @@ Apache::Voodoo::Debug::Handler - Handles servicing debugging information request
 
 =head1 VERSION
 
-$Id: Handler.pm 12906 2009-02-20 23:08:10Z medwards $
+$Id$
 
 =head1 SYNOPSIS
  

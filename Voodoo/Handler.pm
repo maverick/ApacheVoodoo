@@ -6,7 +6,7 @@ Apache::Voodoo::Handler - Main interface between mod_perl and Voodoo
 
 =head1 VERSION
 
-$Id: Handler.pm 11537 2008-12-11 21:36:23Z medwards $
+$Id$
 
 =head1 SYNOPSIS
  

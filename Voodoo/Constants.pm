@@ -6,7 +6,7 @@ Apache::Voodoo::Constants - interface to Apache::Voodoo configuration settings.
 
 =head1 VERSION
 
-$Id: Constants.pm 12906 2009-02-20 23:08:10Z medwards $
+$Id$
 
 =head1 SYNOPSIS
 

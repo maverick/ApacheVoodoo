@@ -6,7 +6,7 @@ Apache::Voodoo::Debug - handles operations associated with debugging output.
 
 =head1 VERSION
 
-$Id: Native.pm 12788 2009-02-19 23:06:38Z medwards $
+$Id$
 
 =head1 SYNOPSIS
 

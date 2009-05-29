@@ -6,7 +6,7 @@ Apache::Voodoo::Application::ConfigParser
 
 =head1 VERSION
 
-$Id: Application.pm 12906 2009-02-20 23:08:10Z medwards $
+$Id$
 
 =cut ################################################################################
 package Apache::Voodoo::Application::ConfigParser;

@@ -2,7 +2,7 @@
 
 =head1 Apache::Voodoo::View::HTML::Theme
 
-$Id: Theme.pm 12906 2009-02-20 23:08:10Z medwards $
+$Id$
 
 =head1 Synopsis
 

@@ -1,4 +1,4 @@
-# $Id: Static.pm 12906 2009-02-20 23:08:10Z medwards $
+# $Id$
 package Apache::Voodoo::Loader::Static;
 
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
