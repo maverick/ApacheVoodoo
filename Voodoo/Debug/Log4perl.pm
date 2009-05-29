@@ -26,21 +26,25 @@ use Data::Dumper; $Data::Dumper::Terse = 1; $Data::Dumper::Indent = 1;
 
 use Apache::Voodoo::Constants;
 
+#
+# Since log4perl wants to use one config file for the whole running perl program (one
+# call to init), and # ApacheVoodo lets you define logging per application (multiple inits).
+# We're using a singleton to get around that.
+#
+my $self;
+
 sub new {
 	my $class = shift;
+	my $conf  = shift;
 
-	my $id   = shift;
-	my $conf = shift;
-
-	my $self = {};
-	bless($self,$class);
-
-	unless ($conf->{config_file} =~ /^\//) {
-		my $ac = Apache::Voodoo::Constants->new();
-		$conf->{config_file} = File::Spec->catfile($ac->install_path,$id,$ac->conf_path,$conf->{config_file});
+	if (ref($self)) {
+		return $self;
 	}
 
-	Log::Log4perl->init($conf->{config_file});
+	$self = {};
+	bless($self,$class);
+
+	Log::Log4perl->init_and_watch($conf,10);
 
 	return $self;
 }
@@ -54,9 +58,6 @@ sub enabled {
 	return 1;
 }
 
-sub shutdown {
-	return;
-}
 
 sub debug     { my $self = shift; $self->_get_logger->debug($self->_dumper(@_)); }
 sub info      { my $self = shift; $self->_get_logger->info( $self->_dumper(@_)); }
@@ -67,13 +68,47 @@ sub exception { my $self = shift; $self->_get_logger->fatal($self->_dumper(@_));
 sub trace     { my $self = shift; $self->_get_logger->trace($self->_dumper(@_)); }
 sub table     { my $self = shift; $self->_get_logger->debug($self->_dump_table(@_)); }
 
-sub mark          { my $self = shift; $self->debug('mark',          @_); }
-sub return_data   { my $self = shift; $self->debug('return_data',   @_); }
-sub url           { my $self = shift; $self->debug('url',           @_); }
-sub status        { my $self = shift; $self->debug('status',        @_); }
-sub params        { my $self = shift; $self->debug('params',        @_); }
-sub template_conf { my $self = shift; $self->debug('template_conf', @_); }
-sub session       { my $self = shift; $self->debug('session',       @_); }
+sub return_data   { my $self = shift; $self->_get_logger('ReturnData'  )->debug('return_data',   $self->_dumper(@_)); }
+sub url           { my $self = shift; $self->_get_logger('Url'         )->debug('url',           $self->_dumper(@_)); }
+sub status        { my $self = shift; $self->_get_logger('Status'      )->debug('status',        $self->_dumper(@_)); }
+sub params        { my $self = shift; $self->_get_logger('Params'      )->debug('params',        $self->_dumper(@_)); }
+sub template_conf { my $self = shift; $self->_get_logger('TemplateConf')->debug('template_conf', $self->_dumper(@_)); }
+sub session       { my $self = shift; $self->_get_logger('Session'     )->debug('session',       $self->_dumper(@_)); }
+
+sub mark { 
+	my $self = shift; 
+
+	push(@{$self->{profile}},[@_]);
+}
+
+sub shutdown {
+	my $self = shift;
+
+	my @d = $self->{profile};
+	my $last = $#d;
+	if ($last > 0) {
+		my $total_time = $d[$last]->[0] - $d[0]->[0];
+
+		my @return = map {
+			[
+				sprintf("%.5f",    $d[$_]->[0] - $d[$_-1]->[0]),
+				sprintf("%5.2f%%",($d[$_]->[0] - $d[$_-1]->[0])/$total_time*100),
+				$d[$_]->[1]
+			]
+		} (1 .. $last);
+
+		unshift(@return, [
+			sprintf("%.5f",$total_time),
+			'percent', 
+			'message'
+		]);
+
+		my $logger = $self->_get_logger("Profile");
+		$logger->debug($self->_dump_table("Profile",\@return));
+	}
+
+	delete $self->{profile};
+}
 
 sub _dumper {
 	my $self = shift;
@@ -91,14 +126,20 @@ sub _dumper {
 }
 
 sub _get_logger {
-	my $self = shift;
+	my $self    = shift;
+	my $section = shift;
 
-	my @stack = $self->stack_trace();
-	if (scalar(@stack)) {
-		return Log::Log4perl->get_logger($stack[-1]->{class});
+	if ($section) {
+		return Log::Log4perl->get_logger("Apache::Voodoo::".$section);
 	}
 	else {
-		return Log::Log4perl->get_logger("Apache::Voodoo");
+		my @stack = $self->stack_trace();
+		if (scalar(@stack)) {
+			return Log::Log4perl->get_logger($stack[-1]->{class});
+		}
+		else {
+			return Log::Log4perl->get_logger("Apache::Voodoo");
+		}
 	}
 }
 

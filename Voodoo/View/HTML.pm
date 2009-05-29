@@ -56,9 +56,7 @@ sub begin {
 	my $self = shift;
 	my $p    = shift;
 
-	my $template = $p->{'uri'};
 	my $skeleton;
-
 	eval {
 		my $return;
 		if ($self->{'use_themes'}) {

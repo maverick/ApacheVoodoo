@@ -282,11 +282,11 @@ sub execute_controllers {
 		"uri"           => $uri,
 
 		# these are deprecated.  In the future get them from $p->{mp} or $p->{config}
-		"document_root" => $self->{'run'}->{'conf'}->{'template_dir'},
+		"document_root" => $self->{'run'}->{'config'}->{'template_dir'},
 		"dir_config"    => $self->{mp}->dir_config,
 		"user-agent"    => $self->{mp}->header_in('User-Agent'),
 		"r"             => $self->{mp}->{r},
-		"themes"        => $self->{'run'}->{'conf'}->{'themes'}
+		"themes"        => $self->{'run'}->{'config'}->{'themes'}
 	};
 
 	my $template_params = {};

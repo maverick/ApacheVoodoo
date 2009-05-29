@@ -104,7 +104,6 @@ sub handler {
 	####################
 	# Execute the controllers
 	####################
-	warn ($uri);
 	my $content;
 	my $e;
 	eval {

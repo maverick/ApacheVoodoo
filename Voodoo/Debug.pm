@@ -5,6 +5,8 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 use warnings;
 
+use Apache::Voodoo::Constants;
+
 sub new {
 	my $class = shift;
 	my $conf  = shift;
@@ -28,6 +30,12 @@ sub new {
 			require $file;
 			push(@handlers, $package->new($conf->{'id'},$conf->{'debug'}->{$_}));
 		}
+	}
+
+	my $ac = Apache::Voodoo::Constants->new();
+	if ($ac->use_log4perl) {
+		require Apache::Voodoo::Debug::Log4perl;
+		push(@handlers, Apache::Voodoo::Debug::Log4perl->new($ac->log4perl_conf));
 	}
 
 	if (scalar(@handlers) > 1) {
