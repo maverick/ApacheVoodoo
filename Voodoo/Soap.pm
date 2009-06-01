@@ -53,7 +53,7 @@ sub handler {
 
 	my $return = $self->{'soap'}->handle($r);
 
-	$self->{'engine'}->finish();
+	$self->{'engine'}->finish($self->{mp}->ok);
 
 	return $return;
 }

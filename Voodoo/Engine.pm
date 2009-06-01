@@ -16,6 +16,7 @@ package Apache::Voodoo::Engine;
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
+use warnings;
 
 use File::Spec;
 use DBI;
@@ -295,9 +296,9 @@ sub execute_controllers {
 
 	# call each of the pre_include modules followed by our page specific module followed by our post_includes
 	foreach my $c ( 
-		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}) ),
+		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}  ||"") ),
 		$app->map_uri($uri),
-		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'}) )
+		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'} ||"") )
 		) {
 
 		if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
@@ -461,6 +462,10 @@ sub restart {
 		}
 	}
 	closedir(DIR);
+
+	foreach (values %{$self->{'apps'}}) {
+		$_->bootstrapped();
+	}
 }
 
 sub _adjust_url {

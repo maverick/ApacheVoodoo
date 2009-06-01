@@ -35,8 +35,10 @@ sub new {
 	return $self;
 }
 
-sub init      { my $self = shift; $_->init(@_)      foreach (@{$self->{'handlers'}}); }
-sub shutdown  { my $self = shift; $_->shutdown(@_)  foreach (@{$self->{'handlers'}}); }
+sub bootstrapped { my $self = shift; $_->bootstrapped(@_) foreach (@{$self->{'handlers'}}); }
+sub init         { my $self = shift; $_->init(@_)         foreach (@{$self->{'handlers'}}); }
+sub shutdown     { my $self = shift; $_->shutdown(@_)     foreach (@{$self->{'handlers'}}); }
+
 sub debug     { my $self = shift; $_->debug(@_)     foreach (@{$self->{'handlers'}}); }
 sub info      { my $self = shift; $_->info(@_)      foreach (@{$self->{'handlers'}}); }
 sub warn      { my $self = shift; $_->warn(@_)      foreach (@{$self->{'handlers'}}); }

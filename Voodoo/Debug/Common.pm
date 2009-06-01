@@ -32,6 +32,8 @@ sub new {
 	return $self;
 }
 
+sub bootstrapped { return; }
+
 sub init      { return; }
 sub shutdown  { return; }
 sub debug     { return; }

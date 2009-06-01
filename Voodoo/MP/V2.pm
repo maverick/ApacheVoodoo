@@ -19,7 +19,6 @@ use Apache2::Cookie;
 
 use base("Apache::Voodoo::MP::Common");
 
-
 sub declined     { return Apache2::Const::DECLINED;     }
 sub forbidden    { return Apache2::Const::FORBIDDEN;    }
 sub ok           { return Apache2::Const::OK;           }

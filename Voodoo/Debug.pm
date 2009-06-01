@@ -29,13 +29,21 @@ sub new {
 
 			require $file;
 			push(@handlers, $package->new($conf->{'id'},$conf->{'debug'}->{$_}));
+
 		}
 	}
 
 	my $ac = Apache::Voodoo::Constants->new();
 	if ($ac->use_log4perl) {
 		require Apache::Voodoo::Debug::Log4perl;
-		push(@handlers, Apache::Voodoo::Debug::Log4perl->new($ac->log4perl_conf));
+		my $l4p = Apache::Voodoo::Debug::Log4perl->new($conf->{'id'},$ac->log4perl_conf);
+
+		unless ($conf->{'debug'}->{'Log4perl'}) {
+			# Tomfoolery to deal with log4perl being a singlton.
+			# If the config file pulls in log4perl, we don't want to add the instance again,
+			# lest we end up with duplicated messages.
+			push(@handlers,$l4p);
+		}
 	}
 
 	if (scalar(@handlers) > 1) {

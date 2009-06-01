@@ -58,6 +58,12 @@ sub databases {
 	return $_[0]->{'parser'}->databases();
 }
 
+sub bootstrapped {
+	my $self = shift;
+
+	$self->{debug_handler}->bootstrapped();
+}
+
 sub refresh {
 	my $self    = shift;
 	my $initial = shift;

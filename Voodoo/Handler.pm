@@ -45,6 +45,7 @@ sub handler {
 	my $r    = shift;
 
 	$self->{'mp'}->set_request($r);
+
 	$self->{'engine'}->set_request($r);
 
 	####################

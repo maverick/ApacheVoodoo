@@ -24,34 +24,60 @@ use File::Spec;
 use Log::Log4perl;
 use Data::Dumper; $Data::Dumper::Terse = 1; $Data::Dumper::Indent = 1;
 
-use Apache::Voodoo::Constants;
-
 #
 # Since log4perl wants to use one config file for the whole running perl program (one
 # call to init), and # ApacheVoodo lets you define logging per application (multiple inits).
-# We're using a singleton to get around that.
+# We're using a singleton to get around that.  We append each config block to a hash and
+# then init log4perl after the all the apps are loaded.  Kinda ugly, but until log4perl supports
+# multiple configs, then it's what we're stuck with.
 #
-my $self;
+our $self;
 
 sub new {
 	my $class = shift;
+	my $id    = shift;
 	my $conf  = shift;
 
-	if (ref($self)) {
-		return $self;
+	unless (ref($self)) {
+		$self = {};
+		$self->{conf} = {};
+		bless($self,$class);
 	}
 
-	$self = {};
-	bless($self,$class);
-
-	Log::Log4perl->init_and_watch($conf,10);
+	if (ref($conf) eq "HASH") {
+		foreach (keys %{$conf}) {
+			$self->{conf}->{$_} = $conf->{$_};
+		}
+	}
+	elsif (!ref($conf)) {
+		$self->{v_file} = $conf;
+	}
 
 	return $self;
 }
 
-sub init {
+sub bootstrapped {
 	my $self = shift;
-	my $mp   = shift;
+
+	unless (Log::Log4perl->initialized()) {
+		my $conf;
+		if ($self->{v_file}) {
+			if (open(F,$self->{v_file})) {
+				local $/ = undef;
+				$conf = <F>;
+				$conf .= "\n";
+				close(F);
+			}
+			else {
+				warn $!
+			}
+		}
+		foreach (keys %{$self->{conf}}) {
+			$conf .= $_ .' = '.$self->{conf}->{$_}."\n";
+		}
+
+		Log::Log4perl->init_once(\$conf);
+	}
 }
 
 sub enabled {
@@ -68,12 +94,12 @@ sub exception { my $self = shift; $self->_get_logger->fatal($self->_dumper(@_));
 sub trace     { my $self = shift; $self->_get_logger->trace($self->_dumper(@_)); }
 sub table     { my $self = shift; $self->_get_logger->debug($self->_dump_table(@_)); }
 
-sub return_data   { my $self = shift; $self->_get_logger('ReturnData'  )->debug('return_data',   $self->_dumper(@_)); }
-sub url           { my $self = shift; $self->_get_logger('Url'         )->debug('url',           $self->_dumper(@_)); }
-sub status        { my $self = shift; $self->_get_logger('Status'      )->debug('status',        $self->_dumper(@_)); }
-sub params        { my $self = shift; $self->_get_logger('Params'      )->debug('params',        $self->_dumper(@_)); }
-sub template_conf { my $self = shift; $self->_get_logger('TemplateConf')->debug('template_conf', $self->_dumper(@_)); }
-sub session       { my $self = shift; $self->_get_logger('Session'     )->debug('session',       $self->_dumper(@_)); }
+sub return_data   { my $self = shift; $self->_get_logger('ReturnData'  )->debug($self->_dumper(@_)); }
+sub url           { my $self = shift; $self->_get_logger('Url'         )->debug($self->_dumper(@_)); }
+sub status        { my $self = shift; $self->_get_logger('Status'      )->debug($self->_dumper(@_)); }
+sub params        { my $self = shift; $self->_get_logger('Params'      )->debug($self->_dumper(@_)); }
+sub template_conf { my $self = shift; $self->_get_logger('TemplateConf')->debug($self->_dumper(@_)); }
+sub session       { my $self = shift; $self->_get_logger('Session'     )->debug($self->_dumper(@_)); }
 
 sub mark { 
 	my $self = shift; 
