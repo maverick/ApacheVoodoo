@@ -86,6 +86,7 @@ sub stack_trace {
 		else {
 			$f->{'type'} = '::';
 		}
+		$f->{instruction} = $f->{class}.$f->{type}.$f->{function};
 
 		push(@trace,$f);
 

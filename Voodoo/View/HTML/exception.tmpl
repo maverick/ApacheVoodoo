@@ -1,7 +1,64 @@
-<div class="voodooException">
+<style>
+div.voodooException {
+	margin: 20px;
+}
 
-<h1>An Error Occurred While Processing This Request</h1>
-<pre>
-<TMPL_VAR exception>
-</pre>
+div.voodooException h1 {
+	color: red;
+	font-size: 16px;
+	padding-bottom: 4px;
+}
+
+div.voodooException h2 {
+	font-size: 14px;
+}
+
+div.voodooException p {
+	padding-top: 5px;
+}
+
+div.voodooException table {
+	padding: 5px 0px 5px 0px;
+	border-collapse: collapse;
+}
+
+div.voodooException th {
+	background: #ccc; 
+}
+
+div.voodooException th,
+div.voodooException td {
+	padding-left: 2px;
+	padding-right: 2px;
+	border: 1px solid black;
+	color: #000000;
+}
+
+div.voodooException .vdTableRowOdd {
+	background-color: #e0ffe0;
+}
+</style>
+
+<div class="voodooException">
+	<h1>An Error Occurred While Processing This Request:</h1>
+	<h2><TMPL_VAR description></h2>
+	<p>
+		<TMPL_VAR message>
+	</p>
+	<p>
+		<table>
+		<tr>
+			<th>Instructon</th>
+			<th>Line</th>
+			<th>Args</th>
+		</tr>
+		<TMPL_LOOP stack>
+		<tr <TMPL_IF __odd__>class="vdTableRowOdd"</TMPL_IF>>
+			<td><TMPL_VAR instruction></td>
+			<td><TMPL_VAR line></td>
+			<td><TMPL_VAR args></td>
+		</tr>
+		</TMPL_LOOP>
+		</table>
+	</p>
 </div>

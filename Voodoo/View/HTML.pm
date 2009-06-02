@@ -141,21 +141,34 @@ sub exception {
 	return if ($self->{internal_error});
 
 	eval {
-		use Data::Dumper;
 		if ($e->isa("Exception::Class::DBI")) {
 			$self->_load_internal_template("db_error");
 			$self->params(
-				'time' => scalar (localtime($e->time)),
-				'package' => $e->package,
-				'file' => $e->file,
-				'line' => $e->line,
-				'error' => $e->errstr,
-				'query' => $e->statement
+				#'package' => $e->package,
+				#'file' => $e->file,
+				#'line' => $e->line,
+				#'error' => $e->errstr,
+				"description" => "Database Error",
+				"message"     => $e->errstr,
+				"package"     => $e->package,
+				"line"        => $e->line,
+				"query"       => $self->_format_query($e->statement)
+			);
+		}
+		elsif ($e->isa("Apache::Voodoo::Exception::RunTime")) {
+			$self->_load_internal_template("exception");
+			$self->params(
+				"description" => $e->description,
+				"message"     => $e->message,
+				"stack"       => $self->_stack_trace($e->trace())
 			);
 		}
 		else {
 			$self->_load_internal_template("exception");
-			$self->params("exception" => Dumper $e);
+			$self->params(
+				"description" => ref($e),
+				"message" => "$e"
+			);
 		}
 	};
 	if ($@) {
@@ -189,12 +202,90 @@ sub finish {
 }
 
 sub _internal_error {
-	my $self  = shift;
+	my $self = shift;
 
 	$self->content_type("text/html");
 
 	$self->{internal_error} = 1;
 	$self->{error_msg} = shift;
+}
+
+sub _stack_trace {
+	my $self  = shift;
+	my $trace = shift;
+
+	unless (ref($trace) eq "Devel::StackTrace") {
+		return [];
+	}
+
+	my @trace;
+	my $i = 1;
+    while (my $frame = $trace->frame($i++)) {
+		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
+        next if ($frame->package =~ /^Apache::Voodoo/);
+        next if ($frame->package =~ /(eval)/);
+
+		my $f = {
+			'class'    => $frame->package,
+			'function' => $trace->frame($i)->subroutine,
+			'file'     => $frame->filename,
+			'line'     => $frame->line,
+		};
+		$f->{'function'} =~ s/^$f->{'class'}:://;
+
+		my @a = $trace->frame($i)->args;
+		# if the first item is a reference to same class, then this was a method call
+		if (ref($a[0]) eq $f->{'class'}) {
+			shift @a;
+			$f->{'type'} = '->';
+		}
+		else {
+			$f->{'type'} = '::';
+		}
+		$f->{'args'} = join(",",@a);
+
+		$f->{'instruction'} = $f->{'class'}.$f->{'type'}.$f->{'function'};
+		push(@trace,$f);
+
+    }
+	return \@trace;
+}
+
+sub _format_query {
+	my $self  = shift;
+	my $query = shift;
+
+	my $leading = undef;
+	my @lines; 
+	foreach my $line (split(/\n/,$query)) {
+		$line =~ s/[\r\n]//g;
+		$line =~ s/(?<![ \S])\t/    /g;    # negative look-behind assertion.  replaces only leading tabs
+
+		if (!defined($leading)) {
+			next if $line =~ /^\s*$/;
+			my $l = $line;
+			$l =~ s/\S.*$//;
+			if (length($l)) {
+				$leading = length($l);
+			}
+		}
+		else {
+			my $l = $line;
+			$l =~ s/\S.*$//;
+			if (length($l) and length($l) < $leading) {
+				$leading = length($l);
+			}
+		}
+		push (@lines,$line);
+	}
+
+	return join(
+		"\n",
+		map {
+			$_ =~ s/^ {$leading}//;
+			$_;
+		} @lines
+	);
 }
 
 1;

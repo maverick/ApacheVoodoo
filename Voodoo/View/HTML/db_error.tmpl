@@ -1,37 +1,58 @@
-<div class="voodooDbError">
+<style>
+div.voodooException {
+	margin: 20px;
+}
 
-<h1>DB Error</h1>
+div.voodooException h1 {
+	color: red;
+	font-size: 16px;
+	padding-bottom: 4px;
+}
+
+div.voodooException h2 {
+	font-size: 14px;
+}
+
+div.voodooException table {
+	padding: 5px 0px 5px 0px;
+	border-collapse: collapse;
+}
+
+div.voodooException td {
+	padding-left: 2px;
+	padding-right: 2px;
+	border: 1px solid black;
+	color: #000000;
+}
+
+div.voodooException td.label {
+	font-weight: bold;
+}
+
+div.voodooException td.nowrap {
+	white-space: pre;
+}
+</style>
+
+<div class="voodooException">
+<h1>An Error Occurred While Processing This Request:</h1>
+<h2>Database Error</h2>
 <table>
 <tr>
-	<td>TIME:</td>
-	<td><TMPL_VAR time></td>
+	<td class="label">Error:</td>
+	<td><tmpl_var message></td>
 </tr>
 <tr>
-	<td>PACKAGE:</td>
-	<td><TMPL_VAR package></td>
+	<td class="label">Module:</td>
+	<td><tmpl_var package></td>
 </tr>
 <tr>
-	<td>FILE:</td>
-	<td><TMPL_VAR file></td>
+	<td class="label">Line:</td>
+	<td><tmpl_var line></td>
 </tr>
 <tr>
-	<td>SUBROUTINE:</td>
-	<td><TMPL_VAR subroutine></td>
-</tr>
-<tr>
-	<td>Line Number:</td>
-	<td><TMPL_VAR line></td>
-</tr>
-<tr>
-	<td colspan="2">
-		<TMPL_VAR error>
-	</td>
+	<td class="label">Query:</td>
+	<td class="nowrap"><tmpl_var query></td>
 </tr>
 </table>
-
-<h2>Query</h2>
-<pre>
-<TMPL_VAR query>
-</pre>
-
 </div>
