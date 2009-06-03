@@ -56,7 +56,7 @@ sub new {
 			$_[0]->rethrow;
 		}
 		else {
-			Apache::Voodoo::Exception::RunTime->throw(error => join("\n", @_));
+			Apache::Voodoo::Exception::RunTime->throw(message => join("\n", @_));
 		}
 	};
 

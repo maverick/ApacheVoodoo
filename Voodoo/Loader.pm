@@ -35,26 +35,24 @@ sub load_module {
 	# we're running multiple instances of the same application, then we're just wasting time
 	# recompiling the same modules over and over, and "warnings" will sometimes (uselessly) yell about
 	# modules being redefined.
-	#unless ($self->{'bootstrapping'}) {
+	unless ($self->{'bootstrapping'}) {
 		delete $INC{$file};
-	#}
+	}
 
 	my $obj;
 	eval {
+		local $SIG{__DIE__};
 		require $file;
 		$obj = $module->new();
 	};
 	if ($@) {
-		warn "Failed to load $module: $@";
-		my $error = $@;
+		my $error = "$@";
+		$error =~ s/Compilation failed in require at .*Apache\/Voodoo\/Loader.pm line.*//;
 
 		$module =~ s/^[^:]+:://;
 
 		require Apache::Voodoo::Zombie;
-		$obj = Apache::Voodoo::Zombie->new();
-
-		$obj->module($module);
-		$obj->error($error);
+		$obj = Apache::Voodoo::Zombie->new($module,$error);
 	}
 
 	return $obj;

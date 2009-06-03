@@ -155,20 +155,26 @@ sub exception {
 				"query"       => $self->_format_query($e->statement)
 			);
 		}
-		elsif ($e->isa("Apache::Voodoo::Exception::RunTime")) {
+		elsif ($e->isa("Apache::Voodoo::Exception::Application::DisplayError")) {
+			$self->_load_internal_template("display_error");
+			$self->params(
+				'error_string' => $e->message,
+				'error_url'    => $e->target
+			);
+		}
+		elsif ($e->isa("Apache::Voodoo::Exception")) {
 			$self->_load_internal_template("exception");
 			$self->params(
 				"description" => $e->description,
-				"message"     => $e->message,
-				"stack"       => $self->_stack_trace($e->trace())
+				"message"     => $e->message
 			);
+			if ($e->isa("Apache::Voodoo::Exception::RunTime")) {
+				$self->params("stack" => $self->_stack_trace($e->trace()));
+			}
 		}
 		else {
 			$self->_load_internal_template("exception");
-			$self->params(
-				"description" => ref($e),
-				"message" => "$e"
-			);
+			$self->params("message" => "$e");
 		}
 	};
 	if ($@) {

@@ -11,9 +11,18 @@ use warnings;
 use Exception::Class (
 	'Apache::Voodoo::Exception',
 	
+	'Apache::Voodoo::Exception::Compilation' => {
+		isa => 'Apache::Voodoo::Exception',
+		description => 'Module compilation failed',
+		fields => ['module']
+	},
 	'Apache::Voodoo::Exception::RunTime' => {
 		isa => 'Apache::Voodoo::Exception',
 		description => 'Run time exception from perl'
+	},
+	'Apache::Voodoo::Exception::RunTime::Thrown' => {
+		isa => 'Apache::Voodoo::Exception::RunTime',
+		description => 'Module threw an exception'
 	},
 	'Apache::Voodoo::Exception::RunTime::BadCommand' => {
 		isa => 'Apache::Voodoo::Exception::RunTime',
@@ -25,6 +34,10 @@ use Exception::Class (
 		description => "Controller didn't return a hash reference",
 		fields => ['module', 'method', 'data']
 	},
+	'Apache::Voodoo::Exception::ParamParse' => {
+		isa => 'Apache::Voodoo::Exception',
+		description => 'Parameters failed to parse'
+	},
 	'Apache::Voodoo::Exception::DBIConnect' => {
 		isa => 'Apache::Voodoo::Exception',
 		description => 'Failed to connect to the database'
@@ -32,10 +45,6 @@ use Exception::Class (
 	'Apache::Voodoo::Exception::Application' => {
 		isa => 'Apache::Voodoo::Exception',
 		description => 'Application Error'
-	},
-	'Apache::Voodoo::Exception::ParamParse' => {
-		isa => 'Apache::Voodoo::Exception',
-		description => 'Parameters failed to parse'
 	},
 	'Apache::Voodoo::Exception::Application::SessionTimeout' => {
 		isa => 'Apache::Voodoo::Exception::Application',
