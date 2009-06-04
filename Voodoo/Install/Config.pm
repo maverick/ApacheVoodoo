@@ -280,6 +280,7 @@ sub debug_path {
 	$self->{DEBUG_PATH} = prompt("URL Path to the debug handler",$self->{DEBUG_PATH});
 }
 
+
 1;
 
 =pod ###########################################################################

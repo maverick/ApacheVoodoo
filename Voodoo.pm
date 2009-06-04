@@ -70,7 +70,7 @@ sub exception {
 
 	if (ref($Apache::Voodoo::Engine::debug)) {
 		$Apache::Voodoo::Engine::debug->exception(@_);
-		Apache::Voodoo::Exception::RunTime->throw(message => join("\n",@_));
+		Apache::Voodoo::Exception::RunTime::Thrown->throw(message => join("\n",@_));
 	}
 }
 

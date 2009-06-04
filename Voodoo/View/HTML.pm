@@ -144,10 +144,6 @@ sub exception {
 		if ($e->isa("Exception::Class::DBI")) {
 			$self->_load_internal_template("db_error");
 			$self->params(
-				#'package' => $e->package,
-				#'file' => $e->file,
-				#'line' => $e->line,
-				#'error' => $e->errstr,
 				"description" => "Database Error",
 				"message"     => $e->errstr,
 				"package"     => $e->package,
