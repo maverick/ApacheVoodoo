@@ -51,13 +51,15 @@ div.voodooException .vdTableRowOdd {
 	<p>
 		<table>
 		<tr>
-			<th>Instructon</th>
+			<th>Class</th>
+			<th>Subroutine</th>
 			<th>Line</th>
 			<th>Args</th>
 		</tr>
 		<TMPL_LOOP stack>
 		<tr <TMPL_IF __odd__>class="vdTableRowOdd"</TMPL_IF>>
-			<td><TMPL_VAR instruction></td>
+			<td><TMPL_VAR class></td>
+			<td><TMPL_VAR subroutine></td>
 			<td><TMPL_VAR line></td>
 			<td><TMPL_VAR args></td>
 		</tr>

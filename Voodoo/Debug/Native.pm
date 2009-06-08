@@ -179,7 +179,7 @@ sub _debug {
 		type  => 'debug',
 		id    => $self->{id},
 		level => $type,
-		stack => $self->_encode($self->stack_trace($full)),
+		stack => $self->_encode([$self->stack_trace($full)]),
 		data  => $data
 	});
 }

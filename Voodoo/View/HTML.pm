@@ -246,7 +246,6 @@ sub _stack_trace {
 		}
 		$f->{'args'} = join(",",@a);
 
-		$f->{'instruction'} = $f->{'class'}.$f->{'type'}.$f->{'function'};
 		push(@trace,$f);
 
     }

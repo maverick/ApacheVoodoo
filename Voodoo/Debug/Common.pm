@@ -93,9 +93,6 @@ sub stack_trace {
 		if ($full) {
 			$f->{'args'} = \@a;
 		}
-		else {
-			last;
-		}
     }
 	return @trace;
 }

@@ -91,7 +91,7 @@ sub warn      { my $self = shift; $self->_get_logger->warn( $self->_dumper(@_));
 sub error     { my $self = shift; $self->_get_logger->error($self->_dumper(@_)); }
 sub exception { my $self = shift; $self->_get_logger->fatal($self->_dumper(@_)); }
 
-sub trace     { my $self = shift; $self->_get_logger->trace($self->_dumper(@_)); }
+sub trace     { my $self = shift; $self->_get_logger->trace($self->_dump_trace(@_)); }
 sub table     { my $self = shift; $self->_get_logger->debug($self->_dump_table(@_)); }
 
 sub return_data   { my $self = shift; $self->_get_logger('ReturnData'  )->debug($self->_dumper(@_)); }
@@ -170,45 +170,75 @@ sub _get_logger {
 }
 
 sub _dump_table {
-	my $self = shift;
+	my $s = shift;
 	my @data = @_;
 
 	return sub {
+		my $self = $s;
 		my $name = "Table";
 		if (scalar(@data) > 1) {
 			$name = shift @data;
 		}
 
-		my @return = ($name);
-
-		my @col;
-		# find the widest element in each column
-		foreach my $row (@{$data[0]}) {
-			for (my $i=0; $i < scalar(@{$row}); $i++) {
-				if (!defined($col[$i]) || length($row->[$i]) > $col[$i]) {
-					$col[$i] = length($row->[$i]);
-				}
-			}
-		}
-
-		my $t_width = 2;	    # "| "
-		foreach (@col) {
-			$t_width += $_ + 3; # " | "
-		}
-		$t_width -= 1;          # "| " -> "|"
-
-		push(@return,'-' x $t_width);
-		foreach my $row (@{$data[0]}) {
-			my $line = "| ";
-			for (my $i=0; $i < scalar(@{$row}); $i++) {
-				$line .= sprintf("%-".$col[$i]."s",$row->[$i]) . " | ";
-			}
-			$line =~ s/ $//;
-			push (@return,$line);
-			push(@return,'-' x $t_width);
-		}
-		return "\n".join("\n",@return);
+		return "\n$name\n" . $self->_mk_table(@{$data[0]});
 	};
+}
+
+sub _dump_trace {
+	my $s = shift;
+	my $n = shift;
+	my $t = [$s->stack_trace()];
+
+	return sub {
+		my $self  = $s;
+		my $trace = $t;
+
+		my $name = ($n || "Trace");
+		my @data = map {
+			[
+				$_->{class},
+				$_->{function},
+				$_->{line},
+			]
+		} @{$trace};
+
+		unshift(@data,['Class','Subroutine','Line']);
+		return "\n$name\n".$self->_mk_table(@data);
+	};
+}
+
+sub _mk_table {
+	my $self = shift;
+	my @data = @_;
+
+	my @col;
+	# find the widest element in each column
+	foreach my $row (@data) {
+		for (my $i=0; $i < scalar(@{$row}); $i++) {
+			if (!defined($col[$i]) || length($row->[$i]) > $col[$i]) {
+				$col[$i] = length($row->[$i]);
+			}
+		}
+	}
+
+	my $t_width = 2;	    # "| "
+	foreach (@col) {
+		$t_width += $_ + 3; # " | "
+	}
+	$t_width -= 1;          # "| " -> "|"
+
+	my @return;
+	push(@return,'-' x $t_width);
+	foreach my $row (@data) {
+		my $line = "| ";
+		for (my $i=0; $i < scalar(@{$row}); $i++) {
+			$line .= sprintf("%-".$col[$i]."s",$row->[$i]) . " | ";
+		}
+		$line =~ s/ $//;
+		push (@return,$line);
+		push(@return,'-' x $t_width);
+	}
+	return join("\n",@return);
 }
 
 1;

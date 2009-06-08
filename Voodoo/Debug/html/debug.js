@@ -254,37 +254,40 @@ function voodooDebug(opts) {
 	}
 
 	this.handleDebug = function(data) {
-		console.log(data);
-
 		var stack = new Array();
 
 		var h = '<ul>';
 		for (var i=0; i < data.length; i++) {
 			var row = data[i];
+			var rstack = row.stack.reverse();
 
-			var depth;
-			for (depth=0; depth < row.stack.length; depth++) {
-				var frame = row.stack[depth];
-				if (stack[depth]          == undefined   || 
-					stack[depth].class    != frame.class ||
-					stack[depth].function != frame.function) {
+			if (rstack.length > 0) {
+				var depth;
+				for (depth=0; depth < rstack.length || depth < stack.length; depth++) {
+					if (rstack[depth]         == undefined ||
+						stack[depth]          == undefined ||
+						stack[depth].class    != rstack[depth].class ||
+						stack[depth].function != rstack[depth].function) {
 
-					while (depth < stack.length-1) {
-						// pop stack up to the point that everything matches
-						console.log("pop stack:",stack.length-1, " depth:",depth);
-						h += '</li></ul>';
-						stack.pop();
+						while (stack.length > depth) {
+							// pop stack up to the point that everything matches
+							h += '</li></ul>';
+							stack.pop();
+						}
+						
+						if (rstack[depth] != undefined) {
+							// push new item
+							stack.push(rstack[depth]);
+							h += '<li class="vdOpen"><span class="vdClick" onClick="vdDebug.toggleUL(this);">'+
+								'<img src="'+this.imgMinus.src+'" />'+
+								rstack[depth].class + 
+								rstack[depth].type.replace('<','&lt;').replace('>','&gt;') + 
+								rstack[depth].function + "</span><ul>";
+						}
 					}
-					// push new item
-					stack.push(frame);
-					h += '<li class="vdOpen"><span class="vdClick" onClick="vdDebug.toggleUL(this);">'+
-					     '<img src="'+this.imgMinus.src+'" />'+
-						 frame.class + 
-					     frame.type.replace('<','&lt;').replace('>','&gt;') + 
-					     frame.function + "</span><ul>";
 				}
+				h += '<li><img src="'+this.imgLevels[row.level].src+'"/> ' + rstack[0].line + ':';
 			}
-			h += '<li><img src="'+this.imgLevels[row.level].src+'"/> ' + row.stack[0].line + ':';
 				
 			if (row.level == "table") {
 				h += row.data[0];
@@ -311,15 +314,16 @@ function voodooDebug(opts) {
 
 	this.convertStackToTable = function(data) {
 		var t = new Array();
-		t.push(new Array('Instruction','Line','Args'));
-		for (var i=data.length-1; i >= 0; i--) {
+		t.push(new Array('Class','Subroutine','Line','Args'));
+		for (var i=0; i<data.length; i++) {
 			var args = new Array();
 			for (var j=0; j<data[i].args.length; j++) {
 				args.push(this.dumpData(data[i].args[j],true));
 			}
 
 			t.push(new Array(
-				data[i].class + data[i].type + data[i].function,
+				data[i].class,
+				data[i].function,
 				data[i].line,
 				args.join(',')
 			));
@@ -379,7 +383,6 @@ function voodooDebug(opts) {
 		if (closed) {
 			o = 'vdInvisible';
 			c = 'vdVisible';
-			console.log("closed");
 		}
 
 		var id = this.makeId();

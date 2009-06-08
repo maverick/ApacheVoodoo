@@ -292,8 +292,6 @@ sub execute_controllers {
 
 	my $template_params = {};
 
-	$debug->debug(sort keys %{$app->{'controllers'}});
-
 	# call each of the pre_include modules followed by our page specific module followed by our post_includes
 	foreach my $c ( 
 		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}  ||"") ),
