@@ -4,6 +4,8 @@ package Apache::Voodoo::Loader::Dynamic;
 $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 
 use strict;
+use warnings;
+
 use base("Apache::Voodoo::Loader");
 
 sub new {
@@ -55,6 +57,7 @@ sub refresh {
 	foreach my $method (keys %{$self->{'provides'}}) {
 		# a little help from the Cookbook 10.14
 		no strict 'refs';
+		no warnings 'redefine';
 		*$method = undef;
 	}
 	$self->{'provides'} = {};
@@ -91,6 +94,7 @@ sub can {
 		unless ($nosub) {
 			# create a closeure for this method (a little help from the Cookbook 10.14)
 			no strict 'refs';
+			no warnings 'redefine';
 			*$method = sub { my $self = shift; return $self->_handle($method,@_); };
 		}
 		return 1;
@@ -142,8 +146,11 @@ sub _handle {
 			my $file = $module;
 			$file =~ s/::/\//go;
 			$file .= ".pm";
+
+			no warnings 'redefine';
 			delete $INC{$file};
 			eval {
+				no warnings 'redefine';
 				require $file;
 			};
 			if ($@) {

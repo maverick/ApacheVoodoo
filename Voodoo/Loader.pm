@@ -36,11 +36,13 @@ sub load_module {
 	# recompiling the same modules over and over, and "warnings" will sometimes (uselessly) yell about
 	# modules being redefined.
 	unless ($self->{'bootstrapping'}) {
+		no warnings 'redefine';
 		delete $INC{$file};
 	}
 
 	my $obj;
 	eval {
+		no warnings 'redefine';
 		local $SIG{__DIE__};
 		require $file;
 		$obj = $module->new();
