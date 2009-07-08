@@ -21,7 +21,7 @@ use Data::Dumper;
 
 use Email::Valid;
 
-use Apache::Voodoo::ValidURL;
+use Apache::Voodoo::Validate::URL;
 use Apache::Voodoo::Pager;
 
 sub new {
@@ -1002,7 +1002,7 @@ sub _process_params {
 				}
 			}
 			elsif($varchar->{'valid'} eq "url") {
-				if (length($v{$varchar->{'name'}}) && Apache::Voodoo::ValidURL::valid_url($v{$varchar->{'name'}}) == 0) {
+				if (length($v{$varchar->{'name'}}) && Apache::Voodoo::Validate::URL::valid_url($v{$varchar->{'name'}}) == 0) {
 					$errors{'BAD_'.$varchar->{'name'}} = 1;
 				}
 			}
