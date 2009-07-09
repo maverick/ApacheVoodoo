@@ -17,6 +17,7 @@ use strict;
 use warnings;
 
 use Apache::Voodoo::Exception;
+use Data::Dumper;
 
 my %COLUMN_TYPES = (
 	"varchar"          => \&_varchar,
@@ -24,10 +25,9 @@ my %COLUMN_TYPES = (
 	'signed_int'       => \&_signed_int,
 	'signed_decimal'   => \&_signed_decimal,
 	'unsigned_decimal' => \&_unsigned_decimal,
-	'date'      => \&_null,
+	'date'      => \&_date,
 	'time'      => \&_null,
 	'datetime'  => \&_null,
-	'timestamp' => \&_null,
 	'bit'       => \&_null,
 	'text'      => sub { 
 		$_[0]->{length} = 0; 
@@ -53,13 +53,13 @@ sub set_configuration {
 
 	my @errors;
 
-	my @columns;
+	my @fields;
 	if (ref($c) eq "ARRAY") {
-		@columns = @{$c};
+		@fields = @{$c};
 	}
 	else {
 		no warnings "uninitialized";
-		@columns = map {
+		@fields = map {
 			$c->{$_}->{'id'} = $_;
 			$c->{$_};
 		}
@@ -77,7 +77,7 @@ sub set_configuration {
 		$self->{$_.'s'} = [];
 	}
 
-	foreach my $conf (@columns) {
+	foreach my $conf (@fields) {
 		my $name = $conf->{id};
 
 		unless (defined($conf->{'type'})) {
@@ -96,8 +96,12 @@ sub set_configuration {
 		$c->{'name'} = $name;
 		$c->{'type'} = $conf->{'type'};
 
+		if (defined($c->{valid}) && ref($c->{valid}) ne "CODE") {
+			push(@errors,"Field $c->{id}: valid is not a subroutine reference");
+		}
+
 		# grab the switches
-		foreach ("required","unique") {
+		foreach ("required","unique",'multiple') {
 			if ($conf->{$_}) {
 				$c->{$_} = $conf->{$_};
 				push(@{$self->{$_}},$name);
@@ -135,7 +139,7 @@ sub set_configuration {
 			push(@{$self->{'references'}},\%v);
 		}
 
-		push(@{$self->{'columns'}},       $c);
+		push(@{$self->{'fields'}},        $c);
 		push(@{$self->{$c->{'type'}."s"}},$c);
 	}
 
@@ -164,7 +168,9 @@ sub table {
 
 sub required { return @{$_[0]->{required}}; }
 
+sub fields            { return @{$_[0]->{fields}};            }
 sub varchars          { return @{$_[0]->{varchars}};          }
+sub texts             { return @{$_[0]->{texts}};             }
 sub unsigned_ints     { return @{$_[0]->{unsigned_ints}};     }
 sub   signed_ints     { return @{$_[0]->{  signed_ints}};     }
 sub unsigned_decimals { return @{$_[0]->{unsigned_decimals}}; }
@@ -172,7 +178,6 @@ sub   signed_decimals { return @{$_[0]->{  signed_decimals}}; }
 sub dates             { return @{$_[0]->{dates}};             }
 sub times             { return @{$_[0]->{times}};             }
 sub datetimes         { return @{$_[0]->{datetimes}};         }
-sub timestamps        { return @{$_[0]->{timestamps}};        }
 sub bits              { return @{$_[0]->{bits}};              }
 
 sub _varchar {
@@ -192,8 +197,10 @@ sub _varchar {
 	}
 
 	if (defined($c->{valid})) {
-		if (ref($c->{valid}) eq "CODE" ||
-			$c->{valid} =~ /^(url|email)$/ ) {
+		if ($c->{valid} =~ /^(url|email)$/ ) {
+			$h{'valid_'.$c->{valid}} = 1;
+		}
+		elsif (ref($c->{valid}) eq "CODE") {
 			$h{valid} = $c->{valid};
 		}
 		else {
@@ -231,6 +238,9 @@ sub _unsigned_int {
 	else {
 		push(@e,"Field $c->{id}: either 'max' or 'bytes' is a required parameter");
 	}
+
+	$h{valid} = $c->{valid};
+
 	return \%h,\@e;
 }
 
@@ -265,6 +275,9 @@ sub _signed_int {
 	else {
 		push(@e,"Field $c->{id}: either 'max' and 'min' or 'bytes' is a required parameter");
 	}
+
+	$h{valid} = $c->{valid};
+
 	return \%h,\@e;
 }
 
@@ -295,6 +308,9 @@ sub _signed_decimal {
 	else {
 		push(@e,"Field $c->{id}: 'right' must be positive integer");
 	}
+
+	$h{valid} = $c->{valid};
+
 	return \%h,\@e;
 }
 
@@ -325,6 +341,44 @@ sub _unsigned_decimal {
 	else {
 		push(@e,"Field $c->{id}: 'right' must be positive integer");
 	}
+
+	$h{valid} = $c->{valid};
+
+	return \%h,\@e;
+}
+
+sub _date {
+	my $c = shift;
+	my %h;
+	my @e;
+
+	if (defined($c->{valid})) {
+		if ($c->{valid} =~ /^(past|future)$/ ) {
+			$h{'valid_'.$c->{valid}} = 1;
+		}
+		elsif (ref($c->{valid}) eq "CODE") {
+			$h{valid} = $c->{valid};
+		}
+		else {
+			push(@e,"Field $c->{id}: valid must be either 'past','future', or a subroutine reference");
+		}
+	}
+
+	if (defined($c->{now})) {
+		if (ref($c->{now}) eq "CODE") {
+			$h{now} = $c->{now};
+		}
+		else {
+			push(@e,"Field $c->{id}: now must be a subroutine reference");
+		}
+	}
+	else {
+		$h{now} = sub {
+			my @tp = localtime();
+			return sprintf("%04d-%02d-%02d",$tp[5]+1900,$tp[4]+1,$tp[3]);
+		}
+	}
+
 	return \%h,\@e;
 }
 

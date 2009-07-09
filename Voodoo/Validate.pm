@@ -20,10 +20,23 @@ use base("Apache::Voodoo");
 
 use Email::Valid;
 
+use Apache::Voodoo::Exception;
 use Apache::Voodoo::Validate::Config;
 use Apache::Voodoo::Validate::URL;
 
-use Data::Dumper;
+my %COLUMN_TYPES = (
+	"varchar"          => \&_valid_varchar,
+	"text"             => \&_valid_varchar,
+	'unsigned_int'     => \&_valid_unsigned_int,
+	'signed_int'       => \&_valid_signed_int,
+	'signed_decimal'   => \&_valid_signed_decimal,
+	'unsigned_decimal' => \&_valid_unsigned_decimal,
+	'date'             => \&_valid_date,
+	'time'             => \&_valid_time,
+	'datetime'         => \&_valid_datetime,
+	'bit'              => \&_valid_bit
+);
+
 sub new {
 	my $class = shift;
 
@@ -46,21 +59,23 @@ sub new {
 	return $self;
 }
 
-sub add_insert_callback {
+sub add_callback {
 	my $self    = shift;
+	my $context = shift;
 	my $sub_ref = shift;
 
-	push(@{$self->{'insert_callbacks'}},$sub_ref);
+	unless (defined($context)) {
+		Apache::Vodooo::Exception::RunTime->throw("add_callback requires a context name as the first parameter");
+	}
+
+	unless (ref($sub_ref) eq "CODE") {
+		Apache::Vodooo::Exception::RunTime->throw("add_callback requires a subroutine reference as the second paramter");
+	}
+
+	push(@{$self->{'callbacks'}->{$context}},$sub_ref);
 }
 
-sub add_update_callback {
-	my $self    = shift;
-	my $sub_ref = shift;
-
-	push(@{$self->{'update_callbacks'}},$sub_ref);
-}
-
-sub add_error_callback {
+sub set_error_formatter {
 	my $self    = shift;
 	my $sub_ref = shift;
 
@@ -70,229 +85,268 @@ sub add_error_callback {
 }
 
 sub validate {
-	my $self   = shift;
-	my $params = shift;
+	my $self = shift;
+	my $p    = shift;
 
 	my $c = $self->{'config'};
 
-	my %values = ();
+	my $values = {};
 	my $errors = {};
 
-	##############
-	# check required
-	##############
-	foreach ($c->required) {
-		if (!defined($params->{$_}) ||  $params->{$_} =~ /^\s*$/) {
-			$self->{'ef'}->($_,'MISSING',$errors);
+	foreach my $field ($c->fields) {
+		unless (defined($COLUMN_TYPES{$field->{'type'}})) {
+			Apache::Voodoo::Exception::RunTime->throw("Don't know how to validate field type $field->{type}");
 		}
-	}
 
-	##############
-	# varchar
-	##############
-	foreach my $varchar ($c->varchars) {
-		my $v = $self->trim($params->{$varchar->{'name'}});
-		next unless defined($v);
+		my $good;
+		my $missing = 1;
+		my $bad     = 0;
+		foreach ($self->_param($p,$field)) {
+			next unless defined ($_);
 
-		my $n = $varchar->{'name'};
+			# call the validation routine for each value
+			my ($v,$b) = $COLUMN_TYPES{$field->{type}}->($self,$_,$field,$errors);
 
-		if ($varchar->{'length'} > 0 && length($v) > $varchar->{'length'}) {
-			$self->{'ef'}->($n,'BIG',$errors);
-		}
-		elsif (defined($varchar->{'valid'})) {
-			if ($varchar->{'valid'} eq "email" && length($v) > 0) {
-				# Net::DNS pollutes the value of $_ with the IP of the DNS server that responsed to the lookup 
-				# request.  It's localized to keep Net::DNS out of my pool.
-				local $_;
-
-				my $addr;
-				eval {
-					$addr = Email::Valid->address('-address' => $v,
-					                              '-mxcheck' => 1, 
-											      '-fqdn'    => 1 );
-				};
-				if ($@) {
-					$self->warn("Email::Valid produced an exception: $@");
-					warn "Email::Valid produced an exception: $@";
-					$self->{'ef'}->($n,'BAD',$errors);
-				}
-				elsif(!defined($addr)) {
-					$self->{'ef'}->($n,'BAD',$errors);
-				}
-				else {
-					$values{$n} = $addr;
-				}
+			if ($b) {
+				# bad one, we're outta here.
+				$bad = 1;
+				last;
 			}
-			elsif ($varchar->{'valid'} eq "url") {
-				if (length($v) && Apache::Voodoo::Validate::URL::valid_url($v) == 0) {
-					$self->{'ef'}->($n,'BAD',$errors);
-				}
-				else {
-					$values{$n} = $v;
-				}
-			}
-			elsif (ref($varchar->{'valid'}) eq "CODE") {
-				my $r = $varchar->{'valid'}->($v);
+			elsif (defined($field->{'valid'})) {
+				# there's a validation subroutine, call it
+				my $r = $field->{'valid'}->($v);
+
 				if (defined($r) && $r == 1) {
-					$values{$n} = $v;
+					push(@{$good},$v);
+					$missing = 0;
 				}
 				else {
+					$bad = 1;
 					if (!defined($r) || $r == 0) {
 						$r = 'BAD';
 					}
-					$self->{'ef'}->($n,$r,$errors);
+					$self->{'ef'}->($field->{'name'},$r,$errors);
 				}
 			}
-			else {
-				$self->warn("No such validation type: ".$varchar->{'valid'});
+			elsif (defined($v)) {
+				push(@{$good},$v);
+				$missing = 0;
 			}
 		}
-		elsif (defined($varchar->{'regexp'})) {
-			my $re = $varchar->{'regexp'};
-			if ($v =~ /$re/) {
-				$values{$n} = $v;
-			}
-			else {
-				$self->{'ef'}->($n,'BAD',$errors);
-			}
+
+		# check requiredness
+		if ($missing && $field->{'required'}) {
+			$bad = 1;
+			$self->{'ef'}->($field->{'name'},'MISSING',$errors);
 		}
-		elsif ($varchar->{length} > 0) {
-			# If there was a length restriction, then this data
-			# isn't in a text area and needs to have it's " HTML entitified
-			$v =~ s/"/\&quot;/g;
-			$values{$n} = $v;
-		}
-		else {
-			$values{$n} = $v;
-		}
-	}
 
-	##############
-	# + decimal
-	##############
-	foreach ($c->unsigned_decimals) {
-		my $v = $self->trim($params->{$_->{'name'}});
-		next unless defined($v);
-
-		if ($v =~ /^(\d*)(?:\.(\d+))?$/) {
-			my $l = $2 || 0;
-			my $r = $3 || 0;
-			$l *= 1;
-			$r *= 1;
-
-			if (length($l) > $_->{'left'} ||
-				length($r) > $_->{'right'} ) {
-
-				$self->{ef}->($_->{'name'},'BIG',$errors);
-			}
-			else {
-				$values{$_->{'name'}} = $v;
-			}
-		}
-		else {
-			$self->{ef}->($_->{'name'},'BAD',$errors);
-		}
-	}
-
-	##############
-	# +/- decimal
-	##############
-	foreach ($c->signed_decimals) {
-		my $v = $self->trim($params->{$_->{'name'}});
-		next unless defined($v);
-
-		if ($v =~ /^(\+|-)?(\d*)(?:\.(\d+))?$/) {
-			my $l = $2 || 0;
-			my $r = $3 || 0;
-			$l *= 1;
-			$r *= 1;
-
-			if (length($l) > $_->{'left'} ||
-				length($r) > $_->{'right'} ) {
-				$self->{ef}->($_->{'name'},'BIG',$errors);
-			}
-			else {
-				$values{$_->{'name'}} = $v;
-			}
-		}
-		else {
-			$self->{ef}->($_->{'name'},'BAD',$errors);
-		}
-	}
-
-	##############
-	# + int
-	##############
-	foreach ($c->unsigned_ints) {
-		my $v = $self->trim($params->{$_->{'name'}});
-		next unless defined($v);
-
-		if (   defined($v) && $v !~ /^\d*$/ )   { $self->{ef}->($_->{'name'},'BAD',$errors); }
-		elsif (defined($v) && $v > $_->{'max'}) { $self->{ef}->($_->{'name'},'MAX',$errors); }
-		else {
-			$values{$_->{'name'}} = $v;
-		}
-	}
-
-	##############
-	# +/- int
-	##############
-	foreach ($c->signed_ints) {
-		my $v = $self->trim($params->{$_->{'name'}});
-		next unless defined($v);
-
-		if ($v !~ /^(\+|-)?\d*$/)                { $self->{ef}->($_->{'name'},'BAD',$errors); }
-		elsif (defined($v) && $v > $_->{'max'})  { $self->{ef}->($_->{'name'},'MAX',$errors); }
-		elsif (defined($v) && $v < $_->{'min'})  { $self->{ef}->($_->{'name'},'MIN',$errors); }
-		else {
-			$values{$_->{'name'}} = $v;
-		}
-	}
-
-	##############
-	# Dates
-	##############
-	foreach ($c->dates) {
-		my $v = $self->trim($params->{$_->{'name'}});
-		next unless defined($v);
-
-		if ($v ne "") {
-			if ($self->validate_date($v)) {
-				$values{$_->{'name'}} = $self->date_to_sql($v);
-			}
-			else {
-				$self->{ef}->($_->{'name'},'BAD',$errors);
-			}
-		}
-	}
-
-	##############
-	# Times
-	##############
-	foreach ($c->times) {
-		my $v = $self->trim($params->{$_->{'name'}});
-		next unless defined($v);
-
-		if ($v ne "") {
-			my $temp = $self->time_to_sql($v);
-			if ($temp) {
-				$values{$_->{'name'}} = $temp;
-			}
-			else {
-				$self->{ef}->($_->{'name'},'BAD',$errors);
-			}
-		}
+		$self->_pack($good,$field,$values) unless ($bad);
 	}
 
 	if (scalar keys %{$errors}) {
-		return (\%values,$errors);
+		return ($values,$errors);
 	}
 	else {
-		return \%values;
+		return $values;
 	}
 }
 
-sub trim {
+sub _valid_varchar {
+	my ($self,$v,$def,$errors) = @_;
+
+	my $n = $def->{'name'};
+
+	if ($def->{'length'} > 0 && length($v) > $def->{'length'}) {
+		$self->{'ef'}->($n,'BIG',$errors);
+	}
+	elsif ($def->{'valid_email'}) {
+		# Net::DNS pollutes the value of $_ with the IP of the DNS server that responsed to the lookup 
+		# request.  It's localized to keep Net::DNS out of my pool.
+		local $_;
+
+		my $addr;
+		eval {
+			$addr = Email::Valid->address('-address' => $v,
+			                              '-mxcheck' => 1, 
+			                              '-fqdn'    => 1 );
+		};
+		if ($@) {
+			$self->warn("Email::Valid produced an exception: $@");
+			warn "Email::Valid produced an exception: $@";
+			$self->{'ef'}->($n,'BAD',$errors);
+		}
+		elsif(!defined($addr)) {
+			$self->{'ef'}->($n,'BAD',$errors);
+		}
+		else {
+			return $v;
+		}
+	}
+	elsif ($def->{'valid_url'}) {
+		if (length($v) && Apache::Voodoo::Validate::URL::valid_url($v) == 0) {
+			$self->{'ef'}->($n,'BAD',$errors);
+		}
+		else {
+			return $v;
+		}
+	}
+	elsif (defined($def->{'regexp'})) {
+		my $re = $def->{'regexp'};
+		if ($v =~ /$re/) {
+			return $v;
+		}
+		else {
+			$self->{'ef'}->($n,'BAD',$errors);
+		}
+	}
+	else {
+		return $v;
+	}
+
+	return undef,1;
+}
+
+sub _valid_unsigned_decimal {
+	my ($self,$v,$def,$errors) = @_;
+
+	if ($v =~ /^(\d*)(?:\.(\d+))?$/) {
+		my $l = $2 || 0;
+		my $r = $3 || 0;
+		$l *= 1;
+		$r *= 1;
+
+		if (length($l) > $def->{'left'} ||
+			length($r) > $def->{'right'} ) {
+
+			$self->{ef}->($def->{'name'},'BIG',$errors);
+		}
+		else {
+			return $v;
+		}
+	}
+	else {
+		$self->{ef}->($_->{'name'},'BAD',$errors);
+	}
+	return undef,1;
+}
+
+sub _valid_signed_decimal {
+	my ($self,$v,$def,$errors) = @_;
+
+	if ($v =~ /^(\+|-)?(\d*)(?:\.(\d+))?$/) {
+		my $l = $2 || 0;
+		my $r = $3 || 0;
+		$l *= 1;
+		$r *= 1;
+
+		if (length($l) > $def->{'left'} ||
+			length($r) > $def->{'right'} ) {
+			$self->{ef}->($def->{'name'},'BIG',$errors);
+		}
+		else {
+			return $v;
+		}
+	}
+	else {
+		$self->{ef}->($def->{'name'},'BAD',$errors);
+	}
+
+	return undef,1;
+}
+
+sub _valid_unsigned_int {
+	my ($self,$v,$def,$errors) = @_;
+
+	if ($v !~ /^\d*$/ )        { $self->{'ef'}->($def->{'name'},'BAD',$errors); }
+	elsif ($v > $def->{'max'}) { $self->{'ef'}->($def->{'name'},'MAX',$errors); }
+	else {
+		return $v;
+	}
+
+	return undef,1;
+}
+
+sub _valid_signed_int {
+	my ($self,$v,$def,$errors) = @_;
+
+	if ($v !~ /^(\+|-)?\d*$/)                  { $self->{'ef'}->($def->{'name'},'BAD',$errors); }
+	elsif (defined($v) && $v > $def->{'max'})  { $self->{'ef'}->($def->{'name'},'MAX',$errors); }
+	elsif (defined($v) && $v < $def->{'min'})  { $self->{'ef'}->($def->{'name'},'MIN',$errors); }
+	else {
+		return $v;
+	}
+
+	return undef,1;
+}
+
+sub _valid_date {
+	my ($self,$v,$def,$errors) = @_;
+
+	if ($self->validate_date($v)) {
+		my $d = $self->date_to_sql($v);
+
+		if ($def->{valid_past} && $d gt $def->{now}->()) {
+			$self->{ef}->($def->{'name'},'PAST',$errors);
+		}
+		elsif ($def->{valid_future} && $d le $def->{now}->()) {
+			$self->{ef}->($def->{'name'},'FUTURE',$errors);
+		}
+		else {
+			return $d;
+		}
+	}
+	else {
+		$self->{ef}->($def->{'name'},'BAD',$errors);
+	}
+	return undef,1;
+}
+
+sub _valid_time {
+	my ($self,$v,$def,$errors) = @_;
+
+	my $temp = $self->time_to_sql($v);
+	if ($temp) {
+		return $temp;
+	}
+	else {
+		$self->{'ef'}->($def->{'name'},'BAD',$errors);
+	}
+	return undef,1;
+}
+
+sub _param {
+	my $self   = shift;
+	my $params = shift;
+	my $def    = shift;
+
+	my $p = $params->{$def->{'name'}};
+	if (ref($p) eq "ARRAY") {
+		if ($def->{'multiple'}) {
+			return map {
+				$self->_trim($_)
+			} @{$p};
+		}
+		else {
+			return $self->_trim($p->[0]);
+		}
+	}
+	else {
+		return $self->_trim($p);
+	}
+}
+
+sub _pack {
+	my $self = shift;
+	my $v    = shift;
+	my $def  = shift;
+	my $vals = shift;
+
+	return unless defined($v);
+
+	$vals->{$def->{'name'}} = ($def->{'multiple'})?$v:$v->[0];
+}
+
+sub _trim {
 	my $self = shift;
 	my $v    = shift;
 
@@ -301,7 +355,7 @@ sub trim {
 	$v =~ s/^\s*//;
 	$v =~ s/\s*$//;
 
-	return $v;
+	return (length($v))?$v:undef;
 }
 
 1;

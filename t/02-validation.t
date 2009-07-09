@@ -3,7 +3,7 @@ use warnings;
 
 use Apache::Voodoo::Validate;
 
-use Test::More tests => 25;
+use Test::More tests => 75;
 use Data::Dumper;
 
 my %u_int_old = (
@@ -17,31 +17,41 @@ my %u_int_new = (
 );
 
 my %s_int_old = (
-	'type' => 'unsigned_int',
+	'type' => 'signed_int',
 	'min'  => -4294967296,
 	'max'  => 4294967295
 );
 
 my %s_int_new = (
-	'type'  => 'unsigned_int',
+	'type'  => 'signed_int',
 	'bytes' => 4,
 );
 
-my %vchar = ( type => 'varchar', 'length' => 64 );
-my %text  = ( type => 'varchar', 'length' =>  -1 );
+my %date = (
+	'type' => 'date'
+);
+
+my %time = (
+	'type' => 'time'
+);
+
+my %vchar = ( type => 'varchar', 'length' => 64  );
+my %text  = ( type => 'text' );
 
 my %email  = ( type => 'varchar', 'length' => 64, 'valid'  => 'email'   );
 my %url    = ( type => 'varchar', 'length' => 64, 'valid'  => 'url'     );
 my %regexp = ( type => 'varchar', 'length' => 64, 'regexp' => '^aab+a$' );
 
 my $full_monty = {
-	'u_int_old_r'   => { %u_int_old, required => 1 },
-	'u_int_new_r'   => { %u_int_new, required => 1 },
-	'u_int_old_o'   => { %u_int_old, required => 0 },
-	'u_int_new_o'   => { %u_int_new, required => 0 },
+	'u_int_old_r' => { %u_int_old, required => 1 },
+	'u_int_new_r' => { %u_int_new, required => 1 },
+	'u_int_old_o' => { %u_int_old, required => 0 },
+	'u_int_new_o' => { %u_int_new, required => 0 },
 
-	'varchar_req' => { %vchar,     required => 1 },
-	'varchar_opt' => { %vchar,     required => 0 },
+	'varchar_req' => { %vchar, required => 1 },
+	'varchar_opt' => { %vchar, required => 0 },
+
+	'text' => { %text },
 
 	'email_req' => { %email, required => 1 },
 	'email_opt' => { %email, required => 0 },
@@ -95,6 +105,7 @@ ok(!defined $e->{MISSING_u_int_old_o},'unsigned int optional 1');
 ok(!defined $e->{MISSING_u_int_new_o},'unsigned int optional 2'); 
 ok(!defined $e->{MISSING_url_opt},    'url optional'); 
 ok(!defined $e->{MISSING_varchar_opt},'varchar optional'); 
+ok(!defined $e->{MISSING_text},       'varchar text'); 
 ok(!defined $e->{MISSING_email_opt},  'email optional'); 
 ok(!defined $e->{MISSING_regexp_opt}, 'regexp optional'); 
 
@@ -160,6 +171,7 @@ ok($v->{valid}       eq 'ok',                   'good valid sub');
 
 # fence post values
 ($v,$e) = $V->validate({
+	text        => 'a' x 500,	            # should not yell about length
 	varchar_req => 'a' x 64,
 	varchar_opt => '  '.('a' x 64).'   ',	# also sneek in trim test
 	u_int_new_r => 4294967295,
@@ -205,3 +217,107 @@ ok(defined $e->{BIG_url_opt},    'big url 2');
 ok(defined $e->{BIG_regexp_req}, 'big regexp 1');
 ok(defined $e->{BIG_regexp_opt}, 'big regexp 2');
 ok(defined $e->{BIG_valid},      'big valid sub');
+
+# de-array-ification of non-multiple values
+($v,$e) = $V->validate({
+	varchar_req => [' abc ','def','ghi']
+});
+
+ok($v->{varchar_req} eq 'abc','de-array-ification');
+
+my $M = Apache::Voodoo::Validate->new({
+	'mult' => {
+		'type' => 'varchar',
+		'multiple' => 1,
+		'required' => 1,
+	}
+});
+
+($v,$e) = $M->validate({ mult => 'abc'});
+is_deeply($v->{mult},['abc'],'array-ification of scalar');
+
+($v,$e) = $M->validate({ mult => ['abc ',' def ',' ghi']});
+is_deeply($v->{mult},['abc','def','ghi'],'array passthrough');
+
+my $P = Apache::Voodoo::Validate->new({
+	'prime' => {
+		%u_int_new,
+		multiple => 1,
+		valid => sub {
+			my $v = shift;
+
+			return 1 if ($v eq 1 or $v eq 2);
+			for (my $i=2; $i < $v; $i++) {
+				unless ($v % $i) {
+					return 0;
+				}
+			}
+			return 1;
+		},
+	}
+});
+
+($v,$e) = $P->validate({ prime => 4});
+ok($e->{'BAD_prime'},'valid sub 1');
+
+($v,$e) = $P->validate({ prime => [13,14]});
+ok(scalar keys %{$v} == 0,'v is empty');
+ok($e->{'BAD_prime'},'valid sub 2');
+
+($v,$e) = $P->validate({ prime => [1, 13]});
+is_deeply($v->{'prime'},[1,13],'valid sub 2');
+
+
+my $D = Apache::Voodoo::Validate->new({
+	'date_past' => {
+		type => 'date',
+		valid => 'past'
+	},
+	'date_future' => {
+		type => 'date',
+		valid => 'future'
+	},
+	'date_past_now' => {
+		type => 'date',
+		valid => 'past',
+		now => sub { return '2000-01-01' }
+	},
+	'date_future_now' => {
+		type => 'date',
+		valid => 'future',
+		now => sub { return '2000-01-01' }
+	}
+});
+
+($v,$e) = $D->validate({
+	date_past   => '1/1/1900',
+	date_future => '12/31/9999',	# December 31, 9999 should be far enough in the future
+	date_past_now   => '1/1/1900 ',
+	date_future_now => '1/1/2009',
+});
+ok(scalar keys %{$e} == 0,'e is empty');
+is($v->{date_past},      '1900-01-01','date past 1');
+is($v->{date_past_now},  '1900-01-01','date past 2');
+is($v->{date_future},    '9999-12-31','date future 1');
+is($v->{date_future_now},'2009-01-01','date future 2');
+
+($v,$e) = $D->validate({
+	date_past   => 'a/1/1900',	    # bogus
+	date_future => '13/31/9999',	# bogus
+	date_past_now   => '1/2/2000',	# fence post
+	date_future_now => '1/1/2000',	# fence post
+});
+ok(scalar keys %{$v} == 0,'v is empty');
+ok(defined($e->{BAD_date_past})     ,'bad date past 1');
+ok(defined($e->{PAST_date_past_now}),'bad date past 2');
+ok(defined($e->{BAD_date_future}),   'bad date future 1');
+ok(defined($e->{FUTURE_date_future_now}),'bad date future 2');
+
+($v,$e) = $D->validate({
+	date_past_now   => '1/1/2000',	# fence post again
+	date_future_now => '1/2/2000',	# fence post again
+});
+
+ok(scalar keys %{$e} == 0,'e is empty');
+is($v->{date_past_now},   '2000-01-01','fence post date 1');
+is($v->{date_future_now}, '2000-01-02','fence post date 2');
