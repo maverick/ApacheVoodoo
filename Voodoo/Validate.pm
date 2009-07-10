@@ -16,8 +16,6 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 use warnings;
 
-use base("Apache::Voodoo");
-
 use Email::Valid;
 
 use Apache::Voodoo::Exception;
@@ -275,8 +273,16 @@ sub _valid_date {
 	my ($self,$def,$v) = @_;
 
 	my $e;
-	if ($self->validate_date($v)) {
-		$v = $self->date_to_sql($v);
+	my ($y,$m,$d) = $def->{parser}->($v);
+
+	if (defined($y)   && 
+		defined($m)   && 
+		defined($d)   &&
+		$y =~ /^\d+$/ && 
+		$m =~ /^\d+$/ && 
+		$d =~ /^\d+$/) {
+
+		$v = sprintf("%04d-%02d-%02d",$y,$m,$d);
 
 		if ($def->{valid_past} && $v gt $def->{now}->()) {
 			$e = 'PAST';
