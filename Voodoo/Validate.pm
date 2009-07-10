@@ -105,11 +105,14 @@ sub validate {
 			next unless defined ($_);
 
 			# call the validation routine for each value
-			my ($v,$b) = $COLUMN_TYPES{$field->{type}}->($self,$_,$field,$errors);
+			my ($v,@b) = $COLUMN_TYPES{$field->{type}}->($self,$field,$_);
 
-			if ($b) {
+			if (defined($b[0])) {
 				# bad one, we're outta here.
 				$bad = 1;
+				foreach (@b) {
+					$self->{'ef'}->($field->{'name'},$_,$errors);
+				}
 				last;
 			}
 			elsif (defined($field->{'valid'})) {
@@ -152,12 +155,13 @@ sub validate {
 }
 
 sub _valid_varchar {
-	my ($self,$v,$def,$errors) = @_;
+	my ($self,$def,$v) = @_;
 
 	my $n = $def->{'name'};
 
+	my $e;
 	if ($def->{'length'} > 0 && length($v) > $def->{'length'}) {
-		$self->{'ef'}->($n,'BIG',$errors);
+		$e = 'BIG';
 	}
 	elsif ($def->{'valid_email'}) {
 		# Net::DNS pollutes the value of $_ with the IP of the DNS server that responsed to the lookup 
@@ -173,42 +177,31 @@ sub _valid_varchar {
 		if ($@) {
 			$self->warn("Email::Valid produced an exception: $@");
 			warn "Email::Valid produced an exception: $@";
-			$self->{'ef'}->($n,'BAD',$errors);
+			$e = 'BAD';
 		}
 		elsif(!defined($addr)) {
-			$self->{'ef'}->($n,'BAD',$errors);
-		}
-		else {
-			return $v;
+			$e = 'BAD';
 		}
 	}
 	elsif ($def->{'valid_url'}) {
 		if (length($v) && Apache::Voodoo::Validate::URL::valid_url($v) == 0) {
-			$self->{'ef'}->($n,'BAD',$errors);
-		}
-		else {
-			return $v;
+			$e = 'BAD';
 		}
 	}
 	elsif (defined($def->{'regexp'})) {
 		my $re = $def->{'regexp'};
-		if ($v =~ /$re/) {
-			return $v;
+		unless ($v =~ /$re/) {
+			$e = 'BAD';
 		}
-		else {
-			$self->{'ef'}->($n,'BAD',$errors);
-		}
-	}
-	else {
-		return $v;
 	}
 
-	return undef,1;
+	return $v,$e;
 }
 
 sub _valid_unsigned_decimal {
-	my ($self,$v,$def,$errors) = @_;
+	my ($self,$def,$v) = @_;
 
+	my $e;
 	if ($v =~ /^(\d*)(?:\.(\d+))?$/) {
 		my $l = $2 || 0;
 		my $r = $3 || 0;
@@ -218,21 +211,20 @@ sub _valid_unsigned_decimal {
 		if (length($l) > $def->{'left'} ||
 			length($r) > $def->{'right'} ) {
 
-			$self->{ef}->($def->{'name'},'BIG',$errors);
-		}
-		else {
-			return $v;
+			$e='BIG';
 		}
 	}
 	else {
-		$self->{ef}->($_->{'name'},'BAD',$errors);
+		$e='BAD';
 	}
-	return undef,1;
+
+	return $v,$e;
 }
 
 sub _valid_signed_decimal {
-	my ($self,$v,$def,$errors) = @_;
+	my ($self,$def,$v) = @_;
 
+	my $e;
 	if ($v =~ /^(\+|-)?(\d*)(?:\.(\d+))?$/) {
 		my $l = $2 || 0;
 		my $r = $3 || 0;
@@ -241,75 +233,63 @@ sub _valid_signed_decimal {
 
 		if (length($l) > $def->{'left'} ||
 			length($r) > $def->{'right'} ) {
-			$self->{ef}->($def->{'name'},'BIG',$errors);
-		}
-		else {
-			return $v;
+			$e='BIG';
 		}
 	}
 	else {
-		$self->{ef}->($def->{'name'},'BAD',$errors);
+		$e='BAD';
 	}
-
-	return undef,1;
+	return $v,$e;
 }
 
 sub _valid_unsigned_int {
-	my ($self,$v,$def,$errors) = @_;
+	my ($self,$def,$v) = @_;
 
-	if ($v !~ /^\d*$/ )        { $self->{'ef'}->($def->{'name'},'BAD',$errors); }
-	elsif ($v > $def->{'max'}) { $self->{'ef'}->($def->{'name'},'MAX',$errors); }
-	else {
-		return $v;
-	}
+	return undef,'BAD' unless ($v =~ /^\d*$/ );
+	return undef,'MAX' unless ($v <= $def->{'max'});
 
-	return undef,1;
+	return $v;
 }
 
 sub _valid_signed_int {
-	my ($self,$v,$def,$errors) = @_;
+	my ($self,$def,$v) = @_;
 
-	if ($v !~ /^(\+|-)?\d*$/)                  { $self->{'ef'}->($def->{'name'},'BAD',$errors); }
-	elsif (defined($v) && $v > $def->{'max'})  { $self->{'ef'}->($def->{'name'},'MAX',$errors); }
-	elsif (defined($v) && $v < $def->{'min'})  { $self->{'ef'}->($def->{'name'},'MIN',$errors); }
-	else {
-		return $v;
-	}
+	return undef,'BAD' unless ($v =~ /^(\+|-)?\d*$/);
+	return undef,'MAX' unless ($v <= $def->{'max'});
+	return undef,'MIN' unless ($v >= $def->{'min'});
 
-	return undef,1;
+	return $v;
 }
 
 sub _valid_date {
-	my ($self,$v,$def,$errors) = @_;
+	my ($self,$def,$v) = @_;
 
+	my $e;
 	if ($self->validate_date($v)) {
-		my $d = $self->date_to_sql($v);
+		$v = $self->date_to_sql($v);
 
-		if ($def->{valid_past} && $d gt $def->{now}->()) {
-			$self->{ef}->($def->{'name'},'PAST',$errors);
+		if ($def->{valid_past} && $v gt $def->{now}->()) {
+			$e = 'PAST';
 		}
-		elsif ($def->{valid_future} && $d le $def->{now}->()) {
-			$self->{ef}->($def->{'name'},'FUTURE',$errors);
-		}
-		else {
-			return $d;
+		elsif ($def->{valid_future} && $v le $def->{now}->()) {
+			$e = 'FUTURE';
 		}
 	}
 	else {
-		$self->{ef}->($def->{'name'},'BAD',$errors);
+		$e = 'BAD';
 	}
-	return undef,1;
+
+	return $v,$e;
 }
 
 sub _valid_time {
-	my ($self,$v,$def,$errors) = @_;
+	my ($self,$def,$v) = @_;
 
     $v =~ s/\s*//go;
     $v =~ s/\.//go;
 
 	unless ($v =~ /^\d?\d:[0-5]?\d(:[0-5]?\d)?(am|pm)?$/i) {
-		$self->{ef}->($def->{'name'},'BAD',$errors);
-		return undef,1;
+		return undef,'BAD';
     }
 
 	my ($h,$m,$s);
@@ -324,8 +304,7 @@ sub _valid_time {
 				$h += 12;
 			}
 			elsif ($h > 12) {
-				$self->{ef}->($def->{'name'},'BAD',$errors);
-				return undef,1;
+				return undef,'BAD';
 			}
 		}
 		elsif ($pm eq '0' && $h == 12) {
@@ -339,29 +318,25 @@ sub _valid_time {
 	# our regexp above validated the minutes and seconds, so
 	# all we need to check that the hours are valid.
     if ($h < 0 || $h > 23) { 
-		$self->{ef}->($def->{'name'},'BAD',$errors);
-		return undef,1;
+		return undef,'BAD';
 	}
 
 	$s = 0 unless (defined($s));
    	$v =  sprintf("%02d:%02d:%02d",$h,$m,$s);
 
-	my $bad = 0;
 	if (defined($def->{min}) && $v lt $def->{min}) {
-		$bad = 1;
-		$self->{ef}->($def->{'name'},'MIN',$errors);
-	}
-	
-	if (!$bad && defined($def->{max}) && $v gt $def->{max}) {
-		$bad = 1;
-		$self->{ef}->($def->{'name'},'MAX',$errors);
+		return undef,'MIN';
 	}
 
-	return $v,$bad;
+	if (defined($def->{max}) && $v gt $def->{max}) {
+		return undef,'MAX';
+	}
+
+	return $v;
 }
 
 sub _valid_bit {
-	my ($self,$v,$def,$errors) = @_;
+	my ($self,$def,$v) = @_;
 
 	if ($v =~ /^(0*[1-9]\d*|y(es)?|t(rue)?)$/i) {
 		return 1;
@@ -369,9 +344,9 @@ sub _valid_bit {
 	elsif ($v =~ /^(0+|n(o)?|f(alse)?)$/i) {
 		return 0;
 	}
-
-	$self->{ef}->($def->{'name'},'BAD',$errors);
-	return undef,1;
+	else {
+		return undef,'BAD';
+	}
 }
 
 sub _param {

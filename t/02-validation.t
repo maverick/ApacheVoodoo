@@ -7,7 +7,7 @@ use warnings;
 
 use Apache::Voodoo::Validate;
 
-use Test::More tests => 75;
+use Test::More tests => 103;
 use Data::Dumper;
 
 my %u_int_old = (
@@ -327,7 +327,7 @@ is($v->{date_past_now},   '2000-01-01','fence post date 1');
 is($v->{date_future_now}, '2000-01-02','fence post date 2');
 
 
-my $D = Apache::Voodoo::Validate->new({
+$D = Apache::Voodoo::Validate->new({
 	'time' => {
 		type => 'time'
 	},
