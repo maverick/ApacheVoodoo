@@ -59,20 +59,21 @@ sub new {
 	return $self;
 }
 
-sub add_callback {
+sub set_valid_callback {
 	my $self    = shift;
-	my $context = shift;
+	#my $context = shift;
 	my $sub_ref = shift;
 
-	unless (defined($context)) {
-		Apache::Vodooo::Exception::RunTime->throw("add_callback requires a context name as the first parameter");
-	}
+	#unless (defined($context)) {
+	#	Apache::Vodooo::Exception::RunTime->throw("add_callback requires a context name as the first parameter");
+	#}
 
 	unless (ref($sub_ref) eq "CODE") {
 		Apache::Vodooo::Exception::RunTime->throw("add_callback requires a subroutine reference as the second paramter");
 	}
 
-	push(@{$self->{'callbacks'}->{$context}},$sub_ref);
+	#push(@{$self->{'callbacks'}->{$context}},$sub_ref);
+	$self->{'vc'} = $sub_ref;
 }
 
 sub set_error_formatter {
@@ -144,6 +145,15 @@ sub validate {
 		}
 
 		$self->_pack($good,$field,$values) unless ($bad);
+	}
+
+	if ($self->{vc}) {
+		foreach ($self->{vc}->($values,$errors)) {
+			next unless ref($_) eq "ARRAY";
+
+			$self->{'ef'}->($_->[0],$_->[1],$errors);
+			delete $values->{$_->[0]};
+		}
 	}
 
 	if (scalar keys %{$errors}) {

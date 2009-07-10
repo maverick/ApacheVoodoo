@@ -7,7 +7,7 @@ use warnings;
 
 use Apache::Voodoo::Validate;
 
-use Test::More tests => 103;
+use Test::More tests => 106;
 use Data::Dumper;
 
 my %u_int_old = (
@@ -94,6 +94,24 @@ else {
 	pass("Config Syntax");
 }
 
+eval {
+  $V->set_valid_callback(sub {
+	my ($p,$e) = @_;
+
+	if (defined($p->{varchar_req}) and $p->{varchar_req} eq "docheck" and $p->{varchar_opt} ne 'checked') {
+		return ['varchar_opt','BOGUS'],
+		       ['varchar_req','BOGUS'];
+	}
+	return undef;
+  });
+};
+if ($@) {
+	fail("Adding a validation callback failed when it shouldn't have\n$@");
+	BAIL_OUT("something is terribly wrong");
+}
+else {
+	pass("Adding Callback");
+}
 my ($v,$e) = $V->validate({});
 
 # Catches missing required params
@@ -126,6 +144,8 @@ ok(!defined $e->{MISSING_regexp_opt}, 'regexp optional');
 	regexp_req => 'c',
 	regexp_opt => 'aba',
 	valid => 'notok',
+	varchar_req => 'docheck',
+	varchar_opt => 'bogus'
 });
 
 ok(scalar keys %{$v} == 0,'$values is empty');
@@ -140,6 +160,9 @@ ok(defined $e->{BAD_url_opt},    'bad url 2');
 ok(defined $e->{BAD_regexp_req}, 'bad regexp 1');
 ok(defined $e->{BAD_regexp_opt}, 'bad regexp 2');
 ok(defined $e->{BAD_valid},      'bad valid sub');
+
+ok(defined $e->{BOGUS_varchar_req}, 'bad valid sub');
+ok(defined $e->{BOGUS_varchar_opt}, 'bad valid sub');
 
 # valid values
 ($v,$e) = $V->validate({
@@ -406,3 +429,6 @@ my $B = Apache::Voodoo::Validate->new({
 ($v,$e) = $B->validate({bit => undef}); ok($e->{MISSING_bit},'bad bit 2');
 ($v,$e) = $B->validate({bit => -1});    ok($e->{MISSING_bit},'bad bit 3');
 ($v,$e) = $B->validate({bit => 'a'});   ok($e->{MISSING_bit},'bad bit 4');
+
+
+
