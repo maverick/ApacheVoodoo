@@ -304,13 +304,73 @@ sub _valid_date {
 sub _valid_time {
 	my ($self,$v,$def,$errors) = @_;
 
-	my $temp = $self->time_to_sql($v);
-	if ($temp) {
-		return $temp;
-	}
+    $v =~ s/\s*//go;
+    $v =~ s/\.//go;
+
+	unless ($v =~ /^\d?\d:[0-5]?\d(:[0-5]?\d)?(am|pm)?$/i) {
+		$self->{ef}->($def->{'name'},'BAD',$errors);
+		return undef,1;
+    }
+
+	my ($h,$m,$s);
+    if ($v =~ s/([ap])m$//igo) {
+        my $pm = (lc($1) eq "p")?1:0;
+
+    	($h,$m,$s) = split(/:/,$v);
+
+		# 12 am is midnight and 12 pm is noon...I've always hated that.
+		if ($pm eq '1') {
+			if ($h < 12) {
+				$h += 12;
+			}
+			elsif ($h > 12) {
+				$self->{ef}->($def->{'name'},'BAD',$errors);
+				return undef,1;
+			}
+		}
+		elsif ($pm eq '0' && $h == 12) {
+			$h = 0;
+		}
+    }
 	else {
-		$self->{'ef'}->($def->{'name'},'BAD',$errors);
+    	($h,$m,$s) = split(/:/,$v);
 	}
+
+	# our regexp above validated the minutes and seconds, so
+	# all we need to check that the hours are valid.
+    if ($h < 0 || $h > 23) { 
+		$self->{ef}->($def->{'name'},'BAD',$errors);
+		return undef,1;
+	}
+
+	$s = 0 unless (defined($s));
+   	$v =  sprintf("%02d:%02d:%02d",$h,$m,$s);
+
+	my $bad = 0;
+	if (defined($def->{min}) && $v lt $def->{min}) {
+		$bad = 1;
+		$self->{ef}->($def->{'name'},'MIN',$errors);
+	}
+	
+	if (!$bad && defined($def->{max}) && $v gt $def->{max}) {
+		$bad = 1;
+		$self->{ef}->($def->{'name'},'MAX',$errors);
+	}
+
+	return $v,$bad;
+}
+
+sub _valid_bit {
+	my ($self,$v,$def,$errors) = @_;
+
+	if ($v =~ /^(0*[1-9]\d*|y(es)?|t(rue)?)$/i) {
+		return 1;
+	}
+	elsif ($v =~ /^(0+|n(o)?|f(alse)?)$/i) {
+		return 0;
+	}
+
+	$self->{ef}->($def->{'name'},'BAD',$errors);
 	return undef,1;
 }
 
