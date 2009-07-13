@@ -16,24 +16,7 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 use warnings;
 
-use Email::Valid;
-
 use Apache::Voodoo::Exception;
-use Apache::Voodoo::Validate::Config;
-use Apache::Voodoo::Validate::URL;
-
-my %COLUMN_TYPES = (
-	"varchar"          => \&_valid_varchar,
-	"text"             => \&_valid_varchar,
-	'unsigned_int'     => \&_valid_unsigned_int,
-	'signed_int'       => \&_valid_signed_int,
-	'signed_decimal'   => \&_valid_signed_decimal,
-	'unsigned_decimal' => \&_valid_unsigned_decimal,
-	'date'             => \&_valid_date,
-	'time'             => \&_valid_time,
-	'datetime'         => \&_valid_datetime,
-	'bit'              => \&_valid_bit
-);
 
 sub new {
 	my $class = shift;
@@ -41,18 +24,12 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 
-	my $config = shift;
-	if (ref($config) eq "Apache::Voodoo::Validate::Config") {
-		$self->{'config'} = $config;
-	}
-	else {
-		$self->{'config'} = Apache::Voodoo::Validate::Config->new($config);
-	}
-
 	$self->{'ef'} = sub {
 		my ($f,$t,$e) = @_;
 		$e->{$t.'_'.$f} = 1;
 	};
+
+	$self->_configure(shift);
 
 	return $self;
 }
@@ -83,20 +60,30 @@ sub set_error_formatter {
 	}
 }
 
+sub required  { return map { $_->name } grep { $_->required } @{$_[0]->{fields}} };
+sub unique    { return map { $_->name } grep { $_->unique   } @{$_[0]->{fields}} };
+sub multiple  { return map { $_->name } grep { $_->multiple } @{$_[0]->{fields}} };
+
+sub fields {
+	my $self = shift;
+	my $type = shift;
+
+	if ($type) {
+		return grep { $_->type eq $type } @{$self->{fields}};
+	}
+	else {
+		return @{$self->{fields}};
+	}
+}
+
 sub validate {
 	my $self = shift;
 	my $p    = shift;
 
-	my $c = $self->{'config'};
-
 	my $values = {};
 	my $errors = {};
 
-	foreach my $field ($c->fields) {
-		unless (defined($COLUMN_TYPES{$field->{'type'}})) {
-			Apache::Voodoo::Exception::RunTime->throw("Don't know how to validate field type $field->{type}");
-		}
-
+	foreach my $field ($self->fields) {
 		my $good;
 		my $missing = 1;
 		my $bad     = 0;
@@ -104,7 +91,7 @@ sub validate {
 			next unless defined ($_);
 
 			# call the validation routine for each value
-			my ($v,@b) = $COLUMN_TYPES{$field->{type}}->($self,$field,$_);
+			my ($v,@b) = $field->valid($_);
 
 			if (defined($b[0])) {
 				# bad one, we're outta here.
@@ -114,9 +101,9 @@ sub validate {
 				}
 				last;
 			}
-			elsif (defined($field->{'valid'})) {
+			elsif (defined($field->valid_sub)) {
 				# there's a validation subroutine, call it
-				my $r = $field->{'valid'}->($v);
+				my $r = $field->valid_sub()->($v);
 
 				if (defined($r) && $r == 1) {
 					push(@{$good},$v);
@@ -127,7 +114,7 @@ sub validate {
 					if (!defined($r) || $r == 0) {
 						$r = 'BAD';
 					}
-					$self->{'ef'}->($field->{'name'},$r,$errors);
+					$self->{'ef'}->($field->name,$r,$errors);
 				}
 			}
 			elsif (defined($v)) {
@@ -137,9 +124,9 @@ sub validate {
 		}
 
 		# check requiredness
-		if ($missing && $field->{'required'}) {
+		if ($missing && $field->required) {
 			$bad = 1;
-			$self->{'ef'}->($field->{'name'},'MISSING',$errors);
+			$self->{'ef'}->($field->name,'MISSING',$errors);
 		}
 
 		$self->_pack($good,$field,$values) unless ($bad);
@@ -162,206 +149,63 @@ sub validate {
 	}
 }
 
-sub _valid_varchar {
-	my ($self,$def,$v) = @_;
+sub _configure {
+	my $self = shift;
+	my $c    = shift;
 
-	my $n = $def->{'name'};
+	my @errors;
 
-	my $e;
-	if ($def->{'length'} > 0 && length($v) > $def->{'length'}) {
-		$e = 'BIG';
+	my @fields;
+	if (ref($c) eq "ARRAY") {
+		@fields = @{$c};
 	}
-	elsif ($def->{'valid_email'}) {
-		# Net::DNS pollutes the value of $_ with the IP of the DNS server that responsed to the lookup 
-		# request.  It's localized to keep Net::DNS out of my pool.
-		local $_;
+	else {
+		no warnings "uninitialized";
+		@fields = map {
+			$c->{$_}->{'id'} = $_;
+			$c->{$_};
+		}
+		sort { 
+			$c->{$a}->{'seq'} ||= 0;
+			$c->{$b}->{'seq'} ||= 0;
 
-		my $addr;
+			$c->{$a}->{'seq'} cmp $c->{$b}->{'seq'} || 
+			$a cmp $b;
+		} 
+		keys %{$c};
+	}
+
+	$self->{'fields'} = [];
+	foreach my $conf (@fields) {
+		my $name = $conf->{id};
+
+		unless (defined($conf->{'type'})) {
+			push(@errors,"missing 'type' for column $name");
+			next;
+		}
+
+		my ($field,@e);
 		eval {
-			$addr = Email::Valid->address('-address' => $v,
-			                              '-mxcheck' => 1, 
-			                              '-fqdn'    => 1 );
+			my $m = 'Apache::Voodoo::Validate::'.$conf->{'type'};
+			my $f = 'Apache/Voodoo/Validate/'.$conf->{'type'}.'.pm';
+			require $f;
+			($field,@e) = $m->new($conf);
 		};
 		if ($@) {
-			$self->warn("Email::Valid produced an exception: $@");
-			warn "Email::Valid produced an exception: $@";
-			$e = 'BAD';
+			push(@errors,"error loading plugin for type $conf->{'type'}". $@);
+			next;
 		}
-		elsif(!defined($addr)) {
-			$e = 'BAD';
+
+		if (defined($e[0])) {
+			push(@errors,@e);
+			next;
 		}
-	}
-	elsif ($def->{'valid_url'}) {
-		if (length($v) && Apache::Voodoo::Validate::URL::valid_url($v) == 0) {
-			$e = 'BAD';
-		}
-	}
-	elsif (defined($def->{'regexp'})) {
-		my $re = $def->{'regexp'};
-		unless ($v =~ /$re/) {
-			$e = 'BAD';
-		}
+
+		push(@{$self->{'fields'}},$field);
 	}
 
-	return $v,$e;
-}
-
-sub _valid_unsigned_decimal {
-	my ($self,$def,$v) = @_;
-
-	my $e;
-	if ($v =~ /^(\d*)(?:\.(\d+))?$/) {
-		my $l = $2 || 0;
-		my $r = $3 || 0;
-		$l *= 1;
-		$r *= 1;
-
-		if (length($l) > $def->{'left'} ||
-			length($r) > $def->{'right'} ) {
-
-			$e='BIG';
-		}
-	}
-	else {
-		$e='BAD';
-	}
-
-	return $v,$e;
-}
-
-sub _valid_signed_decimal {
-	my ($self,$def,$v) = @_;
-
-	my $e;
-	if ($v =~ /^(\+|-)?(\d*)(?:\.(\d+))?$/) {
-		my $l = $2 || 0;
-		my $r = $3 || 0;
-		$l *= 1;
-		$r *= 1;
-
-		if (length($l) > $def->{'left'} ||
-			length($r) > $def->{'right'} ) {
-			$e='BIG';
-		}
-	}
-	else {
-		$e='BAD';
-	}
-	return $v,$e;
-}
-
-sub _valid_unsigned_int {
-	my ($self,$def,$v) = @_;
-
-	return undef,'BAD' unless ($v =~ /^\d*$/ );
-	return undef,'MAX' unless ($v <= $def->{'max'});
-
-	return $v;
-}
-
-sub _valid_signed_int {
-	my ($self,$def,$v) = @_;
-
-	return undef,'BAD' unless ($v =~ /^(\+|-)?\d*$/);
-	return undef,'MAX' unless ($v <= $def->{'max'});
-	return undef,'MIN' unless ($v >= $def->{'min'});
-
-	return $v;
-}
-
-sub _valid_date {
-	my ($self,$def,$v) = @_;
-
-	my $e;
-	my ($y,$m,$d) = $def->{parser}->($v);
-
-	if (defined($y)   && 
-		defined($m)   && 
-		defined($d)   &&
-		$y =~ /^\d+$/ && 
-		$m =~ /^\d+$/ && 
-		$d =~ /^\d+$/) {
-
-		$v = sprintf("%04d-%02d-%02d",$y,$m,$d);
-
-		if ($def->{valid_past} && $v gt $def->{now}->()) {
-			$e = 'PAST';
-		}
-		elsif ($def->{valid_future} && $v le $def->{now}->()) {
-			$e = 'FUTURE';
-		}
-	}
-	else {
-		$e = 'BAD';
-	}
-
-	return $v,$e;
-}
-
-sub _valid_time {
-	my ($self,$def,$v) = @_;
-
-    $v =~ s/\s*//go;
-    $v =~ s/\.//go;
-
-	unless ($v =~ /^\d?\d:[0-5]?\d(:[0-5]?\d)?(am|pm)?$/i) {
-		return undef,'BAD';
-    }
-
-	my ($h,$m,$s);
-    if ($v =~ s/([ap])m$//igo) {
-        my $pm = (lc($1) eq "p")?1:0;
-
-    	($h,$m,$s) = split(/:/,$v);
-
-		# 12 am is midnight and 12 pm is noon...I've always hated that.
-		if ($pm eq '1') {
-			if ($h < 12) {
-				$h += 12;
-			}
-			elsif ($h > 12) {
-				return undef,'BAD';
-			}
-		}
-		elsif ($pm eq '0' && $h == 12) {
-			$h = 0;
-		}
-    }
-	else {
-    	($h,$m,$s) = split(/:/,$v);
-	}
-
-	# our regexp above validated the minutes and seconds, so
-	# all we need to check that the hours are valid.
-    if ($h < 0 || $h > 23) { 
-		return undef,'BAD';
-	}
-
-	$s = 0 unless (defined($s));
-   	$v =  sprintf("%02d:%02d:%02d",$h,$m,$s);
-
-	if (defined($def->{min}) && $v lt $def->{min}) {
-		return undef,'MIN';
-	}
-
-	if (defined($def->{max}) && $v gt $def->{max}) {
-		return undef,'MAX';
-	}
-
-	return $v;
-}
-
-sub _valid_bit {
-	my ($self,$def,$v) = @_;
-
-	if ($v =~ /^(0*[1-9]\d*|y(es)?|t(rue)?)$/i) {
-		return 1;
-	}
-	elsif ($v =~ /^(0+|n(o)?|f(alse)?)$/i) {
-		return 0;
-	}
-	else {
-		return undef,'BAD';
+	if (@errors) {
+		Apache::Voodoo::Exception::RunTime->throw("message" => "Configuration Errors:\n\t".join("\n\t",@errors));
 	}
 }
 
@@ -419,7 +263,7 @@ sub _trim {
 #
 # COPYRIGHT
 #
-# Copyright (c) 2009 Steven Edwards.  All rights reserved.
+# Copyright (c) 2005 Steven Edwards.  All rights reserved.
 # 
 # You may use and distribute Voodoo under the terms described in the LICENSE file include
 # in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
