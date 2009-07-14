@@ -152,6 +152,9 @@ sub parse {
 			} @{$db} 
 		];
 	}
+	else {
+		$self->{'dbs'} = [];
+	}
 
 	$self->{'models'}   = $conf{'models'}   || {};
 	$self->{'views'}    = $conf{'views'}    || {};
