@@ -178,19 +178,25 @@ sub finish {
 	my $self   = shift;
 	my $status = shift;
 
-	$debug->session($self->{'run'}->{'session'});
-	$debug->status($status);
-
-	if ($self->{'run'}->{'p'}->{'uri'} eq '/logout') {
-		$self->{'mp'}->err_header_out("Set-Cookie" => $self->{'run'}->{'config'}->{'cookie_name'} . "='!'; path=/");
-		$self->{'run'}->{'session_handler'}->destroy();
-	}
-	else {
-		$self->{'run'}->{'session_handler'}->disconnect();
+	if (defined($debug)) {
+		$debug->session($self->{'run'}->{'session'});
+		$debug->status($status);
 	}
 
-	$debug->mark(Time::HiRes::time,'END');
-	$debug->shutdown();
+	if (defined($self->{'run'}) && defined($self->{'run'}->{'session_handler'})) {
+		if ($self->{'run'}->{'p'}->{'uri'} eq 'logout') {
+			$self->{'mp'}->err_header_out("Set-Cookie" => $self->{'run'}->{'config'}->{'cookie_name'} . "='!'; path=/");
+			$self->{'run'}->{'session_handler'}->destroy();
+		}
+		else {
+			$self->{'run'}->{'session_handler'}->disconnect();
+		}
+	}
+
+	if (defined($debug)) {
+		$debug->mark(Time::HiRes::time,'END');
+		$debug->shutdown();
+	}
 
 	delete $self->{'run'};
 }
