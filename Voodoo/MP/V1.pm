@@ -76,6 +76,48 @@ sub parse_params {
    	return \%params;
 }
 
+sub set_cookie {
+	my $self = shift;
+
+	my $name    = shift;
+	my $value   = shift;
+	my $expires = shift;
+
+	my $c = Apache::Cookie->new($self->{r},
+		-name     => $name,
+		-value    => $value,
+		-path     => '/',
+		-domain   => $self->{'r'}->get_server_name()
+	);
+
+	if ($expires) {
+		$c->expires($expires);
+	}
+
+	# I don't use Apache2::Cookie's bake since it doesn't support setting the HttpOnly flag.
+	# The argument goes something like "Not every browser supports it, so what's the point?"
+	# Isn't that a bit like saying "What's the point in wearing this bullet proof vest if it
+	# doesn't stop a round from a tank?"
+	$self->err_header_out('Set-Cookie' => $c->as_string()."; HttpOnly");
+}
+
+sub get_cookie {
+	my $self = shift;
+
+	unless (defined($self->{cookiejar})) {
+		# cookies haven't be parsed yet.
+		$self->{cookiejar} = Apache::Cookie::Jar->new($self->{r});
+	}
+
+	my $c = $self->{cookiejar}->cookies(shift);
+	if (defined($c)) {
+		return $c->value;
+	}
+	else {
+		return undef;
+	}
+}
+
 1;
 
 =pod ################################################################################

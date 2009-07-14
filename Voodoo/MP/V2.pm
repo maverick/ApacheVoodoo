@@ -115,7 +115,7 @@ sub set_cookie {
 	# The argument goes something like "Not every browser supports it, so what's the point?"
 	# Isn't that a bit like saying "What's the point in wearing this bullet proof vest if it
 	# doesn't stop a round from a tank?"
-	$self->err_header_out('Set-Cookie' => $c->as_string().'; HttpOnly');
+	$self->err_header_out('Set-Cookie' => "$c; HttpOnly");
 }
 
 sub get_cookie {
