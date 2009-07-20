@@ -154,11 +154,20 @@ sub exception {
 			);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::DisplayError")) {
-			$self->_load_internal_template("display_error");
-			$self->params(
-				'error_string' => $e->message,
-				'error_url'    => $e->target
-			);
+			if (-e $self->{'template_dir'}."display_error.tmpl") {
+				$self->_load_template("display_error");
+			}
+			else {
+				$self->_load_internal_template("display_error");
+			}
+
+			$self->params('error_url' => $e->target);
+			if (ref($e->message) eq "HASH") {
+				$self->params($e->message);
+			}
+			else {
+				$self->params('error_string' => $e->message);
+			}
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception")) {
 			$self->_load_internal_template("exception");
