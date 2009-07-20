@@ -154,7 +154,7 @@ sub exception {
 			);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::DisplayError")) {
-			if (-e $self->{'template_dir'}."display_error.tmpl") {
+			if (-e File::Spec->catfile($self->{'template_dir'},"display_error.tmpl")) {
 				$self->_load_template("display_error");
 			}
 			else {
