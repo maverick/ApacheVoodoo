@@ -56,6 +56,8 @@ sub begin {
 	my $self = shift;
 	my $p    = shift;
 
+	$self->content_type($p->{"template_conf"}->{"content-type"} || 'text/html');
+
 	my $skeleton;
 	eval {
 		my $return;
