@@ -13,7 +13,7 @@ rm prepare_dist.sh
 rm lib/Apache/Voodoo/MyConfig.pm
 rm -rf lib/Apache/Voodoo/experimental
 
-find . | grep -vf MANIFEST.SKIP | sed -e 's/^\.\///' > MANIFEST
+find . -type f | grep -vf MANIFEST.SKIP | sed -e 's/^\.\///' > MANIFEST
 
 perl Makefile.PL
 make && make test && make dist
