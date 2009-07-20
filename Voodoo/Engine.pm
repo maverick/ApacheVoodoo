@@ -209,7 +209,7 @@ sub attach_session {
 	my $session_id = $self->{'mp'}->get_cookie($conf->{'cookie_name'});
 	my $session = $app->{'session_handler'}->attach($session_id,$app->{'dbh'});
 
-	if (!defined($session_id) || $session->{'id'} ne $session_id) {
+	if (!defined($session_id) || $session->id() ne $session_id) {
 		# This is a new session, or there was an old cookie from a previous sesion,
 		$self->{'mp'}->set_cookie($conf->{'cookie_name'},$session->{'id'});
 	}

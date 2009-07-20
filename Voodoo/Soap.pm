@@ -5,7 +5,11 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 use warnings;
 
+use lib("/data/apache/sites/test");
+
 use SOAP::Transport::HTTP;
+use Pod::WSDL;
+use MIME::Entity;
 
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Engine;
@@ -24,9 +28,9 @@ sub new {
 	$self->{'soap'} = SOAP::Transport::HTTP::Apache->new();
 	$self->{'soap'}->on_dispatch(
 		sub {
-			my $req = shift;
-			$self->{'run'}->{'method'} = $req->dataof->name;
-			$self->{'run'}->{'uri'}    = $req->dataof->uri;
+			warn "in on dispatch";
+			$self->{'run'}->{'method'} = $_[0]->dataof->name;
+			$self->{'run'}->{'uri'}    = $_[0]->dataof->uri;
 			return ("Apache/Voodoo/Soap","handle_request");
 		}
 	);
@@ -51,7 +55,40 @@ sub handler {
 		return $self->{'mp'}->server_error();
 	}
 
-	my $return = $self->{'soap'}->handle($r);
+	my $return;
+	if ($self->{mp}->is_get() && $r->unparsed_uri =~ /\?wsdl$/) {
+		my $uri = $self->{'mp'}->uri();
+		if ($uri =~ /\/$/) {
+			return $self->{mp}->not_found();
+		}
+
+		# FIXME hack.  Shouldn't be looking in there to get this
+		$uri =~ s/^\///;
+		unless ($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}) {
+			return $self->{mp}->not_found();
+		}
+		
+		my $m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri});
+		if ($m eq "Apache::Voodoo::Loader::Dynamic") {
+			$m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}->{'object'});
+		}
+		# FIXME here ends the hackery
+
+		my $wsdl = new Pod::WSDL(
+			source   => $m,
+			location => $self->{mp}->server_url().$uri,
+			pretty   => 1,
+			withDocumentation => 1
+		);
+
+		$self->{'mp'}->content_type('text/xml');
+		$self->{'mp'}->print($wsdl->WSDL);
+		$self->{'mp'}->flush();
+		$return = $self->{mp}->ok;
+	}
+	else {
+		$return = $self->{'soap'}->handle($r);
+	}
 
 	$self->{'engine'}->finish($self->{mp}->ok);
 
@@ -60,6 +97,8 @@ sub handler {
 
 sub handle_request {
 	my $self = shift;
+
+	warn "made it here";
 
 	my $params = {};
 	my $c=0;
@@ -134,7 +173,6 @@ sub handle_request {
 
 sub _make_fault {
 	my $self = shift;
-
 
 	if ($self->{use_faults}) {
 		my %msg;

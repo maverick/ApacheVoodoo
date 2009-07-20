@@ -39,6 +39,19 @@ sub is_get     { return ($_[0]->{r}->method eq "GET"); }
 sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
 sub site_root  { return $_[0]->{r}->dir_config("SiteRoot") || "/"; }
 
+sub server_url {
+	my $self = shift;
+
+	my ($url,$p) = ($self->{r}->subprocess_env('https') eq "on")?('https',443):('http',80);
+
+	$url .= '://'. $self->{r}->server->server_hostname();
+	my $port = $self->{r}->server->port();
+	if ($port && $port ne $p) {
+		$url .= ":$p";
+	}
+	return $url."/";
+}
+
 sub if_modified_since {
 	my $self  = shift;
 	my $mtime = shift;
