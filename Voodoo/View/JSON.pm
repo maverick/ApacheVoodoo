@@ -61,7 +61,7 @@ sub exception {
 	elsif ($e->isa("Apache::Voodoo::Exception::RunTime")) {
 		$d = {
 			"description" => $e->description,
-			"message"     => $e->message,
+			"message"     => $e->error,
 			"stack"       => $self->_stack_trace($e->trace())
 		};
 	}

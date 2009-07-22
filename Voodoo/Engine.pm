@@ -18,8 +18,8 @@ $VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
 use strict;
 use warnings;
 
-use File::Spec;
 use DBI;
+use File::Spec;
 use Time::HiRes;
 
 use Apache::Voodoo::Constants;
@@ -56,7 +56,7 @@ sub new {
 			$_[0]->rethrow;
 		}
 		else {
-			Apache::Voodoo::Exception::RunTime->throw(message => join("\n", @_));
+			Apache::Voodoo::Exception::RunTime->throw(error => join("\n", @_));
 		}
 	};
 
@@ -220,7 +220,7 @@ sub attach_session {
 
 		Apache::Voodoo::Exception::Application::SessionTimeout->throw(
 			target  => $self->_adjust_url("/timeout"),
-			message => "Session has expired"
+			error => "Session has expired"
 		);
 	}
 
@@ -320,13 +320,13 @@ sub execute_controllers {
 				}
 				elsif ($return->[0] eq "DISPLAY_ERROR") {     
 					Apache::Voodoo::Exception::Application::DisplayError->throw(
-						message => $return->[1],
+						error => $return->[1],
 						target  => $self->_adjust_url(($return->[2])?$return->[2]:"index")
 					);
 				}
 				elsif ($return->[0] eq "ACCESS_DENIED") {
 					Apache::Voodoo::Exception::Application::AccessDenied->throw(
-						message => $return->[1] || "Access Denied",
+						error => $return->[1] || "Access Denied",
 						target  => $self->_adjust_url(($return->[2])?$return->[2]:"access_denied")
 					);
 				}
@@ -442,7 +442,7 @@ sub restart {
 			
 			warn "========================================================\n";
 			warn "DB CONNECT FAILED FOR $id\n";
-			warn "$DBI::errstr\n";
+			warn $DBI::errstr."\n";
 			warn "========================================================\n";
 		}
 

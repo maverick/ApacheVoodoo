@@ -205,7 +205,7 @@ sub _configure {
 	}
 
 	if (@errors) {
-		Apache::Voodoo::Exception::RunTime->throw("message" => "Configuration Errors:\n\t".join("\n\t",@errors));
+		Apache::Voodoo::Exception::RunTime->throw("Configuration Errors:\n\t".join("\n\t",@errors));
 	}
 }
 

@@ -28,7 +28,6 @@ sub new {
 	$self->{'soap'} = SOAP::Transport::HTTP::Apache->new();
 	$self->{'soap'}->on_dispatch(
 		sub {
-			warn "in on dispatch";
 			$self->{'run'}->{'method'} = $_[0]->dataof->name;
 			$self->{'run'}->{'uri'}    = $_[0]->dataof->uri;
 			return ("Apache/Voodoo/Soap","handle_request");
@@ -54,6 +53,7 @@ sub handler {
 		warn "$@";
 		return $self->{'mp'}->server_error();
 	}
+
 
 	my $return;
 	if ($self->{mp}->is_get() && $r->unparsed_uri =~ /\?wsdl$/) {
@@ -97,8 +97,6 @@ sub handler {
 
 sub handle_request {
 	my $self = shift;
-
-	warn "made it here";
 
 	my $params = {};
 	my $c=0;
@@ -145,10 +143,10 @@ sub handle_request {
 		return $self->_make_fault($self->{mp}->redirect, "Redirected",$e->target);
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::DisplayError->caught()) {
-		return $self->_make_fault(600, $e->message, {nextservice => $e->target});
+		return $self->_make_fault(600, $e->error, {nextservice => $e->target});
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::AccessDenied->caught()) {
-		return $self->_make_fault($self->{mp}->forbidden, $e->message);
+		return $self->_make_fault($self->{mp}->forbidden, $e->error);
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::RawData->caught()) {
 		return {
@@ -174,7 +172,7 @@ sub handle_request {
 sub _make_fault {
 	my $self = shift;
 
-	if ($self->{use_faults}) {
+	if (1 || $self->{use_faults}) {
 		my %msg;
 		$msg{faultcode}   = shift;
 		$msg{faultstring} = shift;

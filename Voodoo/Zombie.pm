@@ -54,8 +54,8 @@ sub AUTOLOAD {
 	$method =~ s/.*:://;
 
 	Apache::Voodoo::Exception::Compilation->throw(
-		'module'  => $self->{'module'},
-		'message' => $self->{'error'}
+		'module' => $self->{'module'},
+		'error'  => $self->{'error'}
 	);
 }
 

@@ -162,18 +162,18 @@ sub exception {
 			}
 
 			$self->params('error_url' => $e->target);
-			if (ref($e->message) eq "HASH") {
-				$self->params($e->message);
+			if (ref($e->error) eq "HASH") {
+				$self->params($e->error);
 			}
 			else {
-				$self->params('error_string' => $e->message);
+				$self->params('error_string' => $e->error);
 			}
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception")) {
 			$self->_load_internal_template("exception");
 			$self->params(
 				"description" => $e->description,
-				"message"     => $e->message
+				"message"     => $e->error
 			);
 			if ($e->isa("Apache::Voodoo::Exception::RunTime")) {
 				$self->params("stack" => $self->_stack_trace($e->trace()));

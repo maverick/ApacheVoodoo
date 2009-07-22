@@ -42,7 +42,8 @@ sub site_root  { return $_[0]->{r}->dir_config("SiteRoot") || "/"; }
 sub server_url {
 	my $self = shift;
 
-	my ($url,$p) = ($self->{r}->subprocess_env('https') eq "on")?('https',443):('http',80);
+	my $s = $self->{r}->subprocess_env('https');
+	my ($url,$p) = (defined($s) && $s eq "on")?('https',443):('http',80);
 
 	$url .= '://'. $self->{r}->server->server_hostname();
 	my $port = $self->{r}->server->port();
