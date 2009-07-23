@@ -80,6 +80,7 @@ sub handler {
 			pretty   => 1,
 			withDocumentation => 1
 		);
+		$wsdl->targetNS($self->{mp}->server_url().$uri);
 
 		$self->{'mp'}->content_type('text/xml');
 		$self->{'mp'}->print($wsdl->WSDL);
