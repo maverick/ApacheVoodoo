@@ -8,7 +8,7 @@ use warnings;
 use lib("/data/apache/sites/test");
 
 use SOAP::Transport::HTTP;
-use Pod::WSDL;
+use Pod::WSDL2;
 use MIME::Entity;
 
 use Apache::Voodoo::MP;
@@ -74,7 +74,7 @@ sub handler {
 		}
 		# FIXME here ends the hackery
 
-		my $wsdl = new Pod::WSDL(
+		my $wsdl = new Pod::WSDL2(
 			source   => $m,
 			location => $self->{mp}->server_url().$uri,
 			pretty   => 1,
