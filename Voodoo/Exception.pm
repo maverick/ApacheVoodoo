@@ -24,6 +24,10 @@ use Exception::Class (
 		isa => 'Apache::Voodoo::Exception::RunTime',
 		description => 'Module threw an exception'
 	},
+	'Apache::Voodoo::Exception::RunTime::BadConfig' => {
+		isa => 'Apache::Voodoo::Exception::RunTime',
+		description => "Configuration Error",
+	},
 	'Apache::Voodoo::Exception::RunTime::BadCommand' => {
 		isa => 'Apache::Voodoo::Exception::RunTime',
 		description => "Controller returned an unsupported command",

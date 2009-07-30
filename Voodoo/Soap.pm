@@ -173,24 +173,12 @@ sub handle_request {
 sub _make_fault {
 	my $self = shift;
 
-	if (1 || $self->{use_faults}) {
-		my %msg;
-		$msg{faultcode}   = shift;
-		$msg{faultstring} = shift;
-		$msg{detail}      = shift if $_[0];
+	my %msg;
+	$msg{faultcode}   = shift;
+	$msg{faultstring} = shift;
+	$msg{detail}      = shift if $_[0];
 
-		die SOAP::Fault->new(%msg);
-	}
-	else {
-		my $msg = {
-			success => 0,
-			error   => shift,
-			message => shift
-		};
-
-		$msg->{detail} = shift if $_[0];
-		return $msg;
-	}
+	die SOAP::Fault->new(%msg);
 }
 
 1;

@@ -44,7 +44,7 @@ sub set_valid_callback {
 	#}
 
 	unless (ref($sub_ref) eq "CODE") {
-		Apache::Vodooo::Exception::RunTime->throw("add_callback requires a subroutine reference as the second paramter");
+		Apache::Vodooo::Exception::RunTime::BadConfig->throw("add_callback requires a subroutine reference as the second paramter");
 	}
 
 	#push(@{$self->{'callbacks'}->{$context}},$sub_ref);
@@ -205,7 +205,7 @@ sub _configure {
 	}
 
 	if (@errors) {
-		Apache::Voodoo::Exception::RunTime->throw("Configuration Errors:\n\t".join("\n\t",@errors));
+		Apache::Voodoo::Exception::RunTime::BadConfig->throw("Configuration Errors:\n\t".join("\n\t",@errors));
 	}
 }
 

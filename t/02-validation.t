@@ -5,10 +5,13 @@
 use strict;
 use warnings;
 
-use Apache::Voodoo::Validate;
-
-use Test::More tests => 106;
+use Test::More tests => 108;
 use Data::Dumper;
+
+BEGIN {
+	use_ok('Apache::Voodoo::Validate');
+};
+require_ok('Apache::Voodoo::Validate');
 
 my %u_int_old = (
 	'type' => 'unsigned_int',
