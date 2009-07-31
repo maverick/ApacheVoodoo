@@ -72,11 +72,13 @@ sub valid {
 
 		$v = sprintf("%04d-%02d-%02d",$y,$m,$d);
 
-		if ($self->{valid} eq "past" && $v gt $self->{now}->()) {
-			$e = 'PAST';
-		}
-		elsif ($self->{valid} eq "future" && $v le $self->{now}->()) {
-			$e = 'FUTURE';
+		if (defined($self->{'valid'})) {	# supresses warnings.
+			if ($self->{'valid'} eq "past" && $v gt $self->{now}->()) {
+				$e = 'PAST';
+			}
+			elsif ($self->{'valid'} eq "future" && $v le $self->{now}->()) {
+				$e = 'FUTURE';
+			}
 		}
 	}
 	else {
@@ -115,7 +117,7 @@ sub _default_parser {
 		($m,$d,$y) = split("/",$date, 3);
 	}
 	elsif ($date =~ /^\d{4}-\d?\d-\d?\d$/) {
-		($y,$m,$d) = split("/",$date, 3);
+		($y,$m,$d) = split("-",$date, 3);
 	}
 	else {
 		return undef;

@@ -22,7 +22,7 @@ sub config {
 
 	my @e;
 	if (defined($c->{min})) {
-		my $t = $self->_valid_time($c->{min});
+		my $t = _valid_time($c->{min});
 		if ($t) {
 			$self->{'min'} = $t;
 		}
@@ -32,7 +32,7 @@ sub config {
 	}
 
 	if (defined($c->{max})) {
-		my $t = $self->_valid_time($c->{max});
+		my $t = _valid_time($c->{max});
 		if ($t) {
 			$self->{'max'} = $t;
 		}
@@ -47,7 +47,7 @@ sub config {
 sub valid {
 	my ($self,$v) = @_;
 
-    $v = $self->_valid_time($v);
+    $v = _valid_time($v);
 	unless ($v) {
 		return undef,'BAD';
     }
@@ -65,7 +65,6 @@ sub valid {
 
 
 sub _valid_time {
-	my $self = shift;
 	my $time = shift;
 
     $time =~ s/\s*//go;

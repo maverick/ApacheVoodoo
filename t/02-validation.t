@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 108;
+use Test::More tests => 111;
 use Data::Dumper;
 
 BEGIN {
@@ -40,6 +40,10 @@ my %date = (
 
 my %time = (
 	'type' => 'time'
+);
+
+my %datetime = (
+	'type' => 'datetime'
 );
 
 my %vchar = ( type => 'varchar', 'length' => 64  );
@@ -82,6 +86,7 @@ my $full_monty = {
 			return $vals{$v};
 		}
 	},
+	'datetime' => { %datetime }
 };
 
 my $V;
@@ -133,6 +138,7 @@ ok(!defined $e->{MISSING_varchar_opt},'varchar optional');
 ok(!defined $e->{MISSING_text},       'varchar text'); 
 ok(!defined $e->{MISSING_email_opt},  'email optional'); 
 ok(!defined $e->{MISSING_regexp_opt}, 'regexp optional'); 
+ok(!defined $e->{MISSING_datetime},   'datetime optional'); 
 
 # bogus values
 ($v,$e) = $V->validate({
@@ -148,7 +154,8 @@ ok(!defined $e->{MISSING_regexp_opt}, 'regexp optional');
 	regexp_opt => 'aba',
 	valid => 'notok',
 	varchar_req => 'docheck',
-	varchar_opt => 'bogus'
+	varchar_opt => 'bogus',
+	datetime => '2009-01-01 asdfasdf'
 });
 
 ok(scalar keys %{$v} == 0,'$values is empty');
@@ -164,8 +171,11 @@ ok(defined $e->{BAD_regexp_req}, 'bad regexp 1');
 ok(defined $e->{BAD_regexp_opt}, 'bad regexp 2');
 ok(defined $e->{BAD_valid},      'bad valid sub');
 
+ok(defined $e->{BAD_datetime},   'bad datetime');
+
 ok(defined $e->{BOGUS_varchar_req}, 'bad valid sub');
 ok(defined $e->{BOGUS_varchar_opt}, 'bad valid sub');
+
 
 # valid values
 ($v,$e) = $V->validate({
@@ -182,6 +192,7 @@ ok(defined $e->{BOGUS_varchar_opt}, 'bad valid sub');
 	regexp_req => 'aabbbba',
 	regexp_opt => 'aaba',
 	valid => 'ok',
+	datetime => '2009-01-01 12:00am'
 });
 
 ok(scalar keys %{$e} == 0,'$errors is empty');
@@ -198,6 +209,7 @@ ok($v->{url_opt}     eq 'http://yahoo.com/foo', 'good url 2');
 ok($v->{regexp_req}  eq 'aabbbba',              'good regexp 1');
 ok($v->{regexp_opt}  eq 'aaba',                 'good regexp 2');
 ok($v->{valid}       eq 'ok',                   'good valid sub');
+ok($v->{datetime}    eq '2009-01-01 00:00:00',  'good datetime');
 
 # fence post values
 ($v,$e) = $V->validate({
