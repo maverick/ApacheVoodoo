@@ -63,6 +63,63 @@ SKIP: {
 		}
 	}
 
+	$table = Apache::Voodoo::Table->new({
+		table => 'a_table',
+		primary_key => 'id',
+		columns => {
+			id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+			a_fkey => { 
+				type => 'unsigned_int', 
+				bytes => 4, 
+				required => 1,
+				references => {
+					table => 'a_ref_table',
+					primary_key => 'id',
+					columns => ['name'],
+					select_label => 'name'
+				}
+			},
+			a_bit  => { type => 'bit'  },
+			a_date     => { type => 'date' },
+			a_time     => { type => 'time' },
+			a_datetime => { type => 'datetime' },
+			a_signed_decimal   => { type => 'signed_decimal', left=> 4, right=>2 },
+			a_unsigned_decimal => { type => 'unsigned_decimal', left=> 4, right=>2 },
+			a_signed_int       => {type => 'signed_int', bytes => 4},
+			a_unsigned_int     => {type => 'unsigned_int', bytes => 4},
+			a_varchar  => {type => 'varchar', length => 128},
+			a_text     => {type => 'text'}
+		}
+	});
+
+	is_deeply(
+		$table->view({dbh => $dbh,'params' => {'id' => 1}}),
+		{
+          'a_text' => 'a much larger text string',
+          'a_signed_decimal' => '12.34',
+          'a_unsigned_decimal' => '-56.78',
+          'a_date' => '01/01/2009',
+          'a_varchar' => 'a text string',
+          'a_signed_int' => '910',
+          'a_unsigned_int' => '-1112',
+          'a_fkey' => '1',
+          'a_datetime' => '2000-01-01 12:00',
+          'a_bit' => '0',
+          'a_time' => ' 1:00 PM',
+		  'a_ref_table.name' => 'First Value',
+          'id' => '1'
+        },
+		'Simple view with valid id'
+	);
+
+	my $v = $table->view({dbh => $dbh,'params' => {'id' => 2}});
+	is_deeply(
+		$v,
+		['DISPLAY_ERROR','Record not found',undef],	# so wrong...change internals to use exceptions
+		'Simple view with invalid id'
+	);
+
+
 	$dbh->disconnect();
 	unlink($filename);
 };

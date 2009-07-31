@@ -192,7 +192,7 @@ sub _configure {
 			($field,@e) = $m->new($conf);
 		};
 		if ($@) {
-			push(@errors,"error loading plugin for type $conf->{'type'}". $@);
+			push(@errors,"Don't know how to handle data type $conf->{'type'}");
 			next;
 		}
 
