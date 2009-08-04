@@ -39,6 +39,14 @@ sub is_get     { return ($_[0]->{r}->method eq "GET"); }
 sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
 sub site_root  { return $_[0]->{r}->dir_config("SiteRoot") || "/"; }
 
+sub remote_ip {
+	return $_[0]->{r}->connection->remote_ip();
+}
+
+sub remote_host {
+	return $_[0]->{r}->connection->remote_host();
+}
+
 sub server_url {
 	my $self = shift;
 
