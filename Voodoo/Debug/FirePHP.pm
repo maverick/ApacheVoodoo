@@ -278,7 +278,7 @@ sub _fb {
 		}
 	}
 
-  	$self->setHeader('X-Wf-1-Index',$self->{'messageIndex'}-1);
+  	#$self->setHeader('X-Wf-1-Index',$self->{'messageIndex'}-1);
 
 	return 1;
 }
