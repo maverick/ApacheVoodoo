@@ -28,9 +28,7 @@ $CONFIG = {
   'PREFIX' => '/data/apache',
   'SESSION_PATH' => '/data/apache/session',
   'TMPL_PATH' => 'html',
-  'UPDATES_PATH' => 'etc/updates',
-  'USE_LOG4PERL' => 1,
-  'LOG4PERL_CONF' => '/data/apache/lib/perl/Apache/Voodoo/log4perl.conf'
+  'UPDATES_PATH' => 'etc/updates'
 }
 ;
 

@@ -19,17 +19,15 @@ use warnings;
 use base("Apache::Voodoo");
 use Data::Dumper;
 
-use Email::Valid;
-
-use Apache::Voodoo::Validate::URL;
+use Apache::Voodoo::Validate;
 use Apache::Voodoo::Pager;
 
 sub new {
 	my $class = shift;
 	my $self = {};
+
 	bless $self, $class;
 
-	$self->{'pager'} = Apache::Voodoo::Pager->new();
 
 	$self->set_configuration(shift);
 
@@ -40,89 +38,60 @@ sub set_configuration {
 	my $self = shift;
 	my $conf = shift;
 
-	# Data::Dumper is something that comes by default with perl installs
-	# and provides a easy way to make deep copies.
-	my $c;
-	{
-		$Data::Dumper::terse = 1;
-		$c = eval Dumper($conf);
-	}
-
-	my %COLUMN_TYPES = (
-		"varchar" => { 
-			'length' => 1,   # required
-			'valid'  => 0,   # optionsl
-			'regexp' => 0
-		},
-		'unsigned_int' => {
-			'max' => 1,     
-		},
-		'signed_int' => {
-			'max' => 1,
-			'min' => 1,
-		},
-		"signed_decimal" => {
-			'left'  => 1,
-			'right' => 1,
-		},
-		"unsigned_decimal" => {
-			'left'  => 1,
-			'right' => 1,
-		},
-		'date'      => {},
-		'time'      => {},
-		'datetime'  => {},
-		'timestamp' => {},
-		'text'      => {},
-		'bit'       => {}
-	);
-
 	my @errors;
 
-	$self->{'table'} = $c->{'table'}       || push(@errors,"missing table name");
-	$self->{'pkey'}  = $c->{'primary_key'} || push(@errors,"missing primary key");
-	$self->{'pkey_regexp'} = ($c->{'primary_key_regexp'})?$c->{'primary_key_regexp'}:'^\d+$';
-	$self->{'pkey_user_supplied'} = ($c->{'primary_key_user_supplied'})?1:0;
-	while (my ($name,$conf) = each %{$c->{'columns'}}) {
-		unless (defined($conf->{'type'})) {
-			push(@errors,"missing 'type' for column $name");
-			next;
+	if (!defined($conf->{'table'})) {
+		push(@errors,"missing table name");
+	}
+	elsif ($conf->{'table'} !~ /^[a-z_]\w*$/) {
+		push(@errors,"bad table name");
+	}
+	else {
+		$self->{'table'} = $conf->{'table'};
+	}
+
+	if (!defined($conf->{'primary_key'})) {
+		push(@errors,"missing primary key");
+	}
+	elsif ($conf->{'primary_key'} !~ /^[a-z_]\w*$/) {
+		push(@errors,"bad primary key");
+	}
+	else {
+		$self->{'pkey'} = $conf->{'primary_key'};
+	}
+
+	$self->{'pkey_regexp'} = ($conf->{'primary_key_regexp'})?$conf->{'primary_key_regexp'}:'^\d+$';
+	$self->{'pkey_user_supplied'} = ($conf->{'primary_key_user_supplied'})?1:0;
+	eval {
+		$self->{valid} = Apache::Voodoo::Validate->new($conf->{'columns'});
+	};
+	if (my $e = Apache::Voodoo::Exception::RunTime::BadConfig->caught()) {
+		# FIXME hack!  need to figure out to store the list of errors as a data structure and override the stringification operation.
+		my (undef,@e) = split(/\n\t/,"$e");
+		push(@errors,@e);
+	}
+	elsif ($@) {
+		ref($@)?
+			$@->rethrow:
+			Apache::Voodoo::Exception::RunTime->throw($@);
+	}
+
+	while (my ($name,$conf) = each %{$conf->{'columns'}}) {
+		if (defined($conf->{'multiple'})) {
+			push(@errors,"Column $name allows multiple values but Apache::Voodoo::Table can't handle that currently.");
 		}
 
-		unless (defined($COLUMN_TYPES{$conf->{'type'}})) {
-			push(@errors,"don't know how to handle type $conf->{'type'} for column $name");
-			next;
-		}
-		
-		if ($name eq $self->{'pkey'}) {
-			# I'm thinking there's some other stuff I have to do here...
-			# but I don't quite remember what :)
-			# primary key definately CAN'T be listed in the columns...it makes 'add' very unhappy
-			#
-			# oh yeah, now I remember, need the column definition to know type, regexp, etc, etc.
-			# it has to be pulled out and used separatly.
-			next;
+		if (defined($conf->{'unique'})) {
+			push(@{$self->{'unique'}},$name);
 		}
 
-		push(@{$self->{'columns'}},$name);
-
-		my %my_conf;
-		$my_conf{'name'} = $name;
-		while (my ($k,$v) = each %{$COLUMN_TYPES{$conf->{'type'}}}) {
-			$my_conf{$k} = $conf->{$k};
-			if ($v == 1 && !defined($my_conf{$k})) {
-				push(@errors,"$k is a required param for column type $conf->{'type'}");
-			}
-			delete($conf->{$k});
+		# keep a local list of column names for query construction.
+		if (defined($self->{'pkey'}) && $name ne $self->{'pkey'}) {
+			push(@{$self->{'columns'}},$name);
 		}
 
-		# grab the switches
-		foreach ("required","unique") {
-			if ($conf->{$_}) {
-				push(@{$self->{$_}},$name);
-			}
-			delete($conf->{$_});
-		}
+		if ($conf->{'type'} eq "date") { push(@{$self->{dates}},$name); }
+		if ($conf->{'type'} eq "time") { push(@{$self->{times}},$name); }
 
 		if (defined($conf->{'references'})) {
 			my %v;
@@ -153,29 +122,21 @@ sub set_configuration {
 			}
 
 			push(@{$self->{'references'}},\%v);
-			delete $conf->{'references'};
-		}
-
-		push(@{$self->{$conf->{'type'}."s"}},\%my_conf);
-		delete $conf->{'type'};
-
-		foreach (keys %{$conf}) {
-			push(@errors,"unknown option: \"$_\" in column \"$name\"");
 		}
 	}
 
-	$self->{'default_sort'} = $c->{'list_options'}->{'default_sort'};
-	while (my ($k,$v) = each %{$c->{'list_options'}->{'sort'}}) {
+	$self->{'default_sort'} = $conf->{'list_options'}->{'default_sort'};
+	while (my ($k,$v) = each %{$conf->{'list_options'}->{'sort'}}) {
 		$self->{'list_sort'}->{$k} = (ref($v) eq "ARRAY")? join(", ",@{$v}) : $v;
 	}
 
-	foreach (@{$c->{'list_options'}->{'search'}}) {
+	foreach (@{$conf->{'list_options'}->{'search'}}) {
 		push(@{$self->{'list_search_items'}},[$_->[1],$_->[0]]);
 		$self->{'list_search'}->{$_->[1]} = 1;
 	}
 
-	if (ref($c->{'joins'}) eq "ARRAY") {
-		foreach (@{$c->{'joins'}}) {
+	if (ref($conf->{'joins'}) eq "ARRAY") {
+		foreach (@{$conf->{'joins'}}) {
 			push(@{$self->{'joins'}},
 				{
 					table   => $_->{table},
@@ -187,6 +148,7 @@ sub set_configuration {
 		}
 	}
 
+	$self->{'pager'} = Apache::Voodoo::Pager->new();
 	# setup the pagination options
 	$self->{'pager'}->set_configuration(
 		'count'   => 40,
@@ -197,16 +159,12 @@ sub set_configuration {
 			'sort',
 			'last_sort',
 			'desc',
-			@{$c->{'list_options'}->{'persist'} || []}
+			@{$conf->{'list_options'}->{'persist'} || []}
 		]
 	);
 
-	$self->{'errors'} = \@errors;
 	if (@errors) {
-		$self->{'config_invalid'} = 1;
-
-#		print STDERR "Errors in Apache::Voodoo::Table configuration in ".(caller(1))[1]."\n";
-#		print STDERR join("\n",@errors,"\n");
+		Apache::Voodoo::Exception::RunTime::BadConfig->throw("Configuration Errors:\n\t".join("\n\t",@errors));
 	}
 }
 
@@ -263,7 +221,7 @@ sub add {
 		my $e;
 
 		# do all the normal parameter checking
-		($values,$e) = $self->_process_params($params);
+		($values,$e) = $self->{valid}->validate($params);
 
 		if (defined($e)) {
 			# copy the errors from the process_params
@@ -422,7 +380,7 @@ sub edit {
 
 		my $e;
 		# run the standard error checks
-		($values,$e) = $self->_process_params($params);
+		($values,$e) = $self->{valid}->validate($params);
 
 		# copy the errors from the process_params
 		$errors = { %{$errors}, %{$e} };
@@ -810,7 +768,7 @@ sub list {
 sub view {
 	my $self = shift;
 	my $p    = shift;
-	my $additional_constraint = shift;
+	my $additional_constraint = shift || "";
 
 	$self->{'success'} = 0;
 
@@ -881,7 +839,7 @@ sub view {
 		# copy values into template
 		$v{$self->{'pkey'}} = $params->{$self->{'pkey'}};
 		
-		for (my $i=0; $i <= @list; $i++) {
+		for (my $i=0; $i <= $#list; $i++) {
 			my $key = $list[$i];
 
 			$key =~ s/$self->{'table'}\.//;    # take of the table name in front
@@ -895,12 +853,12 @@ sub view {
 
 	# pretty up dates
 	foreach (@{$self->{'dates'}}) {
-		$v{$_->{'name'}} = $self->sql_to_date($v{$_->{'name'}});
+		$v{$_} = $self->sql_to_date($v{$_});
 	}
 
 	# pretty up times
 	foreach (@{$self->{'times'}}) {
-		$v{$_->{'name'}} = $self->sql_to_time($v{$_->{'name'}});
+		$v{$_} = $self->sql_to_time($v{$_});
 	}
 
 	$self->{'success'} = 1;
@@ -939,207 +897,13 @@ sub toggle {
 	return 1;
 }
 
-#
-# standard data checks for add and edit
-#
-sub _process_params {
-	my $self   = shift;
-	my $params = shift;
-
-	my %v;
-	my %errors;
-
-	##############
-	# copy params out
-	##############
-	foreach (@{$self->{'columns'}}) {
-		$params->{$_} =~ s/^\s*//go;
-		$params->{$_} =~ s/\s*$//go;
-
-		$v{$_} = $params->{$_};
-	}
-
-	##############
-	# check required
-	##############
-	foreach (@{$self->{'required'}}) {
-		if ($v{$_} eq "") {
-			$errors{'MISSING_'.$_} = 1;
-		}
-	}
-
-	##############
-	# varchar
-	##############
-	foreach my $varchar (@{$self->{'varchars'}}) {
-		if ($varchar->{'length'} > 0 && length($v{$varchar->{'name'}}) > $varchar->{'length'}) {
-			$errors{'BIG_'.$varchar->{'name'}} = 1;
-		}
-		elsif (defined($varchar->{'valid'})) {
-			if ($varchar->{'valid'} eq "email" && length($v{$varchar->{'name'}}) > 0) {
-				# Net::DNS does something *REMARKABLY STUPID* with $_.  No matter what you do it *ALWAYS* overwrites
-				# the value of $_ with the IP of the DNS server that responsed to the lookup request.  This localization
-				# of $_ keeps Net::DNS for pissing in everybody else's pool.
-				local $_;
-
-				my $addr;
-
-				eval {
-					$addr = Email::Valid->address('-address' => $v{$varchar->{'name'}},
-					                              '-mxcheck' => 1, 
-											      '-fqdn'    => 1 );
-				};
-				if ($@) {
-					$self->debug("Email::Valid produced an exception: $@");
-					warn "Email::Valid produced an exception: $@";
-					$errors{'BAD_'.$varchar->{'name'}} = 1;
-				}
-				elsif(!defined($addr)) {
-					$errors{'BAD_'.$varchar->{'name'}} = 1;
-				}
-				else {
-					$v{$varchar->{'name'}} = $addr;
-				}
-			}
-			elsif($varchar->{'valid'} eq "url") {
-				if (length($v{$varchar->{'name'}}) && Apache::Voodoo::Validate::URL::valid_url($v{$varchar->{'name'}}) == 0) {
-					$errors{'BAD_'.$varchar->{'name'}} = 1;
-				}
-			}
-		}
-		elsif (defined($varchar->{'regexp'})) {
-			 my $re = $varchar->{'regexp'};
-			 unless ($v{$varchar->{'name'}} =~ /$re/) {
-				 $errors{'BAD_'.$varchar->{'name'}} = 1;
-			 }
-		}
-		elsif ($varchar->{length} > 0) {
-			# If there was a length restriction, than this data
-			# isn't in a text area and needs to have it's " HTML entitified
-			$v{$varchar->{'name'}} =~ s/"/\&quot;/g;
-		}
-	}
-
-	##############
-	# + decimal
-	##############
-	foreach (@{$self->{'unsigned_decimals'}}) {
-		if ($v{$_->{'name'}} =~ /^(\d*)(?:\.(\d+))?$/) {
-			my $l = $2 || 0;
-			my $r = $3 || 0;
-			$l *= 1;
-			$r *= 1;
-
-			if (length($l) > $_->{'left'} ||
-				length($r) > $_->{'right'} ) {
-				$errors{'BIG_'.$_->{'name'}} = 1;
-			}
-		}
-		else {
-			$errors{'BAD_'.$_->{'name'}} = 1;	
-		}
-	}
-
-	##############
-	# +/- decimal
-	##############
-	foreach (@{$self->{'signed_decimals'}}) {
-		if ($v{$_->{'name'}} =~ /^(\+|-)?(\d*)(?:\.(\d+))?$/) {
-			my $l = $2 || 0;
-			my $r = $3 || 0;
-			$l *= 1;
-			$r *= 1;
-
-			if (length($l) > $_->{'left'} ||
-				length($r) > $_->{'right'} ) {
-				$errors{'BIG_'.$_->{'name'}} = 1;
-			}
-		}
-		else {
-			$errors{'BAD_'.$_->{'name'}} = 1;	
-		}
-	}
-
-	##############
-	# + int
-	##############
-	foreach (@{$self->{'unsigned_ints'}}) {
-		if ($v{$_->{'name'}} eq "") {
-			$v{$_->{'name'}} = undef;
-		}
-		elsif ($v{$_->{'name'}} !~ /^\d*$/){
-			$errors{'BAD_'.$_->{'name'}} = 1;	
-		}
-		elsif ($v{$_->{'name'}} > $_->{'max'}) {
-			$errors{'MAX_'.$_->{'name'}} = 1;	
-		}
-	}
-
-	##############
-	# +/- int
-	##############
-	foreach (@{$self->{'signed_ints'}}) {
-		if ($v{$_->{'name'}} eq "") {
-			$v{$_->{'name'}} = undef;
-		}
-		elsif ($v{$_->{'name'}} !~ /^(\+|-)?\d*$/){
-			$errors{'BAD_'.$_->{'name'}} = 1;	
-		}
-		elsif ($v{$_->{'name'}} > $_->{'max'}) {
-			$errors{'MAX_'.$_->{'name'}} = 1;	
-		}
-		elsif ($v{$_->{'name'}} < $_->{'min'}) {
-			$errors{'MIN_'.$_->{'name'}} = 1;	
-		}
-	}
-
-	##############
-	# Dates
-	##############
-	foreach (@{$self->{'dates'}}) {
-		if ($v{$_->{'name'}} eq "") {
-			$v{$_->{'name'}."_CLEAN"} = undef;
-		}
-		else {
-			if ($self->validate_date($v{$_->{'name'}})) {
-				$v{$_->{'name'}."_CLEAN"} = $self->date_to_sql($v{$_->{'name'}});
-			}
-			else {
-				$errors{"BAD_".$_->{'name'}} = 1;
-			}
-		}
-	}
-
-	##############
-	# Times
-	##############
-	foreach (@{$self->{'times'}}) {
-		if ($v{$_->{'name'}} eq "") {
-			$v{$_->{'name'}."_CLEAN"} = undef;
-		}
-		else {
-			my $temp = $self->time_to_sql($v{$_->{'name'}});
-			if ($temp) {
-				$v{$_->{'name'}."_CLEAN"} = $temp;
-			}
-			else {
-				$errors{"BAD_".$_->{'name'}} = 1;
-			}
-		}
-	}
-
-	return (\%v,\%errors);
-}
-
 sub get_insert_id {
 	my $self = shift;
 	my $p    = shift;
 
 	my $dbh = $p->{'dbh'};
-
-	my $res = $dbh->selectall_arrayref("SELECT LAST_INSERT_ID()") || $self->db_error();
 	
-	return $res->[0]->[0];
+	return $p->{dbh}->last_insert_id(undef,undef,$self->{'table'},$self->{'pkey'});
 }
 
 

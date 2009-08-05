@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Test::More tests => 6;
+use Test::More tests => 8;
 
 BEGIN {
 	use_ok('File::Temp');
@@ -112,13 +112,12 @@ SKIP: {
 		'Simple view with valid id'
 	);
 
-	my $v = $table->view({dbh => $dbh,'params' => {'id' => 2}});
-	is_deeply(
-		$v,
-		['DISPLAY_ERROR','Record not found',undef],	# so wrong...change internals to use exceptions
-		'Simple view with invalid id'
-	);
-
+	my $v;
+	eval {
+		$v = $table->view({dbh => $dbh,'params' => {'id' => 2}});
+	};
+	$e = Exception::Class->caught();
+	isa_ok($e,"Apache::Voodoo::Exception::Application::DisplayError");
 
 	$dbh->disconnect();
 	unlink($filename);

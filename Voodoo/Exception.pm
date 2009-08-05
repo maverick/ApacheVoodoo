@@ -63,7 +63,7 @@ use Exception::Class (
 	'Apache::Voodoo::Exception::Application::DisplayError' => {
 		isa => 'Apache::Voodoo::Exception::Application',
 		description => "Controller request the display of an error message",
-		fields => ['target']
+		fields => ['code','target']
 	},
 	'Apache::Voodoo::Exception::Application::AccessDenied' => {
 		isa => 'Apache::Voodoo::Exception::Application',

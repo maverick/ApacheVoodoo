@@ -296,73 +296,58 @@ sub execute_controllers {
 		"themes"        => $self->{'run'}->{'config'}->{'themes'}
 	};
 
-	my $template_params = {};
+	my $template_params;
 
-	# call each of the pre_include modules followed by our page specific module followed by our post_includes
-	foreach my $c ( 
-		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}  ||"") ),
-		$app->map_uri($uri),
-		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'} ||"") )
-		) {
+	eval {
+		# call each of the pre_include modules followed by our page specific module followed by our post_includes
+		foreach my $c ( 
+			( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}  ||"") ),
+			$app->map_uri($uri),
+			( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'} ||"") )
+			) {
 
-		if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
-			my $obj    = $app->{'controllers'}->{$c->[0]};
-			my $method = $c->[1];
+			if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
+				my $obj    = $app->{'controllers'}->{$c->[0]};
+				my $method = $c->[1];
 
-			my $return = $obj->$method($self->{'run'}->{'p'});
+				my $return = $obj->$method($self->{'run'}->{'p'});
 
-			$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
-			$debug->return_data($c->[0],$c->[1],$return);
+				$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
+				$debug->return_data($c->[0],$c->[1],$return);
 
-			if (ref($return) eq "ARRAY") {
-				if ($return->[0] eq "REDIRECTED") {
-					Apache::Voodoo::Exception::Application::Redirect->throw(target => $self->_adjust_url($return->[1]));
+				if (!defined($template_params) || !ref($return)) {
+					# first overwrites empty, or scalar overwrites previous
+					$template_params = $return;
 				}
-				elsif ($return->[0] eq "DISPLAY_ERROR") {     
-					Apache::Voodoo::Exception::Application::DisplayError->throw(
-						error => $return->[1],
-						target  => $self->_adjust_url(($return->[2])?$return->[2]:"index")
-					);
+				elsif (ref($return) eq "HASH" && ref($template_params) eq "HASH") {
+					# merge two hashes
+					foreach my $k ( keys %{$return}) {
+						$template_params->{$k} = $return->{$k};
+					}
+					$debug->mark(Time::HiRes::time,"result packing");
 				}
-				elsif ($return->[0] eq "ACCESS_DENIED") {
-					Apache::Voodoo::Exception::Application::AccessDenied->throw(
-						error => $return->[1] || "Access Denied",
-						target  => $self->_adjust_url(($return->[2])?$return->[2]:"access_denied")
-					);
-				}
-				elsif ($return->[0] eq "RAW_MODE") {
-					Apache::Voodoo::Exception::Application::RawData->throw(
-						"content_type" => $return->[1] || "text/html",
-						"data"         => $return->[2],
-						"headers"      => $return->[3]
-					);
+				elsif (ref($return) eq "ARRAY" && ref($template_params) eq "ARRAY") {
+					# merge two arrays
+					push(@{$template_params},@{$return});
 				}
 				else {
-					warn "Controller return an unsupported command in module($c->[0]) method($c->[1]): $return->[0]\n";
-					Apache::Voodoo::Exception::RunTime::BadCommand->throw(
+					# eep.  can't merge.
+					Apache::Voodoo::Exception::RunTime::BadReturn->throw(
 						module  => $c->[0],
 						method  => $c->[1],
-						command => $return->[0]
+						data    => $return
 					);
 				}
-			}
-			elsif (ref($return) eq "HASH") {
-				foreach my $k ( keys %{$return}) {
-					$template_params->{$k} = $return->{$k};
-				}
-				$debug->mark(Time::HiRes::time,"result packing");
-			}
-			else {
-				warn "Controller didn't return a hash reference in module($c->[0]) method($c->[1]) ($return)\n";
-				Apache::Voodoo::Exception::RunTime::BadReturn->throw(
-					module  => $c->[0],
-					method  => $c->[1],
-					data    => $return
-				);
-			}
 
-			last if $self->{'run'}->{'p'}->{'_stop_chain_'};
+				last if $self->{'run'}->{'p'}->{'_stop_chain_'};
+			}
 		}
+	};
+	if (my $e = Apache::Voodoo::Exception->caught()) {
+		if (ref($e) =~ /(AccessDenied|Redirect|DisplayError)$/) {
+			$e->{'target'} = $self->_adjust_url($e->target);
+		}
+		$e->rethrow();
 	}
 
 	return $template_params;

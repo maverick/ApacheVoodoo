@@ -112,33 +112,50 @@ sub stop_chain {
 
 sub redirect {
 	shift;
-   	return [ "REDIRECTED" , shift ];
+	Apache::Voodoo::Exception::Application::Redirect->throw(target => shift);
 }
 
 sub display_error {
 	shift;
-   	return [ "DISPLAY_ERROR", shift, shift ];
+	my ($c,$e,$t);
+	if (@_ == 3) {
+		($c,$e,$t) = @_;
+	}
+	elsif (@_ >= 2 && $_[0] =~ /^\s*[\w:\.-]+\s*$/) {
+		$c = shift;
+		$e = shift;
+		$t = shift || '/index';
+	}
+	else {
+		$c = '500';
+		$e = shift;
+		$t = shift || '/index';
+	}
+
+   	Apache::Voodoo::Exception::Application::DisplayError->throw(
+		code   => $c,
+		error  => $e,
+		target => $t
+	);
 }
 
 sub access_denied {
 	shift;
-	return [ 'ACCESS_DENIED' , shift, shift ];
+	my $m = shift || "Access Denied";
+	my $t = shift || "/access_denied";
+	Apache::Voodoo::Exception::Application::AccessDenied->throw(
+		error  => $m,
+		target => $t
+	);
 }
 
-sub is_redirect      { return $_[0]->_is_a_redirect($_[1],'REDIRECTED');    }
-sub is_display_error { return $_[0]->_is_a_redirect($_[1],'DISPLAY_ERROR'); }
-sub is_access_denied { return $_[0]->_is_a_redirect($_[1],'ACCESS_DENIED'); }
-
-sub _is_a_redirect {
-	shift;
-	my $r = shift;
-	my $t = shift;
-	if (ref($r) eq "ARRAY" && $r->[0] eq $t) {
-		return $r->[1] or 1;
-	}
-	else {
-		return 0;
-	}
+sub raw_mode {
+	my ($self,$c,$d,$h) = @_;
+	Apache::Voodoo::Exception::Application::RawData->throw(
+		"content_type" => $c,
+		"data"         => $d,
+		"headers"      => $h
+	);
 }
 
 sub history {
@@ -467,10 +484,6 @@ sub time_to_sql {
 # Misc
 ################################################################################
 
-sub raw_mode {
-	shift;
-	return [ 'RAW_MODE' , @_ ];
-}
 
 # Function:  dates_in_order
 # Purpose:  Make sure end date comes after start date

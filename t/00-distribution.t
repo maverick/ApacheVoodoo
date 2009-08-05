@@ -6,7 +6,7 @@ use Test::More;
 my $not = ['pod','use'];
 
 eval {
-	require Test::Distribution not => 'pod';
+	use Test::Distribution not => $not;
 };
 plan(skip_all => 'Text::Distribution not installed') if $@;
 

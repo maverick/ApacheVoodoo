@@ -144,7 +144,7 @@ sub handle_request {
 		return $self->_make_fault($self->{mp}->redirect, "Redirected",$e->target);
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::DisplayError->caught()) {
-		return $self->_make_fault(600, $e->error, {nextservice => $e->target});
+		return $self->_make_fault($e->code, $e->error, {nextservice => $e->target});
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::AccessDenied->caught()) {
 		return $self->_make_fault($self->{mp}->forbidden, $e->error);
