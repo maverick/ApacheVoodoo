@@ -54,7 +54,6 @@ sub handler {
 		return $self->{'mp'}->server_error();
 	}
 
-
 	my $return;
 	if ($self->{mp}->is_get() && $r->unparsed_uri =~ /\?wsdl$/) {
 		my $uri = $self->{'mp'}->uri();
@@ -91,9 +90,9 @@ sub handler {
 		$return = $self->{'soap'}->handle($r);
 	}
 
-	$self->{'engine'}->finish($self->{mp}->ok);
+	$self->{'engine'}->finish($self->{status});
 
-	return $return;
+	return $self->{status};
 }
 
 sub handle_request {
@@ -119,7 +118,7 @@ sub handle_request {
 	}
 
 	if ($uri =~ /\/$/) {
-		die SOAP::Fault->new(faultcode => $self->{mp}->not_found(), faultstring => 'No such service.');
+		$self->_make_fault($self->{mp}->not_found(),'No such service.');
 	}
 
 	$filename =~ s/\.tmpl$//;
@@ -130,8 +129,9 @@ sub handle_request {
 
 	unless (-e "$filename.tmpl" && 
 	        -r "$filename.tmpl") {
-		die SOAP::Fault->new(faultcode => $self->{mp}->not_found(), faultstring => 'No such service.');
+		$self->_make_fault($self->{mp}->not_found(),'No such service.');
 	};
+
 
 	my $e;
 	my $content;
@@ -141,15 +141,16 @@ sub handle_request {
 		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};
 	if    ($e = Apache::Voodoo::Exception::Application::Redirect->caught()) {
-		return $self->_make_fault($self->{mp}->redirect, "Redirected",$e->target);
+		$self->_make_fault($self->{mp}->redirect, "Redirected",$e->target);
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::DisplayError->caught()) {
-		return $self->_make_fault($e->code, $e->error, {nextservice => $e->target});
+		$self->_make_fault($e->code, $e->error, {nextservice => $e->target},200);
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::AccessDenied->caught()) {
-		return $self->_make_fault($self->{mp}->forbidden, $e->error);
+		$self->_make_fault($self->{mp}->forbidden, $e->error);
 	}
 	elsif ($e = Apache::Voodoo::Exception::Application::RawData->caught()) {
+		$self->{status} = $self->{mp}->ok;
 		return {
 			'error'        => 0,
 			'success'      => 1,
@@ -167,6 +168,7 @@ sub handle_request {
 		return $self->_make_fault($self->{mp}->server_error, "$@");
 	}
 
+	$self->{status} = $self->{mp}->ok;
 	return $content;
 }
 
@@ -177,6 +179,8 @@ sub _make_fault {
 	$msg{faultcode}   = shift;
 	$msg{faultstring} = shift;
 	$msg{detail}      = shift if $_[0];
+
+	$self->{status} = shift || $msg{faultcode};
 
 	die SOAP::Fault->new(%msg);
 }
