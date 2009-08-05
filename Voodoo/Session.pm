@@ -1,5 +1,7 @@
 =pod ###########################################################################
+
 Factory that creates either a file based or mysql based session storage object.
+
 =cut ###########################################################################
 package Apache::Voodoo::Session;
 

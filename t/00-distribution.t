@@ -7,4 +7,4 @@ eval {
 	require Test::Distribution;
 };
 plan(skip_all => 'Text::Distribution not installed') if $@;
-Test::Distribution::import(not => ['pod','use']);
+import Test::Distribution: not => ['podcover','use'];
