@@ -26,6 +26,8 @@ use Apache::Voodoo::Constants;
 use Apache::Voodoo::Application;
 use Apache::Voodoo::Exception;
 
+use Exception::Class::DBI;
+
 # Debugging object.  I don't like using an 'our' variable, but it is just too much
 # of a pain to pass this thing around to everywhere it needs to go. So, I just tell
 # myself that this is STDERR on god's own steroids so I can sleep at night.
@@ -348,6 +350,12 @@ sub execute_controllers {
 			$e->{'target'} = $self->_adjust_url($e->target);
 		}
 		$e->rethrow();
+	}
+	elsif (ref($@) && $@->can('rethrow')) {
+		$@->rethrow;
+	}
+	elsif ($@) {
+		Apache::Voodoo::Exception::RunTime->throw("$@");
 	}
 
 	return $template_params;

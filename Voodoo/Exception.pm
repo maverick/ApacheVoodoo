@@ -65,12 +65,12 @@ use Exception::Class (
 	'Apache::Voodoo::Exception::Application::DisplayError' => {
 		isa => 'Apache::Voodoo::Exception::Application',
 		description => "Controller request the display of an error message",
-		fields => ['code','target']
+		fields => ['code','target','detail']
 	},
 	'Apache::Voodoo::Exception::Application::AccessDenied' => {
 		isa => 'Apache::Voodoo::Exception::Application',
 		description => "Access to the requested resource has been denied",
-		fields => ['target']
+		fields => ['target','detail']
 	},
 	'Apache::Voodoo::Exception::Application::RawData' => {
 		isa => 'Apache::Voodoo::Exception::Application',
@@ -81,6 +81,45 @@ use Exception::Class (
 
 Apache::Voodoo::Exception::RunTime->Trace(1);
 Apache::Voodoo::Exception::RunTime->NoRefs(0);
+
+sub parse_stack_trace {
+	my $trace = shift;
+
+	unless (ref($trace) eq "Devel::StackTrace") {
+		return [];
+	}
+
+	my @trace;
+	my $i = 1;
+    while (my $frame = $trace->frame($i++)) {
+		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
+        next if ($frame->package =~ /^Apache::Voodoo/);
+        next if ($frame->package =~ /(eval)/);
+
+		my $f = {
+			'class'    => $frame->package,
+			'function' => $trace->frame($i)->subroutine,
+			'file'     => $frame->filename,
+			'line'     => $frame->line,
+		};
+		$f->{'function'} =~ s/^$f->{'class'}:://;
+
+		my @a = $trace->frame($i)->args;
+		# if the first item is a reference to same class, then this was a method call
+		if (ref($a[0]) eq $f->{'class'}) {
+			shift @a;
+			$f->{'type'} = '->';
+		}
+		else {
+			$f->{'type'} = '::';
+		}
+		$f->{'args'} = join(",",@a);
+
+		push(@trace,$f);
+
+    }
+	return \@trace;
+}
 
 1;
 

@@ -132,21 +132,39 @@ sub display_error {
 		$t = shift || '/index';
 	}
 
-   	Apache::Voodoo::Exception::Application::DisplayError->throw(
-		code   => $c,
-		error  => $e,
-		target => $t
-	);
+	if (ref($t)) {
+		Apache::Voodoo::Exception::Application::DisplayError->throw(
+			code   => $c,
+			error  => $e,
+			detail => $t
+		);
+	}
+	else {
+		Apache::Voodoo::Exception::Application::DisplayError->throw(
+			code   => $c,
+			error  => $e,
+			target => $t
+		);
+	}
 }
 
 sub access_denied {
 	shift;
 	my $m = shift || "Access Denied";
 	my $t = shift || "/access_denied";
-	Apache::Voodoo::Exception::Application::AccessDenied->throw(
-		error  => $m,
-		target => $t
-	);
+
+	if (ref($t)) {
+		Apache::Voodoo::Exception::Application::AccessDenied->throw(
+			error  => $m,
+			detail => $t
+		);
+	}
+	else {
+		Apache::Voodoo::Exception::Application::AccessDenied->throw(
+			error  => $m,
+			target => $t
+		);
+	}
 }
 
 sub raw_mode {

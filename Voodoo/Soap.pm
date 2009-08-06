@@ -13,6 +13,8 @@ use MIME::Entity;
 
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Engine;
+use Apache::Voodoo::Exception;
+use Exception::Class::DBI;
 
 use Data::Dumper;
 
@@ -118,7 +120,8 @@ sub handle_request {
 	}
 
 	if ($uri =~ /\/$/) {
-		$self->_make_fault($self->{mp}->not_found(),'No such service.');
+		$self->{status} = $self->{mp}->not_found();
+		$self->_client_fault($self->{mp}->not_found(),'No such service.');
 	}
 
 	$filename =~ s/\.tmpl$//;
@@ -129,58 +132,114 @@ sub handle_request {
 
 	unless (-e "$filename.tmpl" && 
 	        -r "$filename.tmpl") {
-		$self->_make_fault($self->{mp}->not_found(),'No such service.');
+		$self->{status} = $self->{mp}->not_found();
+		$self->_client_fault($self->{mp}->not_found(),'No such service.');
 	};
 
-
-	my $e;
 	my $content;
 	eval {
 		$self->{'engine'}->begin_run();
 
 		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};
-	if    ($e = Apache::Voodoo::Exception::Application::Redirect->caught()) {
-		$self->_make_fault($self->{mp}->redirect, "Redirected",$e->target);
+	if (my $e = Apache::Voodoo::Exception->caught()) {
+		if ($e->isa("Apache::Voodoo::Exception::Application::Redirect")) {
+			$self->{status} = $self->{mp}->redirect;
+			$self->_client_fault($self->{mp}->redirect,"Redirected",$e->target);
+		}
+		elsif ($e->isa("Apache::Voodoo::Exception::Application::DisplayError")) {
+			# apparently OK doesn't return 200 anymore, it returns 0.  When used in conjunction
+			# with a SOAP fault that lets the server default it to 500, which isn't what we want.
+			# The server didn't have an internal error, we just didn't like what the client sent.
+			$self->{status} = 200;	
+			$self->_client_fault($e->code, $e->error, $e->detail);
+		}
+		elsif ($e->isa("Apache::Voodoo::Exception::Application::AccessDenied")) {
+			$self->{status} = $self->{mp}->forbidden;
+			$self->_client_fault($self->{mp}->forbidden, $e->error, $e->detail);
+		}
+		elsif ($e->isa("Apache::Voodoo::Exception::Application::RawData")) {
+			$self->{status} = $self->{mp}->ok;
+			return {
+				'error'        => 0,
+				'success'      => 1,
+				'rawdata'      => 1,
+				'content-type' => $e->content_type,
+				'headers'      => $e->headers,
+				'data'         => $e->data
+			};
+		}
+		elsif ($e->isa("Apache::Voodoo::Exception::Application::SessionTimeout")) {
+			$self->{status} = $self->{mp}->ok;
+			$self->_client_fault(700, $e->error, $e->target);
+		}
+		elsif ($e->isa("Apache::Voodoo::Exception::RunTime") && $self->{'engine'}->is_devel_mode()) {
+			# Apache::Voodoo::Exception::RunTime
+			# Apache::Voodoo::Exception::RunTime::BadCommand
+			# Apache::Voodoo::Exception::RunTime::BadReturn
+			$self->{status} = $self->{mp}->server_error;
+			$self->_server_fault($self->{mp}->server_error, $e->error, Apache::Voodoo::Exception::parse_stack_trace($e->trace));
+		}
+		elsif ($self->{'engine'}->is_devel_mode()) {
+			$self->{status} = $self->{mp}->server_error;
+			$self->_server_fault($self->{mp}->server_error, $e->error);
+		}
+		else {
+			$self->{status} = $self->{mp}->server_error;
+			$self->_server_fault($self->{mp}->server_error, "Internal Server Error");
+		}
 	}
-	elsif ($e = Apache::Voodoo::Exception::Application::DisplayError->caught()) {
-		$self->_make_fault($e->code, $e->error, {nextservice => $e->target},200);
-	}
-	elsif ($e = Apache::Voodoo::Exception::Application::AccessDenied->caught()) {
-		$self->_make_fault($self->{mp}->forbidden, $e->error);
-	}
-	elsif ($e = Apache::Voodoo::Exception::Application::RawData->caught()) {
-		$self->{status} = $self->{mp}->ok;
-		return {
-			'error'        => 0,
-			'success'      => 1,
-			'rawdata'      => 1,
-			'content-type' => $e->content_type,
-			'headers'      => $e->headers,
-			'data'         => $e->data
-		};
+	elsif (ref($@) =~ /^Exception::Class::DBI/ && $self->{'engine'}->is_devel_mode()) {
+		warn("here");
+		$self->{status} = $self->{mp}->server_error;
+		$self->_server_fault($self->{mp}->server_error, $@->description, {
+			"message" => $@->errstr,
+			"package" => $@->package,
+			"line"    => $@->line,
+			"query"   => $@->statement
+		});
 	}
 	elsif ($@) {
-		# Apache::Voodoo::Exception::RunTime
-		# Apache::Voodoo::Exception::RunTime::BadCommand
-		# Apache::Voodoo::Exception::RunTime::BadReturn
-		# Exception::Class::DBI
-		return $self->_make_fault($self->{mp}->server_error, "$@");
+		warn("here2");
+		$self->{status} = $self->{mp}->server_error;
+		if ($self->{'engine'}->is_devel_mode()) {
+			$self->_server_fault($self->{mp}->server_error, "$@");
+		}
+		else {
+			$self->_server_fault($self->{mp}->server_error, 'Internal Server Error');
+		}
 	}
 
 	$self->{status} = $self->{mp}->ok;
 	return $content;
 }
 
+sub _client_fault {
+	my $self = shift;
+	$self->_make_fault('Client',@_);
+}
+
+sub _server_fault {
+	my $self = shift;
+	$self->_make_fault('Server',@_);
+}
+
 sub _make_fault {
 	my $self = shift;
 
-	my %msg;
-	$msg{faultcode}   = shift;
-	$msg{faultstring} = shift;
-	$msg{detail}      = shift if $_[0];
+	my ($t,$c,$s,$d) = @_;
 
-	$self->{status} = shift || $msg{faultcode};
+	my %msg;
+	if (defined($c)) {
+		$msg{faultcode} = $t.'.'.$c;
+	}
+	else {
+		$msg{faultcode} = $t;
+	}
+
+	warn($msg{faultcode});
+	$msg{faultstring} = $s;
+	$msg{faultdetail} = $d if (defined($d));
 
 	die SOAP::Fault->new(%msg);
 }
