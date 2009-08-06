@@ -74,7 +74,8 @@ sub parse {
 	my $conf = Config::General->new(
 		'-ConfigFile' => $self->{'conf_file'},
 		'-IncludeRelative' => 1,
-		'-UseApacheInclude' => 1
+		'-UseApacheInclude' => 1,
+		'-IncludeAgain' => 1
 	);
 
 	my %conf = $conf->getall();
