@@ -75,16 +75,25 @@ sub handler {
 		}
 		# FIXME here ends the hackery
 
-		my $wsdl = new Pod::WSDL2(
-			source   => $m,
-			location => $self->{mp}->server_url().$uri,
-			pretty   => 1,
-			withDocumentation => 1
-		);
-		$wsdl->targetNS($self->{mp}->server_url().$uri);
+		my $wsdl;
+		eval {
+			$wsdl = new Pod::WSDL2(
+				source   => $m,
+				location => $self->{mp}->server_url().$uri,
+				pretty   => 1,
+				withDocumentation => 1
+			);
+			$wsdl->targetNS($self->{mp}->server_url().$uri);
+		};
+		if ($@) {
+			$self->{'mp'}->content_type('text/plain');
+			$self->{'mp'}->print("Error generating WDSL:\n\n$@");
+		}
+		else {
+			$self->{'mp'}->content_type('text/xml');
+			$self->{'mp'}->print($wsdl->WSDL);
+		}
 
-		$self->{'mp'}->content_type('text/xml');
-		$self->{'mp'}->print($wsdl->WSDL);
 		$self->{'mp'}->flush();
 		$return = $self->{mp}->ok;
 	}
