@@ -96,24 +96,31 @@ sub parse_stack_trace {
         next if ($frame->package =~ /^Apache::Voodoo/);
         next if ($frame->package =~ /(eval)/);
 
+		my $nf = $trace->frame($i);
+		my $subroutine;
+		my @args;
+		if ($nf) {
+			$subroutine = $nf->subroutine;
+			@args       = $nf->args;
+		}
+
 		my $f = {
 			'class'    => $frame->package,
-			'function' => $trace->frame($i)->subroutine,
+			'function' => $subroutine,
 			'file'     => $frame->filename,
 			'line'     => $frame->line,
 		};
 		$f->{'function'} =~ s/^$f->{'class'}:://;
 
-		my @a = $trace->frame($i)->args;
 		# if the first item is a reference to same class, then this was a method call
-		if (ref($a[0]) eq $f->{'class'}) {
-			shift @a;
+		if (ref($args[0]) eq $f->{'class'}) {
+			shift @args;
 			$f->{'type'} = '->';
 		}
 		else {
 			$f->{'type'} = '::';
 		}
-		$f->{'args'} = join(",",@a);
+		$f->{'args'} = join(",",@args);
 
 		push(@trace,$f);
 
