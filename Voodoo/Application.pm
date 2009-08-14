@@ -131,7 +131,24 @@ sub refresh {
 		$self->{'views'}->{'JSON'} = Apache::Voodoo::View::JSON->new();
 	}
 
-	foreach (values %{$self->{'models'}}, values %{$self->{'views'}}) {
+	# models get the config and every model except themselves
+	# to prevent accidental circular references
+	foreach my $key (keys %{$self->{'models'}}) {
+		my %m = map { $_ => $self->{models}->{$_} }
+		        grep { $_ ne $key }
+		        keys %{$self->{'models'}};
+
+		eval {
+			$self->{models}->{$key}->init($config->config(),\%m);
+		};
+		if ($@) {
+			warn "$@\n";
+			$self->{'errors'}++;
+		}
+	}
+
+	# views get just the config
+	foreach (values %{$self->{'views'}}) {
 		eval {
 			$_->init($config->config());
 		};
@@ -141,6 +158,7 @@ sub refresh {
 		}
 	}
 
+	# controllers get the config and all the models
 	foreach (values %{$self->{'controllers'}}) {
 		eval {
 			$_->init($config->config(),$self->{'models'});
