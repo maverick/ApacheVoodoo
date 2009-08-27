@@ -106,7 +106,7 @@ sub parse_stack_trace {
 
 		my $f = {
 			'class'    => $frame->package,
-			'function' => $subroutine,
+			'function' => $subroutine || '',
 			'file'     => $frame->filename,
 			'line'     => $frame->line,
 		};
