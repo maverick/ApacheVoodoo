@@ -241,7 +241,10 @@ sub _fb {
 		$msg = '['.$self->jsonEncode(\%meta).','.$self->jsonEncode($Object).']';
 	}
     
-	my $l = length($msg);
+	# FirePHP wants the number of bytes, not characters.  So we can't use length() here, a 2 or 3 byte
+	# character counts as 1 as far as length is concerned.
+	my $l = length(unpack('b*',$msg))/8;
+
 	if ($l < BLOCK_LENGTH) {
 		# The message can be send in one block
 		$self->setHeader(
