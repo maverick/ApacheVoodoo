@@ -199,7 +199,6 @@ sub handle_request {
 		}
 	}
 	elsif (ref($@) =~ /^Exception::Class::DBI/ && $self->{'engine'}->is_devel_mode()) {
-		warn("here");
 		$self->{status} = $self->{mp}->server_error;
 		$self->_server_fault($self->{mp}->server_error, $@->description, {
 			"message" => $@->errstr,
@@ -209,7 +208,6 @@ sub handle_request {
 		});
 	}
 	elsif ($@) {
-		warn("here2");
 		$self->{status} = $self->{mp}->server_error;
 		if ($self->{'engine'}->is_devel_mode()) {
 			$self->_server_fault($self->{mp}->server_error, "$@");
