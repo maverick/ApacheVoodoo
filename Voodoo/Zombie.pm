@@ -53,6 +53,10 @@ sub AUTOLOAD {
 	my $method = $AUTOLOAD;
 	$method =~ s/.*:://;
 
+	if (ref($Apache::Voodoo::Engine::debug)) {
+		$Apache::Voodoo::Engine::debug->error($self->{'module'},$self->{'error'});
+	}
+
 	Apache::Voodoo::Exception::Compilation->throw(
 		'module' => $self->{'module'},
 		'error'  => $self->{'error'}
