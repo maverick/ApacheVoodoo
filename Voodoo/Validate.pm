@@ -19,7 +19,8 @@ use warnings;
 use Apache::Voodoo::Exception;
 
 sub new {
-	my $class = shift;
+	my $class  = shift;
+	my $config = shift || {};
 
 	my $self = {};
 	bless $self, $class;
@@ -29,7 +30,7 @@ sub new {
 		$e->{$t.'_'.$f} = 1;
 	};
 
-	$self->_configure(shift);
+	$self->_configure($config);
 
 	return $self;
 }
@@ -173,6 +174,10 @@ sub _configure {
 			$a cmp $b;
 		} 
 		keys %{$c};
+	}
+
+	unless (scalar(@fields)) {
+		Apache::Voodoo::Exception::RunTime::BadConfig->throw("Empty Configuration.");
 	}
 
 	$self->{'fields'} = [];

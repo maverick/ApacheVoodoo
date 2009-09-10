@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 111;
+use Test::More tests => 113;
 use Data::Dumper;
 
 BEGIN {
@@ -445,5 +445,13 @@ my $B = Apache::Voodoo::Validate->new({
 ($v,$e) = $B->validate({bit => -1});    ok($e->{MISSING_bit},'bad bit 3');
 ($v,$e) = $B->validate({bit => 'a'});   ok($e->{MISSING_bit},'bad bit 4');
 
+my $E;
+eval {
+	$E = Apache::Voodoo::Validate->new({});
+};
+ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Empty configuration throws exception 1 ');
 
-
+eval {
+	$E = Apache::Voodoo::Validate->new();
+};
+ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Empty configuration throws exception 2 ');
