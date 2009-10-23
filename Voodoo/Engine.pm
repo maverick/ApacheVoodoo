@@ -60,7 +60,7 @@ sub new {
 	# Setup signal handler for die so that all deaths become exception objects
 	# This way we can get a stack trace from where the death occurred, not where it was caught.
 	$SIG{__DIE__} = sub { 
-		if (blessed($_[0]) && $_[0]->isa("Exception::Class")) {
+		if (blessed($_[0]) && $_[0]->can("rethrow")) {
 			# Already died using an exception class, just pass it up the chain
 			$_[0]->rethrow;
 		}

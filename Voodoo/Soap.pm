@@ -31,7 +31,6 @@ sub new {
 	$self->{'soap'}->on_dispatch(
 		sub {
 			$self->{'run'}->{'method'} = $_[0]->dataof->name;
-			$self->{'run'}->{'uri'}    = $_[0]->dataof->uri;
 			return ("Apache/Voodoo/Soap","handle_request");
 		}
 	);
@@ -83,7 +82,7 @@ sub handler {
 				pretty   => 1,
 				withDocumentation => 1
 			);
-			$wsdl->targetNS($self->{mp}->server_url().$uri);
+			$wsdl->targetNS($self->{mp}->server_url());
 		};
 		if ($@) {
 			$self->{'mp'}->content_type('text/plain');
@@ -123,10 +122,6 @@ sub handle_request {
 
 	my $uri      = $self->{'mp'}->uri();
 	my $filename = $self->{'mp'}->filename();
-	if (defined($self->{'run'}->{'uri'})) {
-		$uri      = File::Spec->catfile($uri,     $self->{'run'}->{'uri'});
-		$filename = File::Spec->catfile($filename,$self->{'run'}->{'uri'});
-	}
 
 	if ($uri =~ /\/$/) {
 		$self->{status} = $self->{mp}->not_found();
@@ -142,7 +137,7 @@ sub handle_request {
 	unless (-e "$filename.tmpl" && 
 	        -r "$filename.tmpl") {
 		$self->{status} = $self->{mp}->not_found();
-		$self->_client_fault($self->{mp}->not_found(),'No such service.');
+		$self->_client_fault($self->{mp}->not_found(),'No such service:'.$filename);
 	};
 
 	my $content;
