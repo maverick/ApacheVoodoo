@@ -76,7 +76,7 @@ sub handler {
 	if (my $e = Apache::Voodoo::Exception::Application::SessionTimeout->caught()) {
 		return $self->{'mp'}->redirect($e->target());
 	}
-	elsif (my $e = Apache::Voodoo::Exception->caught()) {
+	elsif (my $e = Exception::Class->caught()) {
 		warn "$e";
 		return $self->{'mp'}->server_error;
 	}
@@ -106,37 +106,35 @@ sub handler {
 	# Execute the controllers
 	####################
 	my $content;
-	my $e;
 	eval {
 		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};
-	if ($e = Apache::Voodoo::Exception::Application::Redirect->caught()) {
-		$self->{'engine'}->finish($self->{mp}->redirect);
-		return $self->{'mp'}->redirect($e->target());
-	}
-	elsif ($e = Apache::Voodoo::Exception::Application::RawData->caught()) {
-		$self->{mp}->header_out(each %{$e->headers}) if (ref($e->headers) eq "HASH");
-		$self->{mp}->content_type($e->content_type);
-		$self->{mp}->print($e->data);
-
-		$self->{'engine'}->finish($self->{mp}->ok);
-		return $self->{mp}->ok;
-	}
-	elsif ($e = Apache::Voodoo::Exception::Application->caught()) {
-		$content = $e;
-	}
-	elsif ($@) {
-		# Apache::Voodoo::Exception::RunTime
-		# Apache::Voodoo::Exception::RunTime::BadCommand
-		# Apache::Voodoo::Exception::RunTime::BadReturn
-		# Exception::Class::DBI
-		unless ($self->{'engine'}->is_devel_mode()) {
-			warn "$@";
-			$self->{'engine'}->finish($self->{mp}->server_error);
-			return $self->{mp}->server_error;
+	if (my $e = Exception::Class->caught()) {
+		if ($e->isa("Apache::Voodoo::Exception::Application::Redirect")) {
+			$self->{'engine'}->finish($self->{mp}->redirect);
+			return $self->{'mp'}->redirect($e->target());
 		}
+		elsif ($e->isa("Apache::Voodoo::Exception::Application::RawData")) {
+			$self->{mp}->header_out(each %{$e->headers}) if (ref($e->headers) eq "HASH");
+			$self->{mp}->content_type($e->content_type);
+			$self->{mp}->print($e->data);
 
-		$content = $@;
+			$self->{'engine'}->finish($self->{mp}->ok);
+			return $self->{mp}->ok;
+		}
+		elsif (! $e->isa("Apache::Voodoo::Exception::Application")) {
+			# Apache::Voodoo::Exception::RunTime
+			# Apache::Voodoo::Exception::RunTime::BadCommand
+			# Apache::Voodoo::Exception::RunTime::BadReturn
+			# Exception::Class::DBI
+			unless ($self->{'engine'}->is_devel_mode()) {
+				warn "$@";
+				$self->{'engine'}->finish($self->{mp}->server_error);
+				return $self->{mp}->server_error;
+			}
+
+		}
+		$content = $e;
 	}
 
 	my $view = $self->{'engine'}->execute_view($content);

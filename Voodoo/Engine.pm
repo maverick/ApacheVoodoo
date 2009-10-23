@@ -22,6 +22,8 @@ use DBI;
 use File::Spec;
 use Time::HiRes;
 
+use Scalar::Util 'blessed';
+
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Application;
 use Apache::Voodoo::Exception;
@@ -50,10 +52,15 @@ sub new {
 
 	$self->{constants} = Apache::Voodoo::Constants->new();
 
+	if (exists $ENV{'MOD_PERL'}) {
+		# let's us do a compile check outside of mod_perl
+		$self->restart;
+	}
+
 	# Setup signal handler for die so that all deaths become exception objects
 	# This way we can get a stack trace from where the death occurred, not where it was caught.
 	$SIG{__DIE__} = sub { 
-		if (ref($_[0]) =~ /^Apache::Voodoo::Exception/ || ref($_[0]) =~ /^Exception::Class::DBI/) {
+		if (blessed($_[0]) && $_[0]->isa("Exception::Class")) {
 			# Already died using an exception class, just pass it up the chain
 			$_[0]->rethrow;
 		}
@@ -61,11 +68,6 @@ sub new {
 			Apache::Voodoo::Exception::RunTime->throw(error => join("\n", @_));
 		}
 	};
-
-	if (exists $ENV{'MOD_PERL'}) {
-		# let's us do a compile check outside of mod_perl
-		$self->restart;
-	}
 
 	$i_am_a_singleton = $self;
 
@@ -345,17 +347,17 @@ sub execute_controllers {
 			}
 		}
 	};
-	if (my $e = Apache::Voodoo::Exception->caught()) {
+	if (my $e = Exception::Class->caught()) {
 		if (ref($e) =~ /(AccessDenied|Redirect|DisplayError)$/) {
 			$e->{'target'} = $self->_adjust_url($e->target);
+			$e->rethrow();
 		}
-		$e->rethrow();
-	}
-	elsif (ref($@) && $@->can('rethrow')) {
-		$@->rethrow;
-	}
-	elsif ($@) {
-		Apache::Voodoo::Exception::RunTime->throw("$@");
+		elsif (ref($e)) {
+			$e->rethrow();
+		}
+		else {
+			Apache::Voodoo::Exception::RunTime->throw("$@");
+		}
 	}
 
 	return $template_params;
@@ -382,13 +384,13 @@ sub execute_view {
 
 	$view->begin($self->{'run'}->{'p'});
 
-	if (ref($content) eq "HASH") {
+	if (blessed($_[0]) && $_[0]->isa("Exception::Class")) {
+		$view->exception($content);
+	}
+	else {
 		# pack up the params. note the presidence: module overrides template_conf
 		$view->params($self->{'run'}->{'template_conf'});
 		$view->params($content);
-	}
-	else {
-		$view->exception($content);
 	}
 
 	# add any params from the debugging handlers

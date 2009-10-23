@@ -151,7 +151,7 @@ sub handle_request {
 
 		$content = $self->{'engine'}->execute_controllers($uri,$params);
 	};
-	if (my $e = Apache::Voodoo::Exception->caught()) {
+	if (my $e = Exception::Class->caught()) {
 		if ($e->isa("Apache::Voodoo::Exception::Application::Redirect")) {
 			$self->{status} = $self->{mp}->redirect;
 			$self->_client_fault($self->{mp}->redirect,"Redirected",$e->target);
@@ -189,31 +189,22 @@ sub handle_request {
 			$self->{status} = $self->{mp}->server_error;
 			$self->_server_fault($self->{mp}->server_error, $e->error, Apache::Voodoo::Exception::parse_stack_trace($e->trace));
 		}
+		elsif ($e->isa("Exception::Class::DBI") && $self->{'engine'}->is_devel_mode()) {
+			$self->{status} = $self->{mp}->server_error;
+			$self->_server_fault($self->{mp}->server_error, $@->description, {
+				"message" => $@->errstr,
+				"package" => $@->package,
+				"line"    => $@->line,
+				"query"   => $@->statement
+			});
+		}
 		elsif ($self->{'engine'}->is_devel_mode()) {
 			$self->{status} = $self->{mp}->server_error;
-			$self->_server_fault($self->{mp}->server_error, $e->error);
+			$self->_server_fault($self->{mp}->server_error, ref($e)?$e->error:"$e");
 		}
 		else {
 			$self->{status} = $self->{mp}->server_error;
 			$self->_server_fault($self->{mp}->server_error, "Internal Server Error");
-		}
-	}
-	elsif (ref($@) =~ /^Exception::Class::DBI/ && $self->{'engine'}->is_devel_mode()) {
-		$self->{status} = $self->{mp}->server_error;
-		$self->_server_fault($self->{mp}->server_error, $@->description, {
-			"message" => $@->errstr,
-			"package" => $@->package,
-			"line"    => $@->line,
-			"query"   => $@->statement
-		});
-	}
-	elsif ($@) {
-		$self->{status} = $self->{mp}->server_error;
-		if ($self->{'engine'}->is_devel_mode()) {
-			$self->_server_fault($self->{mp}->server_error, "$@");
-		}
-		else {
-			$self->_server_fault($self->{mp}->server_error, 'Internal Server Error');
 		}
 	}
 
