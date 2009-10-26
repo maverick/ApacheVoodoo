@@ -384,7 +384,7 @@ sub execute_view {
 
 	$view->begin($self->{'run'}->{'p'});
 
-	if (blessed($_[0]) && $_[0]->isa("Exception::Class")) {
+	if (blessed($content) && $content->can('rethrow')) {
 		$view->exception($content);
 	}
 	else {
