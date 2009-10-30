@@ -429,7 +429,7 @@ sub sql_to_date {
 	my $self = shift;
 	my $date = shift;
 
-	if ($date eq "NULL" || $date eq "") {
+	if (!defined($date) || $date eq "NULL" || $date =~ /^\s*$/) {
 		return "";
 	}
 
@@ -444,7 +444,7 @@ sub sql_to_time {
 	my $self = shift;
 	my $time = shift;
 
-	if ($time eq "NULL" || $time eq "") {
+	if (!defined($time) || $time eq "NULL" || $time =~ /^\s*$/) {
 		return "";
 	}
 
