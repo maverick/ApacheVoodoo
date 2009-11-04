@@ -153,10 +153,9 @@ sub begin_run {
 
 	foreach (@{$app->databases}) {
 		eval {
-			# we put this in app not run so that database connections persist across requests
-			$app->{'dbh'} = DBI->connect_cached(@{$_});
+			$run->{'dbh'} = DBI->connect_cached(@{$_});
 		};
-		last if $app->{'dbh'};
+		last if $run->{'dbh'};
 	
 		Apache::Voodoo::Exception::DBIConnect->throw($DBI::errstr);
 	}
@@ -211,7 +210,7 @@ sub attach_session {
 	my $conf = shift;
 
 	my $session_id = $self->{'mp'}->get_cookie($conf->{'cookie_name'});
-	my $session = $app->{'session_handler'}->attach($session_id,$app->{'dbh'});
+	my $session = $app->{'session_handler'}->attach($session_id,$self->{'run'}->{'dbh'});
 
 	if (!defined($session_id) || $session->id() ne $session_id) {
 		# This is a new session, or there was an old cookie from a previous sesion,
@@ -285,7 +284,7 @@ sub execute_controllers {
 	$debug->template_conf($template_conf);
 
 	$self->{'run'}->{'p'} = {
-		"dbh"           => $self->{'run'}->{'app'}->{'dbh'},
+		"dbh"           => $self->{'run'}->{'dbh'},
 		"params"        => $params,
 		"session"       => $self->{'run'}->{'session'},
 		"template_conf" => $template_conf,
@@ -427,18 +426,22 @@ sub restart {
 
 		my $app = Apache::Voodoo::Application->new($id,$self->{'constants'});
 
+		my $dbh;
 		# check to see if we can get a database connection
 		foreach (@{$app->databases}) {
 			eval {
-				# we put this in app not run so that database connections persist across requests
-				$app->{'dbh'} = DBI->connect_cached(@{$_});
+				$dbh = DBI->connect(@{$_});
 			};
-			last if $app->{'dbh'};
+			last if $dbh;
 			
 			warn "========================================================\n";
 			warn "DB CONNECT FAILED FOR $id\n";
 			warn $DBI::errstr."\n";
 			warn "========================================================\n";
+		}
+
+		if ($dbh) {
+			$dbh->disconnect;
 		}
 
 		$self->{'apps'}->{$id} = $app;
