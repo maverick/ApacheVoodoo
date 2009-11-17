@@ -9,7 +9,6 @@ BEGIN {
 		Apache::Voodoo::Debug::FirePHP
 		Apache::Voodoo::Debug::Handler
 		Apache::Voodoo::Debug::Log4perl
-		Apache::Voodoo::Debug::Multiplex
 		Apache::Voodoo::Debug::Native
 		Apache::Voodoo::Debug::Native::SQLite
 		Apache::Voodoo::Debug::Native::common

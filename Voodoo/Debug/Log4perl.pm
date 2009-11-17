@@ -24,6 +24,8 @@ use File::Spec;
 use Log::Log4perl;
 use Data::Dumper; $Data::Dumper::Terse = 1; $Data::Dumper::Indent = 1;
 
+$Log::Log4perl::caller_depth = 3;
+
 #
 # Since log4perl wants to use one config file for the whole running perl program (one
 # call to init), and # ApacheVoodo lets you define logging per application (multiple inits).

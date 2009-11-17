@@ -11,6 +11,9 @@ sub new {
 	my $class = shift;
 	my $conf  = shift;
 
+	my $self = {};
+	$self->{handlers} = [];
+
 	unless (ref($conf->{'debug'}) eq "HASH") {
 		# old style config, so we'll go full monty for devel and silence for production.
 		$conf->{'debug'} = {
@@ -28,7 +31,7 @@ sub new {
 			$file =~ s/::/\//g;
 
 			require $file;
-			push(@handlers, $package->new($conf->{'id'},$conf->{'debug'}->{$_}));
+			push(@{$self->{handlers}}, $package->new($conf->{'id'},$conf->{'debug'}->{$_}));
 
 		}
 	}
@@ -42,23 +45,44 @@ sub new {
 			# Tomfoolery to deal with log4perl being a singlton.
 			# If the config file pulls in log4perl, we don't want to add the instance again,
 			# lest we end up with duplicated messages.
-			push(@handlers,$l4p);
+			push(@{$self->{handlers}},$l4p);
 		}
 	}
 
-	if (scalar(@handlers) > 1) {
-		require Apache::Voodoo::Debug::Multiplex;
-		return Apache::Voodoo::Debug::Multiplex->new(@handlers);
+	bless $self,$class;
+
+	return $self;
+}
+
+sub bootstrapped { my $self = shift; $_->bootstrapped(@_) foreach (@{$self->{'handlers'}}); }
+sub init         { my $self = shift; $_->init(@_)         foreach (@{$self->{'handlers'}}); }
+sub shutdown     { my $self = shift; $_->shutdown(@_)     foreach (@{$self->{'handlers'}}); }
+
+sub debug     { my $self = shift; $_->debug(@_)     foreach (@{$self->{'handlers'}}); }
+sub info      { my $self = shift; $_->info(@_)      foreach (@{$self->{'handlers'}}); }
+sub warn      { my $self = shift; $_->warn(@_)      foreach (@{$self->{'handlers'}}); }
+sub error     { my $self = shift; $_->error(@_)     foreach (@{$self->{'handlers'}}); }
+sub exception { my $self = shift; $_->exception(@_) foreach (@{$self->{'handlers'}}); }
+sub trace     { my $self = shift; $_->trace(@_)     foreach (@{$self->{'handlers'}}); }
+sub table     { my $self = shift; $_->table(@_)     foreach (@{$self->{'handlers'}}); }
+
+sub mark          { my $self = shift; $_->mark(@_)          foreach (@{$self->{'handlers'}}); }
+sub return_data   { my $self = shift; $_->return_data(@_)   foreach (@{$self->{'handlers'}}); }
+sub session_id    { my $self = shift; $_->session_id(@_)    foreach (@{$self->{'handlers'}}); }
+sub url           { my $self = shift; $_->url(@_)           foreach (@{$self->{'handlers'}}); }
+sub status        { my $self = shift; $_->status(@_)        foreach (@{$self->{'handlers'}}); }
+sub params        { my $self = shift; $_->params(@_)        foreach (@{$self->{'handlers'}}); }
+sub template_conf { my $self = shift; $_->template_conf(@_) foreach (@{$self->{'handlers'}}); }
+sub session       { my $self = shift; $_->session(@_)       foreach (@{$self->{'handlers'}}); }
+
+sub finalize {
+	my $self = shift;
+
+	my @d;
+	foreach (@{$self->{handlers}}) {
+		push(@d,$_->finalize(@_));
 	}
-	elsif (scalar(@handlers) == 1) {
-		return $handlers[0];
-	}
-	else {
-		# Common implements the api, but doesn't do any logging of any sort.
-		# So we can use it as a sink if debugging is turned off.
-		require Apache::Voodoo::Debug::Common;
-		return Apache::Voodoo::Debug::Common->new();
-	}
+	return @d;
 }
 
 1;
