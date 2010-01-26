@@ -1,0 +1,137 @@
+use 5.008000;
+use ExtUtils::MakeMaker;
+
+my %required_modules = (
+	# voodoo-control uses CPAN under the hood to do some of it's work which is why it's listed here.
+	'CPAN'                  => 1.9205,	
+	'Apache::Session'       => 1.6,
+	'Config::General'       => 2.27,
+	'Devel::StackTrace'     => 1.20,
+	'Daemon::Generic'       => 0.51,
+	'Digest::MD5'           => 2.36,
+	'Email::Valid'          => 0.15,
+	'Exception::Class'      => 1.26,
+	'Exception::Class::DBI' => 1.00,
+	'File::Pid'             => 1.01,
+	'HTML::Template'        => 2.7,
+	'IO::Handle::Record'    => 0.13,
+	'IPC::SharedCache'      => 1.3,
+	'JSON::DWIW'            => 0.32,
+	'Proc::UID'             => 0.05,
+	'Time::HiRes'           => 1.65,
+	'XML::Checker::Parser'  => 0
+);
+
+my %optionals = (
+	'Apache::Request'  => 1.33,
+	'Apache::Cookie'   => 0,
+	'Apache2::Request' => 2.08,
+	'Apache2::Cookie'  => 2.08,
+
+	'SOAP::Lite'       => 0.710,
+	'Pod::WSDL'        => 0.05,
+	
+	'Log::Log4Perl'    => 1.24
+);
+
+eval {
+	require "mod_perl2.pm";
+};
+if ($@) {
+	eval {
+		require "mod_perl.pm";
+	};
+}
+
+print "mod_perl version: $mod_perl::VERSION\n";
+if ($mod_perl::VERSION >= 1.99) {
+	print "Adding prequisites for mod_perl Version 2 API...\n";
+	add_mp2(\%required_modules);
+}
+elsif ($mod_perl::VERSION > 0) {
+	print "Adding prequisites for mod_perl Version 1 API...\n";
+	add_mp1(\%required_modules);
+}
+else {
+	my $answer;
+	print "\nCan't find mod_perl.pm or mod_perl2.pm, one of which is required.\n\n";
+	while ($answer != /^[12]$/) {
+		$answer = prompt("Do you want to use Apache 1.X or Apache 2.X? (1/2)",2);
+		chomp($answer);
+	}
+
+	if ($answer == 1) {
+		add_mp1(\%required_modules);
+	}
+	else {
+		add_mp2(\%required_modules);
+	}
+}
+
+eval { require SOAP::Transport::HTTP; };
+if ($@) {
+	print "\nApache::Voodoo can also optionally serve SOAP requests.\n";
+	my $answer;
+	while ($answer !~ /^[yn]/i) {
+		$answer = prompt("Would you like me to add the dependencies to enable this feature? (y/n)",'y');
+		chomp($answer);
+	}
+
+	if ($answer =~ /^y/i) {
+		$required_modules{'SOAP::Lite'} = $optional{'SOAP::Lite'};
+		print "Adding prequisites for SOAP...\n";
+	}
+}
+else {
+	$required_modules{'SOAP::Lite'} = $optional{'SOAP::Lite'};
+}
+
+eval { require Log::Log4perl; };
+if ($@) {
+	print "\nApache::Voodoo can log debugging message with Log4perl.\n";
+	my $answer;
+	while ($answer !~ /^[yn]/i) {
+		$answer = prompt("Would you like me to add the dependencies to enable this feature? (y/n)",'y');
+		chomp($answer);
+	}
+
+	if ($answer =~ /^y/i) {
+		$required_modules{'Log::Log4perl'} = $optional{'Log::Log4perl'};
+		print "Adding prequisites for Log4perl...\n";
+	}
+}
+else {
+	$required_modules{'Log::Log4perl'} = $optional{'Log::Log4perl'};
+}
+
+
+WriteMakefile(
+	NAME          => 'Apache::Voodoo',
+	VERSION_FROM  => 'lib/Apache/Voodoo.pm',
+	PREREQ_PM     => \%required_modules,
+	(
+		$] >= 5.008 ?
+		(ABSTRACT_FROM => 'lib/Apache/Voodoo.pod', # retrieve abstract from module
+		AUTHOR         => 'Maverick Edwards <maverick@smurfbane.org>') : ()
+	),
+	INSTALLSCRIPT => $paths{'SBINDIR'},
+	EXE_FILES => ['bin/voodoo-control']
+	# PM_FILTER => $filter
+);
+
+
+sub add_mp1 {
+	$req = shift;
+	$req->{Apache::Request} = $optional{Apache::Request};
+	$req->{Apache::Cookie}  = $optional{Apache::Cookie};
+}
+
+sub add_mp2 {
+	$req = shift;
+	$req->{Apache2::Request} = $optional{Apache2::Request};
+	$req->{Apache2::Cookie}  = $optional{Apache2::Cookie};
+}
+
+################################################################################
+# Copyright (c) 2005 Steven Edwards.  All rights reserved.
+################################################################################

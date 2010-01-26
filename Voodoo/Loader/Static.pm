@@ -1,0 +1,34 @@
+# $Id: Static.pm 16110 2009-05-29 17:09:13Z medwards $
+package Apache::Voodoo::Loader::Static;
+
+$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/trunk/Voodoo/Loader/Static.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+
+use strict;
+use base("Apache::Voodoo::Loader");
+
+sub new {
+	my $class = shift;
+	my $self = {};
+	bless $self,$class;
+
+	# bingo...this is a factory
+	return $self->load_module(shift);
+}
+
+1;
+
+=pod ################################################################################
+
+=head1 AUTHOR
+
+Maverick, /\/\averick@smurfbaneDOTorg
+
+=head1 COPYRIGHT
+
+Copyright (c) 2005 Steven Edwards.  All rights reserved.
+
+You may use and distribute Voodoo under the terms described in the LICENSE file include
+in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
+of the Artistic License :)
+
+=cut ################################################################################

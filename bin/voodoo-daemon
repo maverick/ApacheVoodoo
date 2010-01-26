@@ -1,0 +1,139 @@
+#!/usr/bin/perl -I /data/apache/lib/perl
+
+use strict;
+use warnings;
+
+use DBI;
+
+use Daemon::Generic;
+use Proc::UID;
+
+use IO::Socket::UNIX;
+use IO::Handle::Record;
+
+use POSIX ":sys_wait_h";
+
+use Apache::Voodoo::Constants;
+
+newdaemon(
+	progname => 'voodoo-daemon'	
+);
+
+sub gd_commands_more {
+	return (
+		resetdb => 'Clear the debugging database'
+	);
+}
+
+sub gd_other_cmd {
+	my $self = shift;
+	my $opt  = shift;
+
+	if ($opt eq "resetdb") {
+
+		# FIXME actually reset the db
+
+		exit;
+	}
+	$self->gd_usage();
+	exit;
+}
+
+sub gd_preconfig {
+	my $self = shift;
+
+	my $ac = Apache::Voodoo::Constants->new();
+	$self->{voodoo}->{ac} = $ac;
+
+	my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
+	my @db  = DBI->installed_drivers();
+
+	my $db;
+	eval {
+		require "Apache/Voodoo/Debug/Native/$db[0].pm";
+		my $class = 'Apache::Voodoo::Debug::Native::'.$db[0];
+		$db = $class->new();
+	};
+	if ($@) {
+		die "$db[0] is not supported: $@";
+	}
+
+	$self->{voodoo}->{db} = $db;
+	$db->init_db($dbh,$ac);
+
+	$dbh->disconnect;
+
+	if ($> != 0 && $> != $ac->apache_uid()) {
+		print STDERR "This command must either be ran as root or as the same user apache runs as.\n";
+		exit;
+	}
+
+	return (
+		pidfile => $ac->pid_file(),
+	);
+}
+
+sub gd_run {
+	my $self = shift;
+
+	my $ac = $self->{voodoo}->{ac};
+	my $db = $self->{voodoo}->{db};
+
+	my $sf = $ac->socket_file();
+	unlink ($sf);
+
+	if ($> == 0) {
+		Proc::UID::drop_gid_perm($ac->apache_gid());
+		Proc::UID::drop_uid_perm($ac->apache_uid());
+	}
+
+	my $socket = IO::Socket::UNIX->new(
+		Type   => SOCK_STREAM,
+		Local  => $sf,
+		Listen => 1,
+	) || die "Can't open socket: $!";
+
+	chmod(0660,$sf);
+	chown($ac->apache_uid,$ac->apache_gid,$sf);
+
+	my $dbh = DBI->connect(@{$ac->debug_dbd()}) || die DBI->errstr;
+	$db->set_dbh($dbh);
+
+	$SIG{CHLD} = \&reaper;
+
+	while (1) {
+		my $io = $socket->accept();
+
+		# for some strange reason sometimes accept returns a dud
+		next unless (defined($io));	
+
+		my $child = fork;
+		if ($child) {
+			next;
+		}
+
+		while (defined($io)) {
+			my ($data) = $io->read_record();
+
+			last unless defined($data);
+
+			my $handler = 'handle_'.$data->{'type'};
+			if ($db->can($handler)) {
+				$db->$handler($data);
+			}
+			else {
+				print STDERR "==$$== message type ($data->{'type'}) isn't supported\n";
+			}
+		}
+		exit 0;
+	}
+}
+
+sub reaper {
+	my $zombie_pid;
+	while (($zombie_pid = waitpid(-1,WNOHANG)) > 0){
+			print STDERR  "$$ reaped $zombie_pid" . ($? ? " with exit $?" : '')."\n";
+	}
+
+	$SIG{CHLD} = \&reaper;
+}

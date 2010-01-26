@@ -1,0 +1,324 @@
+=pod 
+
+=head1 NAME
+
+Apache::Voodoo::basics - The Basics of Voodoo setup and operation
+
+=head1 SETUP
+
+There are a three setup steps to begin writing a site with Voodoo.  The following sections
+describe those steps.  Some basic understanding of Apache administration is necessary ;)
+
+=head1 1) Apache Configuration
+
+The first thing we need to do is modify Apache's configuration file to load Voodoo, and to setup our site.
+
+=head2 Example Configuration
+
+  # load these at server start (optional, slightly quicker startup time)
+  PerlModule Apache::Session
+  PerlModule HTML::Template
+
+  # load Apache::Voodoo
+  PerlModule Apache::Voodoo::Handler
+
+  <Directory /data/apache/sites/my_app/html>
+    SetHandler perl-script
+    PerlHandler Apache::Voodoo::Handler
+    PerlSetVar ID my_app
+
+    Options Indexes Includes FollowSymLinks
+    AllowOverride None
+
+    Order allow,deny
+    Allow from all
+  </Directory>
+
+The directory block may be repeated as many times as necessary to setup multiple sites.
+Directory Aliases and Virtual Hosts may also be used in the same manner.
+
+=over 4
+
+=item PerlModule Apache::Voodoo::Handler
+
+Loads Voodoo.  This line must be present somewhere inside the 'main' section of the
+apache configuration file...IE. not within a <directory> or <virtual> block.
+
+=item SetHandle perl-script
+
+Tells Apache that a mod_perl is going to be use for this directory or virtual host
+	
+=item PerlHandler Apache::Voodoo::Handler
+	
+Tells Apache what method to call to handle requests for this directory
+
+=item PerlSetVar ID name_of_site
+
+This let's Voodoo know what site is attached to this directory.
+
+Names matching /[a-z][a-z0-9_-]*/i are valid.
+
+=back
+
+=head1 2) Voodoo Configuration File
+
+Each Voodoo site has it's own configuration file that is kept in: 
+
+	<ServerRoot>/sites/<name_of_site>/etc/voodoo.conf
+
+The "name_of_site" directory must match the value of the ID parameter. In our example above, it 
+would be "my_app".
+
+This is also used as the top level package name that Voodoo will use in loading all other modules.  
+This can be overridden with the optional BASE_PACKAGE directive.
+
+Voodoo uses the L<Config/General> module for its configuration files.  See its documentation for more
+information on its syntax rules.
+
+=head2 Example Configuration
+
+	cookie_name  = my_app_SID
+	session_timeout = 0
+	shared_cache    = 0
+	session_dir  = /usr/local/apache/sessions/my_app
+	debug = 1
+
+	<database>
+		connect  = "dbi:mysql:database=my_app;host=127.0.0.1;mysql_connect_timeout=2"
+		username = "test_user"
+		password = "test_password"
+	</database>
+	
+	<modules>
+		login
+		admin::login_history
+	</modules>
+
+	<includes>
+		date
+		main_menu
+	</includes>
+
+	<template_conf>
+		<default>
+			skeleton = skeleton.tmpl
+			pre_include = date
+			post_include = main_menu
+		</default>
+	</template_conf>
+
+=over 4
+
+=item cookie_name
+
+This is a optional parameter that sets the name of the cookie used by Voodoo for session identification.
+If it is not supplied the cookie name will the value of the ID parameter with "_SID" appended.
+
+=item session_timeout
+
+Number of minutes before a cookie expires.  Set to 0 for no expiration.
+
+=item shared_cache
+
+Whether or not to use Shared memory for caching of templates.  Typically 0 for development
+and 1 for production.
+
+=item database
+
+This is a list of database connect info.  Databases are connected to in the order listed. 
+If the first connection fails the next in the list is used.  An error message is generated 
+in the Apache error log file on a failed connection, but no other action is taken.  
+There are good database monitoring packages out there :) .  The contents of each array element 
+is passed directly to DBI->connect.
+
+=item session_dir
+
+This is the directory that Apache::Session will use to store session information.  This directory must be present
+and writable by whatever user Apache runs as.
+
+=item debug
+
+Enables or disables the debug() method from Apache::Voodoo and its associated output on each page.  See L<Apache::Voodoo::Debug> for more information.
+
+=item halt_on_errors
+
+If set to 1, this causes the server to return a 503 (server temporary unavailable) message 
+for the host if any modules fail to load.  Defaults to 0
+
+=item modules
+
+This contains the list of page handling modules that will be loaded by Voodoo.
+
+Note that the modules names do not contain the base package name.  "my_app::index" becomes "index", this
+saves a bunch of typing, but more importantly prevents accidental cross-site module loading.
+
+These modules must reside in <ServerRoot>/sites/<name_of_site>/code, and of course follow Perl's 
+conventions for directory and file names. mod_perl appends <ServerRoot>/lib/perl to @INC and this is used
+as a convenient directory to symlink in the path to the site's modules.  This method saves us the hassle
+fiddling with @INC and doesn't increase the number of directories the loader must search through.
+
+=item includes
+
+This contains a list of modules that can be used on a per page basis to inject extra info 
+into the output.  For example, if you wish to have the current date and time appear on every page,
+create a module that returns that info, include it in this list and add it to the template_conf section
+accordingly.
+
+=item template_conf
+
+The entries here are regular expression entries that match one or more page with the site.
+Each section may be used to control certain aspects of how Voodoo presents the page.
+The magic entry <default> matches any page that doesn't have another matching entry.
+Standard items are:
+
+=over 4
+
+=item skeleton
+
+Which skeleton template to use
+
+=item pre_include
+
+A list of include modules to call on this page, BEFORE the main page handling module.
+These will be called in the order given in the list.
+
+=item post_include
+
+A list of include modules to call on this page, AFTER the main page handling module.
+These will be called in the order given in the list.
+
+=item content-type
+
+Content type for the output.  Defaults to text/html
+
+=back
+
+Any other params will be passed to the template directly, and will be accessible to page handling modules
+via $p->{'template_conf'}
+
+=head1 3) Basic Templates
+
+In <ServerRoot>/sites/<name_of_site>/html directory, create a file named 'skeleton.tmpl' (or whatever you specified in the 'skeleton' parameter above),
+and place (at least) this in it:
+
+	<html>
+	<TMPL_VAR _MAIN_BODY_>
+	<TMPL_VAR _DEBUG_>
+	</html>
+
+Here's the logic.  The vast majority of the time, every page on a site has the same basic look; the same header, the same footer, 
+the same menu, etc.  What changes page to page is the core content, the meat so to speak.  Why write the HTML for the 
+headers, etc over and over?  Why have to remember to include header and footer templates in every file?  Why have to go 
+back and edit every file if you want to move the menu from the left to the right side?
+
+This method allows you to write all header/footer stuff once and have a single point of alteration for it.  
+The core content (your other template files), are simply inlined where _MAIN_BODY_ is in the skeleton.
+
+Let's say your index.tmpl file contains:
+
+	<h1>Hello, welcome to my site</h1>
+	Enjoy your stay.
+
+The resulting html as sent to the browser would be:
+
+    
+	<html>
+	<h1>Hello, welcome to my site</h1>
+	Enjoy your stay.
+	<!-- Voodoo Debug info omitted for clarity-->
+	</html>
+
+Any HTML::Template directives in the skeleton can be controlled by the page modules.  You can think of it this way:
+The individual page template is inserted into the skeleton first and then normal HTML::Template processing is
+done on the entire thing.
+
+Only files that end in .tmpl are processed by Voodoo.  It ignores any other files and leaves them for Apache to
+handle natively.  The .tmpl is optional in the URLs,  http://yoursite.com/index.tmpl and http://yoursite.com/index are
+functionally identical.
+
+=head1 4) Module Location
+
+All the .pm's for your site go in <ServerRoot>/sites/<name_of_site>/code and follow Perl's naming convention as they appear in
+the voodoo.conf file.  In other words, the module's package name might be "my_app::login" but it belongs in
+<ServerRoot>/sites/my_app/code/login.pm
+
+=head1 EXAMPLE SITE LAYOUT
+
+etc, html, and code are the three directories whose locations are fixed, you can create other "top level" directories
+as you need them.  For example, this layout has worked well for myself and others.
+
+    <ServerRoot>/sites/my_app
+        |_ bin
+        |   |_ a_cron_job.pl
+        |   |_ a_utility_program.pl
+        |_ code
+        |   |_ skeleton.pm
+        |   |_ login.pm
+        |_ db
+        |   |_ database_schema.sql
+        |_ docs
+        |   |_ who_are_we_kidding_right_guys.doc
+        |_ etc
+        |   |_ voodoo.conf
+		|_ html
+        |   |_ skeleton.tmpl
+        |   |_ login.tmpl
+        |   |_ images
+        |   |_ logo.gif
+        |_ tests
+            |_ a_test_script.t
+
+=head1 AUTOMATING INSTALLS/UPGRADES
+
+Voodoo has a automated install/upgrade system for sites developed within it.  See the program "voodoo-control".
+
+FIXME: loads of docs needed here.
+
+=head1 TEMPLATE TO PAGE MODULE MAPPING
+
+Voodoo matches templates to code according to two rules.
+
+=over 4
+
+=item 1) /my/url/path => base_package::my::url::path->handle
+
+If a module exists that matches the URL and it has a method named 'handle', it is called.
+If that fails then it looks for...
+
+=item 2) /my/url/foo_path => base_package::my::url::path->foo
+
+It removes the file name up to the first '_', looks for module matching that URL containing
+a method named whatever was removed.
+
+=back
+
+If neither of these rules match, then template is just inserted into the skeleton as is.
+This allows you to create static content without having to make a module that basically does nothing.
+
+The interesting side effect of rule two is that you can't make page handling methods that have a _ in them.
+They would never match the criteria of rule two.  This allows you to make methods that have no 
+way of accidentally being mapped to a URL by simply add an underscore to them.
+
+=head2 Examples
+
+	my_app::index->handle        /index			
+	my_app::foo::bar->handle     /foo/bar		
+	my_app::foo::bar_baz->handle /foo/bar_baz    
+	my_app::foo::bar->qux        /foo/qux_bar	
+	my_app::foo::bar->_foo       # won't match any url, it contains an underscore
+
+=head1 MODULE API
+
+The details of how to write modules are covered in L<Apache::Voodoo::api>.
+
+=head1 AUTHOR
+
+Maverick, /\/\averick@smurfbaneDOTorg
+
+=head1 COPYRIGHT
+
+Copyright (c) 2005 Steven Edwards.  All rights reserved.
+
+You may use and distribute Voodoo under the terms described in the LICENSE file include
+in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
+of the Artistic License :)
