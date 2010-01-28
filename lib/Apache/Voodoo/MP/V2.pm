@@ -1,6 +1,6 @@
 package Apache::Voodoo::MP::V2;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/trunk/Voodoo/MP/V2.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -112,10 +112,10 @@ sub set_cookie {
 		$c->expires($expires);
 	}
 
-	# I don't use Apache2::Cookie's bake since it doesn't support setting the HttpOnly flag.
-	# The argument goes something like "Not every browser supports it, so what's the point?"
-	# Isn't that a bit like saying "What's the point in wearing this bullet proof vest if it
-	# doesn't stop a round from a tank?"
+	# I didn't use Apache2::Cookie's bake since it doesn't support setting the HttpOnly flag.
+	# The argument setting the flag goes something like "Not every browser supports it, 
+	# so what's the point?"  Which seems to me to be a bit like saying "What's the point 
+	# in wearing this bullet proof vest if it doesn't stop a shell from a tank?"
 	$self->err_header_out('Set-Cookie' => "$c; HttpOnly");
 }
 
@@ -138,18 +138,12 @@ sub get_cookie {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include in
-this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of
-the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

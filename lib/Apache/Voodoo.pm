@@ -1,16 +1,6 @@
-####################################################################################
-#
-# Apache::Voodoo - Base class for all Voodoo page handling modules
-#
-# $Id: Voodoo.pm 19856 2009-10-30 15:18:57Z medwards $
-# 
-# This is the object that your modules must inherit from in order to interact correctly
-# with Voodoo.  It also provides a set of extremely useful methods.
-#
-####################################################################################
 package Apache::Voodoo;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/trunk/Voodoo.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -631,17 +621,11 @@ sub pretty_time {
 1;
 
 ################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
 #
-# AUTHOR
-#
-# Maverick, /\/\averick@smurfbaneDOTorg
-#
-# COPYRIGHT
-#
-# Copyright (c) 2005 Steven Edwards.  All rights reserved.
-#
-# You may use and distribute Voodoo under the terms described in the
-# LICENSE file include in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of 
-# the Artistic License :)
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
 #
 ################################################################################

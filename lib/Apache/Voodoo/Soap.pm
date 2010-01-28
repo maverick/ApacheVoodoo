@@ -1,6 +1,6 @@
 package Apache::Voodoo::Soap;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/trunk/Voodoo/Soap.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -236,3 +236,13 @@ sub _make_fault {
 }
 
 1;
+
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

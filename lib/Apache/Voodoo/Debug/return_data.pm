@@ -1,8 +1,3 @@
-=pod ###########################################################################
-
-$Id: return_data.pm 16110 2009-05-29 17:09:13Z medwards $
-
-=cut ###########################################################################
 package Apache::Voodoo::Debug::return_data;
 
 use strict;
@@ -45,21 +40,14 @@ sub handle {
     return $self->json_data('vd_return_data',$d);
 }
 
-
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include
-in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
-of the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

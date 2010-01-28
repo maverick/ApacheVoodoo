@@ -1,6 +1,6 @@
 package Apache::Voodoo::MP::Common;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/trunk/Voodoo/MP/Common.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -72,18 +72,12 @@ sub if_modified_since {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include in
-this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of
-the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

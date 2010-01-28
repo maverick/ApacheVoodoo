@@ -1,24 +1,16 @@
-=pod ################################################################################
-
-=head1 NAME
-
-Apache::Voodoo::Debug - handles operations associated with debugging output.
-
-=head1 VERSION
-
-$Id: Native.pm 16315 2009-06-08 22:14:23Z medwards $
-
-=head1 SYNOPSIS
-
-This object is used by Voodoo internally to handling various types of debugging
-information and to produce end user display of that information.  End users 
-never interact with this module directly, instead they use the debug() and mark()
-methods from L<Apache::Voodoo>.
-
-=cut ###########################################################################
+################################################################################
+#
+# Apache::Voodoo::Debug - handles operations associated with debugging output.
+#
+# This object is used by Voodoo internally to handling various types of debugging
+# information and to produce end user display of that information.  End users 
+# never interact with this module directly, instead they use the methods from
+# the Apache::Voodoo base class.
+#
+################################################################################
 package Apache::Voodoo::Debug::Native;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/trunk/Voodoo/Debug/Native.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -297,18 +289,12 @@ sub finalize {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include in
-this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of 
-the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

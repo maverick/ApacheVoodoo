@@ -1,21 +1,13 @@
-=pod ###########################################################################
-
-=head1 NAME
-
-Apache::Voodoo::Install::Pid - Pid file handler
-
-=head1 VERSION
-
-$Id: Pid.pm 16110 2009-05-29 17:09:13Z medwards $
-
-=head1 SYNOPSIS
-
-This object is used by Voodoo internally.
-
-=cut ###########################################################################
+###############################################################################
+#
+# Apache::Voodoo::Install::Pid - Pid file handler
+#
+# This object is used by Voodoo internally.
+#
+###############################################################################
 package Apache::Voodoo::Install::Pid;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/trunk/Voodoo/Install/Pid.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use base("Apache::Voodoo::Install");
 
@@ -70,18 +62,12 @@ sub DESTROY {
 
 1;
 
-=pod ###########################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE 
-file include in this package or L<Apache::Voodoo::license>.  The summary is
-it's a legalese version of the Artistic License :)
-
-=cut ###########################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################
