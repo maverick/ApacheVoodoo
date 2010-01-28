@@ -1,7 +1,3 @@
-#
-# $Id: 02-validation.t 17504 2009-07-10 19:59:16Z medwards $
-#
-
 use strict;
 use warnings;
 
