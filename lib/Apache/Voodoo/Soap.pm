@@ -6,7 +6,22 @@ use strict;
 use warnings;
 
 use SOAP::Transport::HTTP;
-use Pod::WSDL2;
+
+# FIXME: Hack to prefer my extended version of Pod::WSDL over the
+# one on CPAN.  This will need to stay in place until either the
+# author of Pod::WSDL replys or I release my own version.
+my $PWSDL;
+BEGIN {
+	eval {
+		require Pod::WSDL2;
+		$PWSDL = 'Pod::WSDL2';
+	};
+	if ($@) {
+		require Pod::WSDL;
+		$PWSDL = 'Pod::WSDL';
+	}
+}
+
 use MIME::Entity;
 
 use Apache::Voodoo::MP;
@@ -74,7 +89,8 @@ sub handler {
 
 		my $wsdl;
 		eval {
-			$wsdl = new Pod::WSDL2(
+			# FIXME the other part of the Pod::WSDL version hack
+			$wsdl = $PWSDL->new(
 				source   => $m,
 				location => $self->{mp}->server_url().$uri,
 				pretty   => 1,
