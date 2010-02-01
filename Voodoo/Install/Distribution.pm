@@ -1,22 +1,14 @@
-=pod ###########################################################################
-
-=head1 NAME
-
-Apache::Voodoo::Install::Updater
-
-=head1 VERSION
-
-$Id$
-
-=head1 SYNOPSIS
-
-This package provides the methods that do pre/post/upgrade commands as specified
-by the various .xml files in an application.
-
-=cut ###########################################################################
+################################################################################
+#
+# Apache::Voodoo::Install::Updater
+#
+# This package provides the methods that do pre/post/upgrade commands as specified
+# by the various .xml files in an application.
+#
+################################################################################
 package Apache::Voodoo::Install::Distribution;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -236,18 +228,12 @@ sub install_files {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include
-in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
-of the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

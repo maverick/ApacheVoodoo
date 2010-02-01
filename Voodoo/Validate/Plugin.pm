@@ -1,18 +1,14 @@
 #####################################################################################
 #
-#  NAME
+# Apache::Voodoo::Validate::Plugin 
 #
-# Apache::Voodoo::Validate::Plugin - Base class which all the data type plugins
-# must inherit from in order to work correctly with A::V::Validate.
-#
-#  VERSION
-# 
-# $Id$
+# Base class which all the data type plugins must inherit from in order to work 
+# correctly with A::V::Validate.
 #
 ####################################################################################
 package Apache::Voodoo::Validate::Plugin;
 
-$VERSION = sprintf("%0.4f",('$HeadURL: http://svn.nasba.dev/Voodoo/trunk/Voodoo/Validate/URL.pm $' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -69,18 +65,13 @@ sub valid {
 }
 
 1;
-#####################################################################################
+
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
 #
-# AUTHOR
-#
-# Maverick, /\/\averick@smurfbaneDOTorg
-#
-# COPYRIGHT
-#
-# Copyright (c) 2009 Steven Edwards.  All rights reserved.
-# 
-# You may use and distribute Voodoo under the terms described in the LICENSE file include
-# in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
-# 
-#####################################################################################
+#
+################################################################################

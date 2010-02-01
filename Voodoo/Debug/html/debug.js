@@ -1,5 +1,3 @@
-// $Id$
-//
 // Ajax handler for Voodoo's native debugging functions.  This contains modified versions
 // of Sean Kane's Feather Ajax and the reference JSON parser found at JSON.org.
 // The original copyright notices for those components appear below, along with

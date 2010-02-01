@@ -1,23 +1,15 @@
-=pod ####################################################################################
-
-=head1 NAME
-
-Apache::Voodoo::Handler - Main interface between mod_perl and Voodoo
-
-=head1 VERSION
-
-$Id$
-
-=head1 SYNOPSIS
- 
-This is the main generic presentation module that interfaces with apache, 
-handles session control, database connections, and interfaces with the 
-application's page handling modules.
-
-=cut ################################################################################
+################################################################################
+#
+# Apache::Voodoo::Handler - Main interface between mod_perl and Voodoo
+# 
+# This is the main generic presentation module that interfaces with apache, 
+# handles session control, database connections, and interfaces with the 
+# application's page handling modules.
+#
+################################################################################
 package Apache::Voodoo::Handler;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 
@@ -76,7 +68,7 @@ sub handler {
 	if (my $e = Apache::Voodoo::Exception::Application::SessionTimeout->caught()) {
 		return $self->{'mp'}->redirect($e->target());
 	}
-	elsif (my $e = Exception::Class->caught()) {
+	elsif ($e = Exception::Class->caught()) {
 		warn "$e";
 		return $self->{'mp'}->server_error;
 	}
@@ -121,6 +113,10 @@ sub handler {
 
 			$self->{'engine'}->finish($self->{mp}->ok);
 			return $self->{mp}->ok;
+		}
+		elsif ($e->isa("Apache::Voodoo::Exception::Application::Unauthorized")) {
+			$self->{'engine'}->finish($self->{mp}->unauthorized);
+			return $self->{mp}->unauthorized;
 		}
 		elsif (! $e->isa("Apache::Voodoo::Exception::Application")) {
 			# Apache::Voodoo::Exception::RunTime
@@ -167,18 +163,12 @@ sub display_host_error {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include
-in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
-of the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

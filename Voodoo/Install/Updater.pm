@@ -1,19 +1,16 @@
-=pod ###########################################################################
+###############################################################################
+#
+# Apache::Voodoo::Install::Updater - Update xml processor
+# 
+# This package provides the internal methods use by voodoo-control that do 
+# pre/post/upgrade commands as specified by the various .xml files in an 
+# application.  It's not intended to be use directly by end users.
+#
+###############################################################################
 
-=head1 NAME
-
-Apache::Voodoo::Install::Updater - Update xml processor
-
-=head1 SYNOPSIS
-
-This package provides the internal methods use by voodoo-control that do pre/post/upgrade
-commands as specified by the various .xml files in an application.  It's not intended to be
-use directly by end users.
-
-=cut ###########################################################################
 package Apache::Voodoo::Install::Updater;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -34,6 +31,22 @@ use Config::General qw(ParseConfig);
 # make CPAN download dependancies
 $CPAN::Config->{'prerequisites_policy'} = 'follow';
 
+################################################################################
+# Creates a new updater object with given configuration options.  It assumes
+# that the files for the application have already been installed or exist in
+# appropriate location.  A good database security setup would not allow the
+# user the application connects as to have alter, create or drop privileges; thus
+# the need for the database root password.  If pretend is set to a true value, 
+# the operations are stepped through, but nothing actually happens.
+# 
+# usage:
+#    Apache::Voodoo::Install::Updater->new(
+#		dbroot   => $database_root_password,
+#		app_name => $application_name,
+#		verbose  => $output_verbosity_level,
+#		pretend  => $boolean
+#	);
+################################################################################
 sub new {
 	my $class = shift;
 	my %params = @_;
@@ -60,10 +73,20 @@ sub new {
 	return $self;
 }
 
-
+# Causes the update chain to execute:  pre-setup.xml, unapplied updates, post-setup.xml
 sub do_update      { $_[0]->_do_all(0); }
+
+# Causes the new install chain to execute:  pre-setup.xml, setup.xml, 
+# post-setup.xml, mark all updates applied.  If this is executed on an 
+# existing system, Bad Things(tm) can happen depending on what commands
+# are present in setup.xml
 sub do_new_install { $_[0]->_do_all(1); }
 
+# Wizard mode function.  This performs a replace into on the _updates table 
+# of a system to have entries and correct checksums for each update file 
+# without actually executing them.  If something went wrong with an install or
+# upgrade and manual tinkering was required to get things back in order, this
+# method can be used to ensure that the _updates table appears current.
 sub mark_updates_applied {
 	my $self = shift;
 
@@ -458,55 +481,12 @@ sub _execute_sql {
 
 1;
 
-=pod
-
-=head1 USAGE
-
-=head2 new( %options )
-
-Creates a new updater object with given configuration options.  It assumes
-that the files for the application have already been installed or exist in
-appropriate location.  A good database security setup would not allow the
-user the application connects as to have alter, create or drop privileges; thus
-the need for the database root password.  If pretend is set to a true value, 
-the operations are stepped through, but nothing actually happens.
-
- usage:
-    Apache::Voodoo::Install::Updater->new(
-		dbroot   => $database_root_password,
-		app_name => $application_name,
-		verbose  => $output_verbosity_level,
-		pretend  => $boolean
-	);
-
-=head2 do_update()
-
-Causes the update chain to execute:  pre-setup.xml, unapplied updates, post-setup.xml
-
-=head2 do_new_install()
-
-Causes the new install chain to execute:  pre-setup.xml, setup.xml, post-setup.xml, mark all updates applied
-If this is executed on an existing system, Bad Things(tm) can happen depending on what commands
-are present in setup.xml
-
-=head2 mark_updates_applied()
-
-Wizard mode function.  This performs a replace into on the _updates table 
-of a system to have entries and correct checksums for each update file 
-without actually executing them.  If something went wrong with an install or upgrade and manual
-tinkering was required to get things back in order, this method can be used to ensure that
-the _updates table appears current.
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include
-in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
-of the Artistic License :)
-
-=cut
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

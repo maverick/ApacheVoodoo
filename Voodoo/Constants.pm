@@ -1,21 +1,14 @@
-=pod ###########################################################################
-
-=head1 NAME
-
-Apache::Voodoo::Constants - interface to Apache::Voodoo configuration settings.
-
-=head1 VERSION
-
-$Id$
-
-=head1 SYNOPSIS
-
-This package provide an OO interface to retrive the various paths and config settings used by Apache Voodoo.
-
-=cut ###########################################################################
+################################################################################
+#
+# Apache::Voodoo::Constants 
+#
+# This package provide an OO interface to retrive the various paths and config 
+# settings used by Apache Voodoo.
+#
+################################################################################
 package Apache::Voodoo::Constants;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -70,18 +63,12 @@ sub log4perl_conf { return $_[0]->{LOG4PERL_CONF}; }
 
 1;
 
-=pod ###########################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE 
-file include in this package or L<Apache::Voodoo::license>.  The summary is
-it's a legalese version of the Artistic License :)
-
-=cut ###########################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

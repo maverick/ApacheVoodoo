@@ -41,8 +41,6 @@ is located here:
 
 http://www.apachevoodoo.com
 
-=back
-
 =head1 BUGS
 
 The Native debug template may not work in all versions of Internet Explorer.

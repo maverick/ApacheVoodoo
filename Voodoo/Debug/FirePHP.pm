@@ -1,6 +1,6 @@
 package Apache::Voodoo::Debug::FirePHP;
   
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -24,7 +24,7 @@ use constant {
 use constant GROUP_START => 'GROUP_START';
 use constant GROUP_END   => 'GROUP_END';
 
-use constant WF_VERSION    => '0.2.1';
+use constant WF_VERSION    => "2.00";
 use constant WF_PROTOCOL   => 'http://meta.wildfirehq.org/Protocol/JsonStream/0.2';
 use constant WF_PLUGIN     => 'http://meta.firephp.org/Wildfire/Plugin/FirePHP/Library-FirePHPCore/'.WF_VERSION;
 use constant WF_STRUCTURE1 => 'http://meta.firephp.org/Wildfire/Structure/FirePHP/FirebugConsole/0.1';
@@ -302,3 +302,13 @@ sub jsonEncode {
 }
   
 1;
+
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

@@ -4,17 +4,13 @@
 
 Apache::Voodoo::Pager - Provides generic pagination controls 
 
-=head1 VERSION
-
-$Id$
-
 =head1 SYNOPSIS
 
 This module generates all the necessary 'next', 'previous' and page number links
 typically found on any search engine results page.  This module can be used in 
 any scenario where data must be paginated.
 
-    my $pager = Apache::Voodoo::Pager->new('count'   => 40,
+    my $pager = Apache::Voodoo::Pager->new('count'   => 25,
                                            'window'  => 10,
                                            'limit'   => 500,
                                            'persist' => [ 'url_param', ... ]);
@@ -29,7 +25,7 @@ any scenario where data must be paginated.
 =cut ################################################################################
 package Apache::Voodoo::Pager;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use POSIX qw(ceil);
@@ -49,14 +45,9 @@ sub set_configuration {
 	my $self = shift;
 	my %c = @_;
 
-	$c{'count'} =~ s/\D//g;
-	$self->{'count'} = $c{'count'}   || 40;
-
-	$c{'window'} =~ s/\D//g;
-	$self->{'window'} = $c{'window'} || 10;
-
-	$c{'limit'} =~ s/\D//g;
-	$self->{'limit'} = $c{'limit'}   || 500;
+	$self->{'count'}  = (defined($c{'count'})  && $c{'count'}  =~ /^\d+$/)?$c{'count'}  :25;
+	$self->{'window'} = (defined($c{'window'}) && $c{'window'} =~ /^\d+$/)?$c{'window'} :10;
+	$self->{'limit'}  = (defined($c{'limit'})  && $c{'limit'}  =~ /^\d+$/)?$c{'limit'}  :500;
 
 	$self->{'persist'} = $c{'persist'};
 }
@@ -285,17 +276,14 @@ be used by the caller to determine how to properly cut the result set.
 
     Page <tmpl_var PAGE_NUMBER> of <tmpl_var NUMBER_PAGES>
 
-=head1 AUTHOR
+=cut ###########################################################################
 
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include
-in this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version
-of the Artistic License :)
-
-=cut ################################################################################
-
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

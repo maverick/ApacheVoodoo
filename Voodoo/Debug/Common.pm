@@ -1,21 +1,13 @@
-=pod ################################################################################
-
-=head1 NAME
-
-Apache::Voodoo::Debug::Common
-
-=head1 VERSION
-
-$Id$
-
-=head1 SYNOPSIS
-
-Does nothing gracefully
-
-=cut ###########################################################################
+################################################################################
+#
+# Apache::Voodoo::Debug::Common
+#
+# Base class for all debugging plugins
+#
+################################################################################
 package Apache::Voodoo::Debug::Common;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
@@ -99,18 +91,12 @@ sub stack_trace {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include in
-this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of 
-the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

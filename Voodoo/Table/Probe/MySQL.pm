@@ -1,19 +1,15 @@
-=pod ################################################################################
-
-=head1 Apache::Voodoo::Table::Probe::mysql
-
-$Id$
-
-=head1 Initial Coding: Maverick
-
-Probes a MySQL database to get information about various tables.
-
-This is old and crufty and not for public use
-
-=cut ################################################################################
+################################################################################
+#
+# Apache::Voodoo::Table::Probe::mysql
+#
+# Probes a MySQL database to get information about various tables.
+#
+# This is old and crufty and not for public use
+#
+################################################################################
 package Apache::Voodoo::Table::Probe::MySQL;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||0);
+$VERSION = "3.0000";
 
 use DBI;
 use Data::Dumper;
@@ -252,18 +248,12 @@ sub debug {
 
 1;
 
-=pod ################################################################################
-
-=head1 AUTHOR
-
-Maverick, /\/\averick@smurfbaneDOTorg
-
-=head1 COPYRIGHT
-
-Copyright (c) 2005 Steven Edwards.  All rights reserved.
-
-You may use and distribute Voodoo under the terms described in the LICENSE file include in
-this package or L<Apache::Voodoo::license>.  The summary is it's a legalese version of 
-the Artistic License :)
-
-=cut ################################################################################
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################

@@ -1,14 +1,27 @@
 package Apache::Voodoo::Soap;
 
-$VERSION = sprintf("%0.4f",('$HeadURL$' =~ m!(\d+\.\d+)!)[0]||10);
+$VERSION = "3.0000";
 
 use strict;
 use warnings;
 
-use lib("/data/apache/sites/test");
-
 use SOAP::Transport::HTTP;
-use Pod::WSDL2;
+
+# FIXME: Hack to prefer my extended version of Pod::WSDL over the
+# one on CPAN.  This will need to stay in place until either the
+# author of Pod::WSDL replys or I release my own version.
+my $PWSDL;
+BEGIN {
+	eval {
+		require Pod::WSDL2;
+		$PWSDL = 'Pod::WSDL2';
+	};
+	if ($@) {
+		require Pod::WSDL;
+		$PWSDL = 'Pod::WSDL';
+	}
+}
+
 use MIME::Entity;
 
 use Apache::Voodoo::MP;
@@ -76,7 +89,8 @@ sub handler {
 
 		my $wsdl;
 		eval {
-			$wsdl = new Pod::WSDL2(
+			# FIXME the other part of the Pod::WSDL version hack
+			$wsdl = $PWSDL->new(
 				source   => $m,
 				location => $self->{mp}->server_url().$uri,
 				pretty   => 1,
@@ -238,3 +252,13 @@ sub _make_fault {
 }
 
 1;
+
+################################################################################
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# All rights reserved.
+#
+# You may use and distribute Apache::Voodoo under the terms described in the 
+# LICENSE file include in this package. The summary is it's a legalese version
+# of the Artistic License :)
+#
+################################################################################
