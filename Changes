@@ -1,18 +1,21 @@
-3.00 -
+3.00 - 2/1/2010
 ================
 Added true MVC support.
 
 Abstracted debugging into multiple backends.  The classic mechanism (aka Native) has
 been expanded to handle AJAX requests. added support for FirePHP and Log4Perl.
 
-Added support for serving applications via SOAP and providing WSDLs for those services using Pod::WSDL.
+Added support for serving applications via SOAP and providing WSDLs for those services 
+using Pod::WSDL.
 
 Parameter validation which used to built into Apache::Voodoo::Table has been abstracted out
 into its own stand alone module.
 
 Better exception support via Exception::Class
 
-Documentation.
+Documentation pulled out and moved to http://apachevoodoo.com
+
+Revision control moved to github http://github.com/maverick/ApacheVoodoo
 
 2.04 - 8/20/2008
 ================
