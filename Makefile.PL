@@ -79,11 +79,13 @@ if ($@) {
 
 	if ($answer =~ /^y/i) {
 		$required_modules{'SOAP::Lite'} = $optional{'SOAP::Lite'};
+		$required_modules{'Pod::WSDL'}  = $optional{'Pod::WSDL'};
 		print "Adding prequisites for SOAP...\n";
 	}
 }
 else {
 	$required_modules{'SOAP::Lite'} = $optional{'SOAP::Lite'};
+	$required_modules{'Pod::WSDL'}  = $optional{'Pod::WSDL'};
 }
 
 eval { require Log::Log4perl; };
