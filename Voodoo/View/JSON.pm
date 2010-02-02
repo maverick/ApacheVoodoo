@@ -1,6 +1,6 @@
 package Apache::Voodoo::View::JSON;
 
-$VERSION = "3.0000";
+$VERSION = "3.0001";
 
 use strict;
 use warnings;
