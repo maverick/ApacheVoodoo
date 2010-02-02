@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 use 5.008000;
 use ExtUtils::MakeMaker;
 

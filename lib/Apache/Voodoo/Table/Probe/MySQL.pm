@@ -9,7 +9,7 @@
 ################################################################################
 package Apache::Voodoo::Table::Probe::MySQL;
 
-$VERSION = "3.0000";
+$VERSION = "3.0001";
 
 use DBI;
 use Data::Dumper;
