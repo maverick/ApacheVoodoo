@@ -1,10 +1,13 @@
 ~$
+.git
 .svn
 .swp$
 .bak
 \#
-prepare_dist.sh
 Voodoo/Table/Probe/mysql.pm
 Voodoo/Table/Probe/templates/template.pm
 Voodoo/MyConfig.pm
 Voodoo/experimental
+Makefile
+docs
+utils
