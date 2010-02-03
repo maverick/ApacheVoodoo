@@ -21,7 +21,7 @@ my %required_modules = (
 	'JSON::DWIW'            => 0.32,
 	'Proc::UID'             => 0.05,
 	'Time::HiRes'           => 1.65,
-	'XML::Checker::Parser'  => 0
+	'XML::Checker'          => 0.13
 );
 
 my %optionals = (
