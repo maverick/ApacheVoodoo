@@ -10,7 +10,7 @@
 
 package Apache::Voodoo::Install::Updater;
 
-$VERSION = "3.0001";
+$VERSION = "3.0002";
 
 use strict;
 use warnings;

@@ -7,7 +7,7 @@
 ################################################################################
 package Apache::Voodoo::Debug::Handler;
 
-$VERSION = "3.0001";
+$VERSION = "3.0002";
 
 use strict;
 use warnings;
