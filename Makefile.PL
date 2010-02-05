@@ -80,14 +80,14 @@ if ($@) {
 	}
 
 	if ($answer =~ /^y/i) {
-		$required_modules{'SOAP::Lite'} = $optional{'SOAP::Lite'};
-		$required_modules{'Pod::WSDL'}  = $optional{'Pod::WSDL'};
+		$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
+		$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
 		print "Adding prequisites for SOAP...\n";
 	}
 }
 else {
-	$required_modules{'SOAP::Lite'} = $optional{'SOAP::Lite'};
-	$required_modules{'Pod::WSDL'}  = $optional{'Pod::WSDL'};
+	$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
+	$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
 }
 
 eval { require Log::Log4perl; };
@@ -100,12 +100,12 @@ if ($@) {
 	}
 
 	if ($answer =~ /^y/i) {
-		$required_modules{'Log::Log4perl'} = $optional{'Log::Log4perl'};
+		$required_modules{'Log::Log4perl'} = $optionals{'Log::Log4perl'};
 		print "Adding prequisites for Log4perl...\n";
 	}
 }
 else {
-	$required_modules{'Log::Log4perl'} = $optional{'Log::Log4perl'};
+	$required_modules{'Log::Log4perl'} = $optionals{'Log::Log4perl'};
 }
 
 
@@ -126,14 +126,14 @@ WriteMakefile(
 
 sub add_mp1 {
 	$req = shift;
-	$req->{Apache::Request} = $optional{Apache::Request};
-	$req->{Apache::Cookie}  = $optional{Apache::Cookie};
+	$req->{Apache::Request} = $optionals{Apache::Request};
+	$req->{Apache::Cookie}  = $optionals{Apache::Cookie};
 }
 
 sub add_mp2 {
 	$req = shift;
-	$req->{Apache2::Request} = $optional{Apache2::Request};
-	$req->{Apache2::Cookie}  = $optional{Apache2::Cookie};
+	$req->{Apache2::Request} = $optionals{Apache2::Request};
+	$req->{Apache2::Cookie}  = $optionals{Apache2::Cookie};
 }
 
 ################################################################################
