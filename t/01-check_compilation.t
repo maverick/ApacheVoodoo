@@ -8,7 +8,6 @@ BEGIN {
 		Apache::Voodoo::Debug::Common
 		Apache::Voodoo::Debug::FirePHP
 		Apache::Voodoo::Debug::Handler
-		Apache::Voodoo::Debug::Log4perl
 		Apache::Voodoo::Debug::Native
 		Apache::Voodoo::Debug::Native::SQLite
 		Apache::Voodoo::Debug::Native::common
@@ -40,21 +39,50 @@ BEGIN {
 		Apache::Voodoo::Session::File
 		Apache::Voodoo::Session::Instance
 		Apache::Voodoo::Session::MySQL
-		Apache::Voodoo::Soap
 		Apache::Voodoo::Table
+		Apache::Voodoo::Table::Probe
+		Apache::Voodoo::Table::Probe::MySQL
 		Apache::Voodoo::Validate
-		Apache::Voodoo::Validate
+		Apache::Voodoo::Validate::Plugin
+		Apache::Voodoo::Validate::bit
+		Apache::Voodoo::Validate::date
+		Apache::Voodoo::Validate::datetime
+		Apache::Voodoo::Validate::signed_decimal
+		Apache::Voodoo::Validate::signed_int
+		Apache::Voodoo::Validate::text
+		Apache::Voodoo::Validate::time
+		Apache::Voodoo::Validate::unsigned_decimal
+		Apache::Voodoo::Validate::unsigned_int
+		Apache::Voodoo::Validate::varchar
 		Apache::Voodoo::View
 		Apache::Voodoo::View::HTML
-		Apache::Voodoo::View::HTML::Theme
-		Apache::Voodoo::View::JSON
-		Apache::Voodoo::Zombie
 	);
+
+	# .pm => prerequsite
+	%optional = (
+		'Apache::Voodoo::MP::V1'          => 'Apache::Request',
+		'Apache::Voodoo::MP::V2'          => 'Apache2::Request',
+		'Apache::Voodoo::Debug::Log4perl' => 'Log::Log4perl',
+		'Apache::Voodoo::Soap'            => 'SOAP::Lite'
+	);
+		
 };
 
-use Test::More tests => scalar @list;
+use Test::More tests => scalar @list + keys %optional;
 
 foreach (@list) {
 	use_ok($_);
 }
 
+foreach (keys %optional) {
+	SKIP: {
+		eval {
+			$f = $optional{$_};
+			$f =~ s/::/\//g;
+			$f .= ".pm";
+			require $f;
+		};
+		skip "$optional{$_} not installed", 1 if ($@);
+		use_ok($_);
+	};
+}
