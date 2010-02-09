@@ -37,12 +37,9 @@ sub new {
 
 	$self->{'mp'} = $opts{'mp'};
 
-	$self->{constants} = Apache::Voodoo::Constants->new();
+	$self->{'constants'} = Apache::Voodoo::Constants->new();
 
-	if (exists $ENV{'MOD_PERL'}) {
-		# let's us do a compile check outside of mod_perl
-		$self->restart;
-	}
+	$self->restart($opts{'only_start'});
 
 	# Setup signal handler for die so that all deaths become exception objects
 	# This way we can get a stack trace from where the death occurred, not where it was caught.
@@ -387,6 +384,7 @@ sub execute_view {
 
 sub restart { 
 	my $self = shift;
+	my $app  = shift;
 
 	# wipe / initialize host information
 	$self->{'apps'} = {};
@@ -404,6 +402,8 @@ sub restart {
 	}
 
 	foreach my $id (readdir(DIR)) {
+		next if (defined($app) && $id ne $app);
+
 		next unless $id =~ /^[a-z]\w*$/i;
 		my $fp = File::Spec->catfile($install_path,$id,$cf_name);
 		next unless -f $fp;
