@@ -6,7 +6,6 @@ use strict;
 use warnings;
 
 use Time::HiRes;
-use Data::Dumper;
 
 sub new {
 	my $class = shift;
