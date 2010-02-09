@@ -46,6 +46,7 @@ sub new {
 sub make_request {
 	my $self   = shift;
 
+	$self->set_request();
 	$self->method(shift);
 	$self->uri(shift);
 
@@ -91,8 +92,9 @@ sub make_request {
 	eval {
 		$params = $self->{'engine'}->parse_params();
 	};
-	if ($@) {
-		return $self->display_host_error($@);
+	if (my $e = Exception::Class->caught()) {
+		warn "$e";
+		$self->server_error;
 	}
 
 	####################
@@ -144,6 +146,7 @@ sub make_request {
 		$content = $e;
 	}
 
+	$self->{'controller_output'} = $content;
 	my $view = $self->{'engine'}->execute_view($content);
 
 	# output content
@@ -159,23 +162,12 @@ sub make_request {
 	return $self->ok;
 }
 
-sub display_host_error {
-	my $self  = shift;
-	my $error = shift;
-
-	$self->content_type("text/html");
-	$self->print("<h2>The following error was encountered while processing this request:</h2>");
-	$self->print("<pre>$error</pre>");
-
-	return $self->ok;
-}
-
 sub set_request {
     my $self = shift;
 
     $self->{'request_id'} = Time::HiRes::time;
 
-	foreach (qw(uri cookiejar content_type is_get redirected_to)) {
+	foreach (qw(uri cookiejar content_type is_get redirected_to controller_output)) {
     	delete $self->{$_};
 	}
 
@@ -234,6 +226,11 @@ sub print {
 	$self->{'output'} .= $_[0];
 }
 
+sub controller_output { 
+	my $self = shift;
+	return $self->{'controller_output'};
+}
+
 sub output { 
 	my $self = shift;
 	return $self->{'output'};
@@ -246,7 +243,7 @@ sub site_root  { return "/"; }
 sub remote_ip {
 	my $self = shift;
 	$self->{'remote_ip'} = $_[0] if $_[0];
-	return $self->{'remote_id'};
+	return $self->{'remote_ip'};
 }
 
 sub remote_host {
@@ -256,6 +253,7 @@ sub remote_host {
 }
 
 sub server_url {
+	return "http://localhost/";
 }
 
 sub if_modified_since {
@@ -330,7 +328,7 @@ sub parse_params {
 		return $self->{'parameters'};
 	}
 	else {
-		my $params;
+		my $params = {};
 		my $c=0;
 		foreach (@{$self->{'parameters'}}) {
 			if (ref($_) eq "HASH") {
