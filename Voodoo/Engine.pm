@@ -37,12 +37,9 @@ sub new {
 
 	$self->{'mp'} = $opts{'mp'};
 
-	$self->{constants} = Apache::Voodoo::Constants->new();
+	$self->{'constants'} = Apache::Voodoo::Constants->new();
 
-	if (exists $ENV{'MOD_PERL'}) {
-		# let's us do a compile check outside of mod_perl
-		$self->restart;
-	}
+	$self->restart($opts{'only_start'});
 
 	# Setup signal handler for die so that all deaths become exception objects
 	# This way we can get a stack trace from where the death occurred, not where it was caught.
@@ -76,7 +73,6 @@ sub get_apps {
 
 sub is_devel_mode {
 	my $self = shift;
-	return 1;
 	return ($self->{'run'}->{'config'}->{'devel_mode'})?1:0;
 }
 
@@ -254,6 +250,21 @@ sub history_capture {
 	$debug->mark(Time::HiRes::time,"history capture");
 }
 
+sub get_model {
+	my $self   = shift;
+
+	my $app_id = shift;
+	my $model  = shift;
+
+	unless ($self->valid_app($app_id)) {
+		Apache::Voodoo::Exception::Application->throw(
+			"Application id '$app_id' unknown. Valid ids are: ".join(",",$self->get_apps())
+		);
+	}
+
+	return $self->{'apps'}->{$app_id}->{'models'}->{$model};
+}
+
 sub execute_controllers {
 	my $self   = shift;
 	my $uri    = shift;
@@ -387,6 +398,7 @@ sub execute_view {
 
 sub restart { 
 	my $self = shift;
+	my $app  = shift;
 
 	# wipe / initialize host information
 	$self->{'apps'} = {};
@@ -404,6 +416,8 @@ sub restart {
 	}
 
 	foreach my $id (readdir(DIR)) {
+		next if (defined($app) && $id ne $app);
+
 		next unless $id =~ /^[a-z]\w*$/i;
 		my $fp = File::Spec->catfile($install_path,$id,$cf_name);
 		next unless -f $fp;

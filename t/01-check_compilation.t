@@ -42,6 +42,7 @@ BEGIN {
 		Apache::Voodoo::Table
 		Apache::Voodoo::Table::Probe
 		Apache::Voodoo::Table::Probe::MySQL
+		Apache::Voodoo::Test
 		Apache::Voodoo::Validate
 		Apache::Voodoo::Validate::Plugin
 		Apache::Voodoo::Validate::bit

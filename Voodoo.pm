@@ -284,7 +284,7 @@ sub sanitize_text {
 
 sub trim {
 	my $self  = shift;
-	my $param = shift;
+	my $param = shift || "";
 
 	$param =~ s/^\s*//o;
 	$param =~ s/\s*$//o;

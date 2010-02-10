@@ -6,6 +6,7 @@ Apache::Voodoo - or just Voodoo for short; is a web application framework
 for Apache 1.3 and 2.0.
 
 =head1 SYNOPSIS
+
 Voodoo provides a fast, flexible and powerful framework for website development.
 It's goal is to handle all the repetitious, tricky and difficult interactions with mod_perl for you.
 
