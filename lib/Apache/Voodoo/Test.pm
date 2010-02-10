@@ -40,6 +40,8 @@ sub new {
 		'only_start' => $opts{'id'}
 	);
 
+	$self->{'engine'}->init_app();
+
 	return $self;
 }
 
@@ -71,10 +73,9 @@ sub make_request {
 
 	########################################
 	# We now know we have a valid request that we need to handle,
-	# Get the engine ready to server it.
+	# Get the engine ready to serve it.
 	########################################
 	eval {
-		$self->{'engine'}->init_app();
 		$self->{'engine'}->begin_run();
 	};
 	if (my $e = Apache::Voodoo::Exception::Application::SessionTimeout->caught()) {
@@ -160,6 +161,13 @@ sub make_request {
 	$view->finish();
 
 	return $self->ok;
+}
+
+sub get_model {
+	my $self  = shift;
+	my $model = shift;
+
+	return $self->{'engine'}->get_model($self->{'id'},$model);
 }
 
 sub set_request {

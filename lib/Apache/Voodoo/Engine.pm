@@ -251,6 +251,21 @@ sub history_capture {
 	$debug->mark(Time::HiRes::time,"history capture");
 }
 
+sub get_model {
+	my $self   = shift;
+
+	my $app_id = shift;
+	my $model  = shift;
+
+	unless ($self->valid_app($app_id)) {
+		Apache::Voodoo::Exception::Application->throw(
+			"Application id '$app_id' unknown. Valid ids are: ".join(",",$self->get_apps())
+		);
+	}
+
+	return $self->{'apps'}->{$app_id}->{'models'}->{$model};
+}
+
 sub execute_controllers {
 	my $self   = shift;
 	my $uri    = shift;
