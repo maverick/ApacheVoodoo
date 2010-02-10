@@ -52,7 +52,7 @@ sub make_request {
 	$self->method(shift);
 	$self->uri(shift);
 
-	my $params = shift;
+	$self->parameters(@_);
 
 	####################
 	# URI translation jazz to get down to a proper filename
@@ -76,6 +76,7 @@ sub make_request {
 	# Get the engine ready to serve it.
 	########################################
 	eval {
+		$self->{'engine'}->init_app();
 		$self->{'engine'}->begin_run();
 	};
 	if (my $e = Apache::Voodoo::Exception::Application::SessionTimeout->caught()) {
@@ -161,6 +162,10 @@ sub make_request {
 	$view->finish();
 
 	return $self->ok;
+}
+
+sub get_session {
+#FIXME implement
 }
 
 sub get_model {
@@ -318,14 +323,16 @@ sub redirect {
 sub parameters {
 	my $self = shift;
 
-	if (scalar(@_) == 1) {
-		$self->{'parameters'} = shift;
-	}
-	else {
-		$self->{'parameters'} = [ @_ ];
+	if (scalar(@_)) {
+		if (scalar(@_) == 1 && ref($_[0]) eq "HASH") {
+			$self->{'parameters'} = shift;
+		}
+		else {
+			$self->{'parameters'} = [ @_ ];
+		}
 	}
 
-	return $self->{'parmeters'};
+	return $self->{'parameters'};
 }
 
 sub parse_params {
@@ -358,10 +365,10 @@ sub set_cookie {
 	my $value   = shift;
 	my $expires = shift;
 
-	my $c = "$name=$value; path=/; domain=".$self->remote_host();
+	my $c = "$name=$value; path=/; domain=".$self->remote_host() ."; HttpOnly";
 	$self->{"cookie"} = $c;
 
-	$self->err_header_out('Set-Cookie' => "$c; HttpOnly");
+	$self->err_header_out('Set-Cookie' => $c);
 }
 
 sub get_cookie {

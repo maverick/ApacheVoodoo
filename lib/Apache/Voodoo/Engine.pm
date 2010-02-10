@@ -73,7 +73,6 @@ sub get_apps {
 
 sub is_devel_mode {
 	my $self = shift;
-	return 1;
 	return ($self->{'run'}->{'config'}->{'devel_mode'})?1:0;
 }
 
