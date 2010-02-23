@@ -37,7 +37,7 @@ sub new {
 
 	$self->{'mp'} = $opts{'mp'};
 
-	$self->{'constants'} = Apache::Voodoo::Constants->new();
+	$self->{'constants'} = $opts{'constants'} || Apache::Voodoo::Constants->new();
 
 	$self->restart($opts{'only_start'});
 
@@ -423,7 +423,7 @@ sub restart {
 		next unless -f $fp;
 		next unless -r $fp;
 
-		warn "starting host $id\n";
+		warn "starting application $id\n";
 
 		my $app = Apache::Voodoo::Application->new($id,$self->{'constants'});
 
