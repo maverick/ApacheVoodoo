@@ -32,12 +32,18 @@ sub new {
 	my $self = {};
 	bless $self, $class;
 
-	$self->{'id'}        = $opts{'id'};
+	$self->{'id'} = $opts{'id'};
+
 	$self->{'constants'} = Apache::Voodoo::Constants->new();
+
+	# If they've specified an alternate config file for testing,
+	# reach behind the scenes and make the engine look for it intead.
+	$self->{'constants'}->{'CONF_FILE'} = $opts{'config_file'} if ($opts{'config_file'});
 
 	$self->{'engine'} = Apache::Voodoo::Engine->new(
 		'mp'         => $self,
-		'only_start' => $opts{'id'}
+		'only_start' => $opts{'id'},
+		'constants'  => $self->{'constants'}
 	);
 
 	$self->{'engine'}->init_app();
