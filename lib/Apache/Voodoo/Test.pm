@@ -371,16 +371,19 @@ sub set_cookie {
 	my $value   = shift;
 	my $expires = shift;
 
-	my $c = "$name=$value; path=/; domain=".$self->remote_host() ."; HttpOnly";
-	$self->{"cookie"} = $c;
+	$self->{"cookie"}->{$name} = {
+		value  => $value,
+		domain => $self->remote_host()
+	};
 
-	$self->err_header_out('Set-Cookie' => $c);
+	$self->err_header_out('Set-Cookie' => "$name=$value; path=/; domain=".$self->remote_host() ."; HttpOnly");
 }
 
 sub get_cookie {
 	my $self = shift;
+	my $name = shift;
 	
-	return $self->{"cookie"};
+	return $self->{'cookie'}->{$name}->{'value'};
 }
 
 1;
