@@ -41,6 +41,8 @@ sub get_mtime {
 	$file =~ s/::/\//go;
 	$file .= ".pm";
 
+	return 0 unless defined($INC{$file});
+
 	my $mtime = (stat($INC{$file}))[9];
 
 	return $mtime;
