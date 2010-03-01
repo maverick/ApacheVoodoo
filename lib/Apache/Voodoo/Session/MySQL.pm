@@ -48,8 +48,6 @@ sub attach {
 		$obj = tie(%session,'Apache::Session::MySQL',$id, \%opts) || die "Tieing to session failed: $!";	
 	}
 
-	$self->{connected} = 1;
-
 	return Apache::Voodoo::Session::Instance->new($obj,\%session);
 }
 
