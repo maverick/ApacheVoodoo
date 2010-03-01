@@ -19,6 +19,8 @@ sub new {
 
 	$self->{id} = $session->{_session_id};
 
+	$self->{connected} = 1;
+
 	return $self;
 }
 

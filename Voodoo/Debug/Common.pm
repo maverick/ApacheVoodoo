@@ -62,13 +62,13 @@ sub stack_trace {
 
 		my $f = {
 			'class'    => $frame->package,
-			'function' => $st->frame($i)->subroutine,
+			'function' => defined($st->frame($i))?$st->frame($i)->subroutine:'',
 			'file'     => $frame->filename,
 			'line'     => $frame->line,
 		};
 		$f->{'function'} =~ s/^$f->{'class'}:://;
 
-		my @a = $st->frame($i)->args;
+		my @a = defined($st->frame($i))?$st->frame($i)->args:'';
 
 		# if the first item is a reference to same class, then this was a method call
 		if (ref($a[0]) eq $f->{'class'}) {
