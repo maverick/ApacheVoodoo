@@ -131,20 +131,33 @@ sub begin_run {
 	$debug->init($self->{'mp'});
 	$debug->mark(Time::HiRes::time,"START");
 
-	$run->{'session_handler'} = $self->attach_session($app,$run->{'config'});
+	$run->{'session_handler'} = $self->attach_session();
 	$run->{'session'} = $run->{'session_handler'}->session;
 
-	foreach (@{$app->databases}) {
-		eval {
-			$run->{'dbh'} = DBI->connect_cached(@{$_});
-		};
-		last if $run->{'dbh'};
-	
-		Apache::Voodoo::Exception::DBIConnect->throw($DBI::errstr);
-	}
+	$debug->session_id($run->{'session_handler'}->{'id'});
+	$debug->mark(Time::HiRes::time,'Session Attachment');
+
+	$run->{'dbh'} = $self->attach_db();
+
 	$debug->mark(Time::HiRes::time,'DB Connect');
 
 	return 1;
+}
+
+sub attach_db {
+	my $self = shift;
+
+	my $db = undef;
+	foreach (@{$self->{'run'}->{'app'}->databases}) {
+		eval {
+			$db = DBI->connect_cached(@{$_});
+		};
+		last if $db;
+	
+		Apache::Voodoo::Exception::DBIConnect->throw($DBI::errstr);
+	}
+
+	return $db;
 }
 
 sub parse_params {
@@ -160,7 +173,7 @@ sub parse_params {
 	return $params;
 }
 
-sub finish {
+sub status {
 	my $self   = shift;
 	my $status = shift;
 
@@ -168,6 +181,13 @@ sub finish {
 		$debug->session($self->{'run'}->{'session'});
 		$debug->status($status);
 	}
+}
+
+sub finish {
+	my $self   = shift;
+	my $status = shift;
+
+	$self->status($status) if $status;
 
 	if (defined($self->{'run'}) && defined($self->{'run'}->{'session_handler'})) {
 		if ($self->{'run'}->{'p'}->{'uri'} =~ /\/?logout(_[^\/]+)?$/) {
@@ -189,8 +209,9 @@ sub finish {
 
 sub attach_session {
 	my $self = shift;
-	my $app  = shift;
-	my $conf = shift;
+
+	my $app  = $self->{'run'}->{'app'};
+	my $conf = $self->{'run'}->{'config'};
 
 	my $session_id = $self->{'mp'}->get_cookie($conf->{'cookie_name'});
 	my $session = $app->{'session_handler'}->attach($session_id,$self->{'run'}->{'dbh'});
@@ -212,9 +233,6 @@ sub attach_session {
 
 	# update the session timer
 	$session->touch();
-
-	$debug->session_id($session->{'id'});
-	$debug->mark(Time::HiRes::time,'Session Attachment');
 
 	return $session;
 }

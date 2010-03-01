@@ -47,6 +47,7 @@ sub new {
 	);
 
 	$self->{'engine'}->init_app();
+	$self->{'engine'}->begin_run();
 
 	return $self;
 }
@@ -55,8 +56,15 @@ sub make_request {
 	my $self   = shift;
 
 	$self->set_request();
-	$self->method(shift);
-	$self->uri(shift);
+
+	if ($_[0] =~ /^(GET|POST|PUT|DELETE)$/) {
+		$self->method(shift);
+		$self->uri(shift);
+	}
+	else {
+		$self->method('GET');
+		$self->uri(shift);
+	}
 
 	$self->parameters(@_);
 
@@ -76,22 +84,6 @@ sub make_request {
 	
 	unless (-e "$filename.tmpl") { return $self->declined;  }
 	unless (-r "$filename.tmpl") { return $self->forbidden; } 
-
-	########################################
-	# We now know we have a valid request that we need to handle,
-	# Get the engine ready to serve it.
-	########################################
-	eval {
-		$self->{'engine'}->init_app();
-		$self->{'engine'}->begin_run();
-	};
-	if (my $e = Apache::Voodoo::Exception::Application::SessionTimeout->caught()) {
-		return $self->redirect($e->target());
-	}
-	elsif ($e = Exception::Class->caught()) {
-		warn "$e";
-		return $self->server_error;
-	}
 
 	####################
 	# Get paramaters 
@@ -124,7 +116,7 @@ sub make_request {
 	};
 	if (my $e = Exception::Class->caught()) {
 		if ($e->isa("Apache::Voodoo::Exception::Application::Redirect")) {
-			$self->{'engine'}->finish($self->redirect);
+			$self->{'engine'}->status($self->redirect);
 			return $self->redirect($e->target());
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::RawData")) {
@@ -132,11 +124,11 @@ sub make_request {
 			$self->content_type($e->content_type);
 			$self->print($e->data);
 
-			$self->{'engine'}->finish($self->ok);
+			$self->{'engine'}->status($self->ok);
 			return $self->ok;
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::Unauthorized")) {
-			$self->{'engine'}->finish($self->unauthorized);
+			$self->{'engine'}->status($self->unauthorized);
 			return $self->unauthorized;
 		}
 		elsif (! $e->isa("Apache::Voodoo::Exception::Application")) {
@@ -146,7 +138,7 @@ sub make_request {
 			# Exception::Class::DBI
 			unless ($self->{'engine'}->is_devel_mode()) {
 				warn "$@";
-				$self->{'engine'}->finish($self->server_error);
+				$self->{'engine'}->status($self->server_error);
 				return $self->server_error;
 			}
 
@@ -164,14 +156,20 @@ sub make_request {
 	####################
 	# Clean up
 	####################
-	$self->{'engine'}->finish($self->ok);
+	$self->{'engine'}->status($self->ok);
 	$view->finish();
 
 	return $self->ok;
 }
 
+sub get_dbh {
+	my $self = shift;
+	return $self->{'engine'}->{'run'}->{'dbh'};
+}
+
 sub get_session {
-#FIXME implement
+	my $self = shift;
+	return $self->{'engine'}->{'run'}->{'session'};
 }
 
 sub get_model {
