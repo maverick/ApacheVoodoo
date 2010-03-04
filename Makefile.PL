@@ -82,7 +82,16 @@ if ($@) {
 
 	if ($answer =~ /^y/i) {
 		$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
-		$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
+
+		# check to see if we have my forked version of Pod::WSDL
+		eval {
+			require Pod::WSDL2;
+		};
+		if ($@) {
+			# nope, add a dependancy on the CPAN version
+			$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
+		}
+
 		print "Adding prequisites for SOAP...\n";
 	}
 }
