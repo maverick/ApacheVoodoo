@@ -32,7 +32,9 @@ my %optionals = (
 	'Apache2::Cookie'  => 2.08,
 
 	'SOAP::Lite'       => 0.710,
-	'Pod::WSDL'        => 0.05,
+
+	'Pod::WSDL2'       => 0.06,	# prefer my forked version,
+	'Pod::WSDL'        => 0.05,	# fallback to the main one if it's not installed
 	
 	'Log::Log4Perl'    => 1.24
 );
@@ -82,13 +84,22 @@ if ($@) {
 
 	if ($answer =~ /^y/i) {
 		$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
-		$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
 		print "Adding prequisites for SOAP...\n";
 	}
 }
 else {
 	$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
-	$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
+}
+
+if ($required_modules{'SOAP::Lite'}) {
+	eval { require Pod::WSDL2; };
+	if ($@) {
+		$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
+	}
+	else {
+		print "Pod::WSDL2 found\n";
+		$required_modules{'Pod::WSDL2'}  = $optionals{'Pod::WSDL2'};
+	}
 }
 
 eval { require Log::Log4perl; };
