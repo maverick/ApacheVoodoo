@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Test::More tests => 8;
+use Test::More tests => 6;
 
 BEGIN {
 	use_ok('File::Temp');

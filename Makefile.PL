@@ -102,6 +102,17 @@ if ($required_modules{'SOAP::Lite'}) {
 	}
 }
 
+if (defined($required_modules{'Pod::WSDL'})) {
+	# check to see if we have my version of Pod::WSDL installed
+	eval {
+		require Pod::WSDL2;
+	};
+	if (!$@) {
+		# they do, remove this dependancy
+		delete $required_modules{'Pod::WSDL'};
+	}
+}
+
 eval { require Log::Log4perl; };
 if ($@) {
 	print "\nApache::Voodoo can log debugging message with Log4perl.\n";
