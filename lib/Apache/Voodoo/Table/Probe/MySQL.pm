@@ -11,10 +11,10 @@ package Apache::Voodoo::Table::Probe::MySQL;
 
 $VERSION = "3.0002";
 
-use DBI;
-use Data::Dumper;
-
 use strict;
+use warnings;
+
+use DBI;
 
 our $DEBUG = 0;
 
@@ -23,7 +23,6 @@ sub new {
 	my $self = {};
 
 	$self->{'dbh'} = shift;
-	print Dumper $self->{dbh}->get_info(17);
 
 	bless $self, $class;
 	return $self;
@@ -47,18 +46,12 @@ sub probe_table {
 	my $data = {};
 	$data->{table} = $table;
 
-	my @fields;
-
-	my $table_info = $dbh->selectall_arrayref("explain $table") || return { 'ERRORS' => [ "explain of table $_ failed. $DBI::errstr" ] };
+	my $table_info = $dbh->selectall_arrayref("explain $table") || return { 'ERRORS' => [ "explain of table $table failed. $DBI::errstr" ] };
 
 	foreach (@{$table_info}) {
 		my $row = $_;
 		my $name = $row->[0];
 		my $column = {};
-
-		debug("================================================================================");
-		debug($row);
-		debug("================================================================================");
 
 		# is this param required for add / edit (does the column allow nulls)
 		$column->{'required'} = 1 unless $row->[2] eq "YES";
@@ -70,16 +63,11 @@ sub probe_table {
 			# is the primary key user supplied
 			unless ($row->[5] eq "auto_increment") {
 				$data->{'pkey_user_supplied'} = 1;
-				push(@fields,$name);
 			}
 		}
 		elsif ($row->[3] eq "UNI") {
 			# unique index.
 			$column->{'unique'} = 1;
-			push(@fields,$name);
-		}
-		else {
-			push(@fields,$name);
 		}
 
 		#
@@ -92,12 +80,9 @@ sub probe_table {
 		$type =~ s/_$//g;
 
 		eval {
-			debug("Examining data type: $type($size)...");
 			$self->$type($column,$size);
-			debug("OK");
 		};
 		if ($@) {
-			debug("UNKNOWN");
 			push(@{$data->{'ERRORS'}},"unsupported type $row->[1]");
 		}
 		#
@@ -105,7 +90,6 @@ sub probe_table {
 		#
 		if ($name =~ /^(\w+)_id$/) {
 			my $ref_table = $1;
-			debug("referenced table is: $ref_table");
 
 			my $ref_table_info = $dbh->selectall_arrayref("explain $ref_table");
 			if (ref($ref_table_info)) {
@@ -114,8 +98,6 @@ sub probe_table {
 				my $ref_data;
 				my $ref_fields;
 				{ 
-					local($DEBUG);
-					$DEBUG = 0;
 					($ref_data,$ref_fields) = $self->probe_table($ref_table);
 				}
 
@@ -128,11 +110,10 @@ sub probe_table {
 
 				$ref_info->{columns} = [ grep {$ref_data->{columns}->{$_}->{type} eq "varchar"} keys %{$ref_data->{columns}} ];
 
-				debug($ref_info);
 				$column->{references} = $ref_info;
 			}
 			else {
-				debug("No such table $ref_table: $DBI::errstr");
+				warn("No such table $ref_table: $DBI::errstr");
 			}
 		}
 
@@ -146,7 +127,7 @@ sub probe_table {
 		exit;
 	}
 
-	return $data,\@fields;
+	return $data;
 }
 
 sub tinyint_unsigned   { shift()->int_handler_unsigned(@_,1); }
@@ -159,8 +140,8 @@ sub bigint_unsigned    { shift()->int_handler_unsigned(@_,8); }
 sub int_handler_unsigned {
 	my ($self,$column,$size,$bytes) = @_;
 
-	$column->{'type'} = 'unsigned_int';
-	$column->{'max'}  = 2 ** ($bytes * 8) - 1;
+	$column->{'type'}  = 'unsigned_int';
+	$column->{'bytes'} = $bytes;
 }
 
 sub tinyint   { shift()->int_handler(@_,1); }
@@ -173,14 +154,13 @@ sub bigint    { shift()->int_handler(@_,8); }
 sub int_handler {
 	my ($self,$column,$size,$bytes) = @_;
 
-	$column->{'type'} = 'signed_int';
-	$column->{'max'}  = (2 ** ($bytes * 8))/2;
-	$column->{'min'}  = (0 - (2 ** ($bytes * 8))/2 - 1);
+	$column->{'type'}  = 'signed_int';
+	$column->{'bytes'} = $bytes;
 }
 
 sub text {
 	my ($self,$column,$size) = @_;
-	$self->varchar($column,-1);
+	$column->{'type'} = 'text';
 }
 
 sub char {
@@ -233,17 +213,6 @@ sub time {
 
 sub timestamp {
 	# timestamp is a 'magically' updated column that we don't touch
-}
-
-sub debug {
-	return unless $DEBUG;
-
-	if (ref($_[0])) {
-		print STDERR Dumper(@_);
-	}
-	else {
-		print STDERR @_,"\n";
-	}
 }
 
 1;
