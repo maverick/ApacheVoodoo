@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Test::More tests => 6;
+use Test::More tests => 9;
 
 BEGIN {
 	use_ok('File::Temp');
@@ -46,7 +46,7 @@ SKIP: {
 
 	my ($fh,$filename) = File::Temp::tmpnam();
 
-	my $dbh = DBI->connect("dbi:SQLite:dbname=$filename","","") || BAIL_OUT("Couldn't make a testing database: $DBI::errstr");
+	my $dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: $DBI::errstr");
 
 	{
 		local $/ = ';';
@@ -85,6 +85,13 @@ SKIP: {
 			a_unsigned_int     => {type => 'unsigned_int', bytes => 4},
 			a_varchar  => {type => 'varchar', length => 128},
 			a_text     => {type => 'text'}
+		},
+		'list_options' => {
+			'default_sort' => 'varchar',
+			'sort' => {
+				'varchar' => 'a_varchar',
+				'text' => 'a_text'
+			}
 		}
 	});
 
@@ -99,7 +106,7 @@ SKIP: {
           'a_signed_int' => '910',
           'a_unsigned_int' => '-1112',
           'a_fkey' => '1',
-          'a_datetime' => '2000-01-01 12:00',
+          'a_datetime' => '2000-02-01 12:00',
           'a_bit' => '0',
           'a_time' => ' 1:00 PM',
 		  'a_ref_table.name' => 'First Value',
@@ -110,10 +117,53 @@ SKIP: {
 
 	my $v;
 	eval {
-		$v = $table->view({dbh => $dbh,'params' => {'id' => 2}});
+		$v = $table->view({dbh => $dbh,'params' => {'id' => 100}});
 	};
 	$e = Exception::Class->caught();
 	isa_ok($e,"Apache::Voodoo::Exception::Application::DisplayError");
+
+	is_deeply(
+		$table->list({dbh => $dbh }),
+		{
+			'PATTERN' => '',
+			'SORT_PARAMS' => 'desc=1&amp;last_sort=varchar&amp;showall=0',
+			'DATA' => [
+				{
+					'a_text' => 'a much larger text string',
+					'a_signed_decimal' => '12.34',
+					'a_unsigned_decimal' => '-56.78',
+					'a_date' => '01/01/2009',
+					'a_varchar' => 'a text string',
+					'a_signed_int' => '910',
+					'a_unsigned_int' => '-1112',
+					'a_fkey' => '1',
+					'a_datetime' => '2000-02-01 12:00',
+					'a_bit' => '0',
+					'a_ref_table.name' => 'First Value',
+					'a_time' => ' 1:00 PM',
+					'id' => '1'
+				},
+				{
+					'a_text' => 'different much longer string',
+					'a_signed_decimal' => '567.89',
+					'a_unsigned_decimal' => '-12.34',
+					'a_date' => '01/01/2010',
+					'a_varchar' => 'another text string',
+					'a_signed_int' => '5150',
+					'a_unsigned_int' => '-3334',
+					'a_fkey' => '2',
+					'a_datetime' => '2010-02-01 14:00',
+					'a_bit' => '1',
+					'a_ref_table.name' => 'Second Value',
+					'a_time' => ' 5:00 PM',
+					'id' => '2'
+				}
+			],
+			'NUM_MATCHES' => '2',
+			'LIMIT' => []
+		},
+		'list results'
+	) || diag Dumper $table->list({dbh => $dbh});
 
 	$dbh->disconnect();
 	unlink($filename);
@@ -144,4 +194,5 @@ CREATE TABLE a_ref_table (
 INSERT INTO a_ref_table (name) VALUES ('First Value');
 INSERT INTO a_ref_table (name) VALUES ('Second Value');
 
-INSERT INTO a_table VALUES(1,1,0,'2009-01-01','13:00','2000-01-01 12:00',12.34,-56.78,910,-1112,'a text string', 'a much larger text string');
+INSERT INTO a_table VALUES(1,1,0,'2009-01-01','13:00','2000-02-01 12:00',12.34, -56.78,910, -1112,'a text string',       'a much larger text string');
+INSERT INTO a_table VALUES(2,2,1,'2010-01-01','17:00','2010-02-01 14:00',567.89,-12.34,5150,-3334,'another text string', 'different much longer string');

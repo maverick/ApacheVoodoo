@@ -24,8 +24,15 @@ sub new {
 
 	bless $self, $class;
 
-
 	$self->set_configuration(shift);
+
+	$self->{'list_param_parser'} = sub {
+		my $self   = shift;
+		my $dbh    = shift;
+		my $params = shift;
+
+		return ();
+	};
 
 	return $self;
 }
@@ -164,6 +171,14 @@ sub set_configuration {
 	}
 }
 
+sub table {
+	my $self = shift;
+	if ($_[0]) {
+		$self->{'table'} = $_[0];
+	}
+	return $self->{'table'};
+}
+
 sub success {
 	my $self = shift;
 
@@ -191,6 +206,13 @@ sub add_update_callback {
 	my $sub_ref = shift;
 
 	push(@{$self->{'update_callbacks'}},$sub_ref);
+}
+
+sub list_param_parser {
+	my $self    = shift;
+	my $sub_ref = shift;
+
+	$self->{'list_param_parser'} = $sub_ref;
 }
 
 sub add {
@@ -235,7 +257,7 @@ sub add {
 					WHERE 
 						$self->{'pkey'} = ?",
 					undef,
-					$params->{$self->{'pkey'}} ) || $self->db_error();
+					$params->{$self->{'pkey'}} );
 
 				if ($res->[0]->[0] == 1) {
 					$errors->{'DUP_'.$self->{'pkey'}} = 1;
@@ -256,7 +278,7 @@ sub add {
 				WHERE 
 					$_ = ?",
 				undef,
-				$values->{$_}) || $self->db_error();
+				$values->{$_});
 			if ($res->[0]->[0] == 1) {
 				$errors->{"DUP_$_"} = 1;
 			}
@@ -291,10 +313,7 @@ sub add {
 
 			my $insert_statement = "INSERT INTO $self->{'table'} ($c) VALUES ($q)";
 
-			$dbh->do($insert_statement,
-			          undef,
-					 @v
-			         ) || $self->db_error();
+			$dbh->do($insert_statement, undef, @v);
 
 			$self->{'success'} = 1;
 			return 1;
@@ -310,7 +329,7 @@ sub add {
 		                $_->{'table'}
 		                $_->{'sextra'}";
 
-		my $res = $dbh->selectall_arrayref($query) || $self->db_error();
+		my $res = $dbh->selectall_arrayref($query);
 
 		$errors->{$_->{'fkey'}} = $self->prep_select($res,$errors->{$_->{'fkey'}} || $_->{'sdefault'});
 	}
@@ -352,7 +371,7 @@ sub edit {
 			$self->{'pkey'} = ? 
 			$additional_constraint",
 		undef,
-		$params->{$self->{'pkey'}}) || $self->db_error();
+		$params->{$self->{'pkey'}});
 
 	unless (defined($res->[0])) {
 		return $self->display_error("No record with that ID found");
@@ -393,7 +412,7 @@ sub edit {
 					$self->{'pkey'} != ?",
 				undef,
 				$values->{$_},
-				$params->{$self->{'pkey'}}) || $self->db_error();
+				$params->{$self->{'pkey'}});
 			if ($res->[0]->[0] == 1) {
 				$errors->{"DUP_$_"} = 1;
 			}
@@ -435,7 +454,7 @@ sub edit {
 			$dbh->do($update_statement,
 			          undef,
 			          (map { $values->{$_} } @{$self->{'columns'}}),
-			          $params->{$self->{'pkey'}}) || $self->db_error();
+			          $params->{$self->{'pkey'}});
 
 			$self->{'success'} = 1;
 			return 1;
@@ -468,7 +487,7 @@ sub edit {
 						$_->{'table'}
 						$_->{'sextra'}";
 
-		my $res = $dbh->selectall_arrayref($query) || $self->db_error();
+		my $res = $dbh->selectall_arrayref($query);
 
 		$errors->{$_->{'fkey'}} = $self->prep_select($res,$errors->{$_->{'fkey'}} || $_->{'sdefault'});
 	}
@@ -510,7 +529,7 @@ sub delete {
 			$self->{'pkey'} = ?
 		$additional_constraint",
 		undef,
-		$params->{$self->{'pkey'}}) || $self->db_error();
+		$params->{$self->{'pkey'}});
 
 	unless ($res->[0]->[0] == 1) {
 		return $self->display_error("No Record found with that ID");
@@ -525,7 +544,7 @@ sub delete {
 				$self->{'pkey'} = ?
 			$additional_constraint",
 			undef,
-			$params->{$self->{'pkey'}}) || $self->db_error();
+			$params->{$self->{'pkey'}});
 
 		$self->{'success'} = 2;
 
@@ -554,6 +573,15 @@ sub list {
 	my $dbh    = $p->{'dbh'};
 	my $params = $p->{'params'};
 
+	$params->{'sort'}      ||= '';
+	$params->{'last_sort'} ||= '';
+	$params->{'count'}     ||= '';
+	$params->{'page'}      ||= '';
+	$params->{'desc'}      ||= '';
+	$params->{'showall'}   ||= '';
+	$params->{'pattern'}   ||= '';
+	$params->{'limit'}     ||= '';
+
 	$params->{'sort'}      =~ s/[^\w-]//g;
 	$params->{'last_sort'} =~ s/[^\w-]//g;
 
@@ -573,28 +601,30 @@ sub list {
 	my $page    = $params->{'page'}    || 1;
 	my $showall = $params->{'showall'} || 0;
 
-	# figure out tables to join against
-	my @list;
+	my @search_params = $self->{'list_param_parser'}->($self,$dbh,$params);
+
+	# create the initial list of columns
+	my @columns;
 	foreach ($self->{'pkey'}, @{$self->{'columns'}}) {
 		if ($_ =~ /\./) {
-			push(@list,$_);
+			push(@columns,$_);
 		}
 		else {
-			push(@list,"$self->{'table'}.$_");
+			push(@columns,"$self->{'table'}.$_");
 		}
 	}
 
 	if (ref($additional_constraint)) {
 		if (defined($additional_constraint->{'additional_column'})) {
-			push(@list, $additional_constraint->{'additional_column'});
+			push(@columns, $additional_constraint->{'additional_column'});
 		}
 	}
 
 	# figure out tables to join against
 	my @joins;
-	if ($self->{references}) {
-		foreach my $join ( sort { ($a->{fkey} =~ /\./) <=> ($b->{fkey} =~ /\./) } @{$self->{'references'}}) {
-			if ($join->{fkey} =~ /\./) {
+	if ($self->{'references'}) {
+		foreach my $join ( sort { ($a->{'fkey'} =~ /\./) <=> ($b->{'fkey'} =~ /\./) } @{$self->{'references'}}) {
+			if ($join->{'fkey'} =~ /\./) {
 				push(@joins,"LEFT JOIN $join->{'table'} ON $join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
 			}
 			else {
@@ -602,72 +632,107 @@ sub list {
 			}
 
 			foreach (@{$join->{'columns'}}) {
-				push(@list,"$join->{'table'}.$_");
+				push(@columns,"$join->{'table'}.$_");
 			}
 		}
 	}
 
-	if ($self->{joins}) {
-		foreach my $join (@{$self->{joins}}) {
+	if ($self->{'joins'}) {
+		foreach my $join (@{$self->{'joins'}}) {
 			my $fkey;
-			if ($join->{fkey} =~ /\./) {
-				$fkey = $join->{fkey};
+			if ($join->{'fkey'} =~ /\./) {
+				$fkey = $join->{'fkey'};
 			}
 			else {
-				$fkey = $self->{table}.'.'.$join->{fkey};
+				$fkey = $self->{'table'}.'.'.$join->{'fkey'};
 			}
 
 			push(@joins,"LEFT JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
 
-			foreach (@{$join->{columns}}) {
+			foreach (@{$join->{'columns'}}) {
 				if ($_ =~ /\./) {
-					push(@list,$_);
+					push(@columns,$_);
 				}
 				else {
-					push(@list,$join->{'table'}.".$_");
+					push(@columns,$join->{'table'}.".$_");
 				}
 			}
 		}
 	}
 
+	if (defined($self->{'list_search'}->{$limit}) && $self->safe_text($pattern)) {
+		push(@search_params,[$limit,'LIKE',$pattern]);
+	}
+
+	if ($additional_constraint) {
+		if (ref($additional_constraint) eq "HASH" and
+		    defined($additional_constraint->{'additional_constraint'})) {
+
+			# make sure our additional constraint won't break the sql
+			my $ac = $additional_constraint;
+			$ac =~ s/^\s*(where|and|or)\s+//go;
+			push(@search_params,$ac);
+		}
+		elsif (!ref($additional_constraint)) {
+			$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+			push(@search_params,$additional_constraint);
+		}
+	}
+
+	# Make sure the search params are sane
+	my @where;
+	my @values;
+	foreach my $clause (@search_params) {
+		my $r = ref($clause);
+		if ($r eq "ARRAY") {
+			unless ($clause->[0] =~ /\./) {
+				$clause->[0] = $self->{'table'}.'.'.$clause->[0];
+			}
+
+			next unless grep { $clause->[0] } @columns;
+
+			if (scalar(@{$clause}) eq 1) {
+				push(@where,"$r->[0] = 1");
+			}
+			elsif (scalar(@{$clause}) == 3) {
+				if ($clause->[1] eq 'is' && $clause->[2] =~ /^(not )?\s*null$/i) {
+					push(@where,join(" ",@{$clause}));
+				}
+				elsif ($clause->[1] =~ /^(=|!=|>|<|>=|<=)/) {
+					push(@where,"$clause->[0] $clause->[1] ?");
+					push(@values,$clause->[2]);
+				}
+				elsif ($clause->[1] =~ /^(not )?\s*like/i) {
+					push(@where,"$clause->[0] $clause->[1] '?%'");
+					push(@values,$clause->[2]);
+				}
+			}
+		}
+		elsif (!$r) {
+			push(@where,$clause);
+		}
+		else {
+			return $self->exception("each entry in the search params list must either be a scalar or a 3 element array");
+		}
+	}
+
+	my $where = ' ';
+
+	if (scalar(@where)) {
+		$where = "\nWHERE\n".join(" AND\n",@where)."\n";
+	}
+
+	# From the DBI docs. This will give us the database server name.
+	my $is_mysql = ($dbh->get_info(17) eq "MySQL")?1:0;
+
 	my $select_stmt = "
-		SELECT SQL_CALC_FOUND_ROWS " .
-			join(",\n",@list). "
+		SELECT". (($is_mysql)?" SQL_CALC_FOUND_ROWS ": " ").
+			join(",\n",@columns). "
 		FROM 
 			$self->{'table'} ".
-		join("\n",@joins);
+		join("\n",@joins).
+		$where;
 
-	# make sure our additional constraint won't break the sql
-	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
-	if (defined($self->{'list_search'}->{$limit}) && $self->safe_text($pattern)) {
-		# we need to narrow the set
-		# 7-18-2001 added lower to make case insensitive for Postgres
-		$select_stmt .= " WHERE $limit LIKE LOWER(\"$pattern%\") ";
-
-		# FIXME!!!
-		if (ref($additional_constraint)) {
-			if(defined($additional_constraint->{'additional_constraint'})) {
-				$select_stmt .= "AND ".$additional_constraint->{'additional_constraint'};
-			}
-		} elsif (length($additional_constraint)) {
-			$select_stmt .= "AND $additional_constraint";
-		}
-	} elsif(ref($additional_constraint)) {
-		if(defined($additional_constraint->{'additional_constraint'})) {
-			$select_stmt .= " WHERE ".$additional_constraint->{'additional_constraint'};
-		}
-
-		# these aren't valid, fry em
-		$pattern = undef;
-		$limit   = undef;
-
-	} elsif (length($additional_constraint)) {
-		$select_stmt .= " WHERE $additional_constraint";
-
-		# these aren't valid, fry em
-		$pattern = undef;
-		$limit   = undef;
-	}
 
 	my $n_desc = $desc;
 	if (defined($self->{'list_sort'}->{$sort}) && defined($self->{'list_sort'}->{$last_sort})) {
@@ -675,7 +740,7 @@ sub list {
 
 		# if we're sorting on the same key as before, then we have the chance to go descending
 		if ($sort eq $last_sort) { 
-			if ($desc == 1) {
+			if ($desc eq '1') {
 				$q =~ s/,/ DESC, /g;
 				$q .= " DESC";
 				$n_desc = 0; # say that we are ascending the next time.
@@ -699,7 +764,15 @@ sub list {
 
 	$select_stmt .= " LIMIT $count OFFSET ". $count * ($page -1) unless $showall;
 
-	my $page_set = $dbh->selectall_arrayref($select_stmt) || $self->db_error();
+	my $page_set = $dbh->selectall_arrayref($select_stmt,undef,@values);
+
+	my $res_count;
+	if ($is_mysql) {
+		$res_count = $dbh->selectall_arrayref("SELECT FOUND_ROWS()")->[0]->[0];
+	}
+	else {
+		$res_count = $dbh->selectall_arrayref("SELECT count(*) FROM $self->{table} ".join("\n",@joins).$where)->[0]->[0];
+	}
 
 	my %return;
 
@@ -716,8 +789,6 @@ sub list {
 	$return{'LIMIT'}   = $self->prep_select($self->{'list_search_items'},$limit);
 	$return{'PATTERN'} = $pattern;
 
-	my $rc = $dbh->selectall_arrayref("SELECT FOUND_ROWS()");
-	my $res_count = $rc->[0]->[0];
 
 	$return{'NUM_MATCHES'} = $res_count;
 
@@ -726,18 +797,18 @@ sub list {
 	################################################################################
 	my %dates;
 	foreach (@{$self->{'dates'}}) {
-		$dates{$_->{'name'}} = 1;
+		$dates{$_} = 1;
 	}
 
 	my %times;
 	foreach (@{$self->{'times'}}) {
-		$times{$_->{'name'}} = 1;
+		$times{$_} = 1;
 	}
 
 	foreach (@{$page_set}) {
 		my %v;
-		for (my $i=0; $i <= @list; $i++) {
-			my $key = $list[$i];
+		for (my $i=0; $i < @columns; $i++) {
+			my $key = $columns[$i];
 
 			$key =~ s/$self->{'table'}\.//; # take of the table name in front
 			# we either end up with the column name from the primay table,
@@ -828,7 +899,7 @@ sub view {
 			$self->{'table'}.$self->{'pkey'} = ?
 			$additional_constraint";
 
-	my $res = $dbh->selectall_arrayref($select_statement,undef,$params->{$self->{'pkey'}}) || $self->db_error();
+	my $res = $dbh->selectall_arrayref($select_statement,undef,$params->{$self->{'pkey'}});
 
 	my %v;
 	if (defined($res) && defined($res->[0])) {
@@ -887,7 +958,7 @@ sub toggle {
 		WHERE 
 			$self->{'pkey'} = ?",
 		undef,
-		$params->{$self->{'pkey'}}) || $self->db_error();
+		$params->{$self->{'pkey'}});
 
 	$self->{'success'} = 1;
 	return 1;

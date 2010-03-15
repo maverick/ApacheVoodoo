@@ -11,18 +11,23 @@ BEGIN {
 	use_ok('Apache::Voodoo::Exception');
 }
 
-my $dbh = DBI->connect("dbi:mysql:test:localhost",'root','') || die DBI->errstr;
+my $dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1}) || die DBI->errstr;
 
 my $probe = Apache::Voodoo::Table::Probe->new($dbh);
 
-my $no_such = $probe->probe_table('no_such_table_as_this_in_the_db');
-ok($no_such->{ERRORS}->[0] =~ /^explain of table /, "no such table") || diag($no_such);
+my $no_such;
+eval {
+	$no_such = $probe->probe_table('no_such_table_as_this_in_the_db');
+};
+ok($@ =~ /doesn't exist/, "no such table");
 
 my $p = $probe->probe_table('av_test_types');
+my $table;
 eval {
-	my $table = Apache::Voodoo::Table->new($p);
+	$table = Apache::Voodoo::Table->new($p);
 };
 my $e = Exception::Class->caught();
 ok(!$e,"probe produces output that table accepts") || diag($e);
 
+print STDERR Dumper $table->list({dbh=>$dbh});
 
