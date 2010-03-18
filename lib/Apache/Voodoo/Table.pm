@@ -31,7 +31,34 @@ sub new {
 		my $dbh    = shift;
 		my $params = shift;
 
-		return ();
+		my @fields = @{$self->{'columns'}};
+		if ($self->{'references'}) {
+			foreach my $join (@{$self->{'references'}}) {
+				foreach (@{$join->{'columns'}}) {
+					push(@fields,"$join->{'table'}.$_");
+				}
+			}
+		}
+
+		my @search;
+		foreach my $field (@fields) {
+			my $s = 'search_'   .$field;
+			my $o = 'search_op_'.$field;
+
+			next unless defined($params->{$s});
+
+			if (defined($params->{$o})) {
+				push(@search,[$field,$params->{$o},$params->{$s}]);
+			}
+			elsif ($params->{$s} =~ /^\d+$/) {
+				push(@search,[$field,'=',$params->{$s}]);
+			}
+			else {
+				push(@search,[$field,'like',$params->{$s}]);
+			}
+		}
+
+		return @search;
 	};
 
 	return $self;
@@ -573,6 +600,7 @@ sub list {
 	my $dbh    = $p->{'dbh'};
 	my $params = $p->{'params'};
 
+	# hello warning supression
 	$params->{'sort'}      ||= '';
 	$params->{'last_sort'} ||= '';
 	$params->{'count'}     ||= '';
@@ -703,7 +731,7 @@ sub list {
 					push(@values,$clause->[2]);
 				}
 				elsif ($clause->[1] =~ /^(not )?\s*like/i) {
-					push(@where,"$clause->[0] $clause->[1] '?%'");
+					push(@where,"$clause->[0] $clause->[1] concat(?,'%')");
 					push(@values,$clause->[2]);
 				}
 			}

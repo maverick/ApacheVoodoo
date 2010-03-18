@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Test::More tests => 12;
+use Test::More tests => 16;
 
 BEGIN {
 	# fall back to eq_or_diff if we don't have Test::Differences
@@ -15,6 +15,10 @@ use_ok('File::Temp');
 use_ok('DBI');
 use_ok('Apache::Voodoo::Exception');
 use_ok('Apache::Voodoo::Table');
+use_ok('Apache::Voodoo::Table::Probe');
+
+# number of tests to skip if a driver for the db can't be found.
+my $nd_skip = 4;
 
 ################################################################################
 # Tests related to checking the config syntax
@@ -75,23 +79,13 @@ isa_ok($e,"Apache::Voodoo::Exception::RunTime::BadConfig");
 my $dbh;
 
 SKIP: {
-	eval { require DBD::SQLite; };
-	skip "DBD::SQLite not found, skipping these tests",3 if $@;
-
-	my ($fh,$filename) = File::Temp::tmpnam();
-	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: $DBI::errstr");
-
-	do_tests('SQLite',$dbh);
-	$dbh->disconnect;
-	unlink($filename);
-}
-
-SKIP: {
 	eval { require DBD::mysql; };
-	skip "DBD::mysql not found, skipping these tests",3 if $@;
+	skip "DBD::mysql not found, skipping these tests",$nd_skip if $@;
 	$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1}) || BAIL_OUT("Couldn't connect to test db: $DBI::errstr");
 
-	do_tests('MySQL',$dbh);
+	setup_db(   'MySQL',$dbh);
+	table_tests('MySQL',$dbh);
+	probe_tests('MySQL',$dbh);
 	my $res = $dbh->selectall_arrayref("SHOW TABLES LIKE 'avt_%'");
 	foreach (@{$res}) {
 		$dbh->do("DROP TABLE $_->[0]");
@@ -99,7 +93,20 @@ SKIP: {
 	$dbh->disconnect;
 }
 
-sub do_tests {
+SKIP: {
+	eval { require DBD::SQLite; };
+	skip "DBD::SQLite not found, skipping these tests",$nd_skip if $@;
+
+	my ($fh,$filename) = File::Temp::tmpnam();
+	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: $DBI::errstr");
+
+	setup_db(   'SQLite',$dbh);
+	table_tests('SQLite',$dbh);
+	$dbh->disconnect;
+	unlink($filename);
+}
+
+sub setup_db {
 	my $type = shift;
 	my $dbh  = shift;
 
@@ -115,6 +122,12 @@ sub do_tests {
 		}
 	}
 	close(F);
+}
+
+sub table_tests {
+	my $type = shift;
+	my $dbh  = shift;
+
 
 	my $table = Apache::Voodoo::Table->new($avt_table_config);
 	eq_or_diff(
@@ -181,4 +194,48 @@ sub do_tests {
 		},
 		"($type) list results"
 	);
-};
+
+	eq_or_diff(
+		$table->list({ dbh => $dbh, params => { 'search_a_varchar' => 'a text' }}),
+		{
+			'PATTERN' => '',
+			'SORT_PARAMS' => 'desc=1&amp;last_sort=varchar&amp;showall=0',
+			'DATA' => [
+				{
+					'a_text' => 'a much larger text string',
+					'a_date' => '01/01/2009',
+					'a_varchar' => 'a text string',
+					'avt_ref_table.name' => 'First Value',
+					'a_datetime' => '2000-02-01 12:00:00',
+					'avt_ref_table_id' => '1',
+					'id' => '1',
+					'a_time' => ' 1:00 PM'
+				}
+			],
+			'NUM_MATCHES' => '1',
+			'LIMIT' => []
+		},
+		"($type) list search results"
+	);
+
+}
+
+sub probe_tests {
+	my $type = shift;
+	my $dbh  = shift;
+
+	my $probe = Apache::Voodoo::Table::Probe->new($dbh);
+	my $no_such;
+	eval {
+		$no_such = $probe->probe_table('no_such_table_as_this_in_the_db');
+	};
+	ok($@ =~ /doesn't exist/, "($type) no such table");
+
+	my $config = $probe->probe_table('avt_all_types');
+	my $table;
+	eval {
+		$table = Apache::Voodoo::Table->new($config);
+	};
+	my $e = Exception::Class->caught();
+	ok(!$e,"($type) probe produces output that table accepts") || diag($e);
+}
