@@ -32,7 +32,7 @@ sub has_expired {
 	my $self    = shift;
 	my $timeout = shift;
 
-	if ($timeout > 0 && $self->{session}->{timestamp} < (time - ($timeout*60))) {
+	if ($timeout > 0 && $self->{session}->{_session_timestamp} < (time - ($timeout*60))) {
 		return 1;
 	}
 	else {
@@ -43,7 +43,7 @@ sub has_expired {
 sub touch {
 	my $self = shift;
 
-	$self->{session}->{timestamp} = time;
+	$self->{session}->{_session_timestamp} = time;
 }
 
 sub disconnect {

@@ -83,12 +83,24 @@ if ($@) {
 	if ($answer =~ /^y/i) {
 		$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
 		$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
+
 		print "Adding prequisites for SOAP...\n";
 	}
 }
 else {
 	$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
 	$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
+}
+
+if (defined($required_modules{'Pod::WSDL'})) {
+	# check to see if we have my version of Pod::WSDL installed
+	eval {
+		require Pod::WSDL2;
+	};
+	if (!$@) {
+		# they do, remove this dependancy
+		delete $required_modules{'Pod::WSDL'};
+	}
 }
 
 eval { require Log::Log4perl; };
