@@ -7,7 +7,7 @@ use Test::More tests => 16;
 BEGIN {
 	# fall back to eq_or_diff if we don't have Test::Differences
 	if (!eval q{ use Test::Differences; 1 }) {
-		*eq_or_diff = \&eq_or_diff;
+		*eq_or_diff = \&is_deeply;
 	}
 }
 
