@@ -121,7 +121,6 @@ sub probe_table {
 	}
 
 	if (defined($data->{'ERRORS'})) {
-		print STDERR "URK!\n";
 		print STDERR join("\n",@{$data->{'ERRORS'}});
 		print "\n";
 		exit;
@@ -200,15 +199,19 @@ sub decimal {
 sub date {
 	my ($self,$column,$size) = @_;
 
-	$column->{'type'}   = 'date';
-	$column->{'length'} = '10';
+	$column->{'type'} = 'date';
 }
 
 sub time {
 	my ($self,$column,$size) = @_;
 
-	$column->{'type'}   = 'time';
-	$column->{'length'} = '10';
+	$column->{'type'} = 'time';
+}
+
+sub datetime {
+	my ($self,$column,$size) = @_;
+
+	$column->{'type'} = 'datetime';
 }
 
 sub timestamp {
