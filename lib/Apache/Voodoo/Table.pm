@@ -106,8 +106,7 @@ sub set_configuration {
 			Apache::Voodoo::Exception::RunTime->throw($@);
 	}
 
-	$self->{'column_names'};
-
+	$self->{'column_names'} = {};
 	while (my ($name,$conf) = each %{$conf->{'columns'}}) {
 		if (defined($conf->{'multiple'})) {
 			push(@errors,"Column $name allows multiple values but Apache::Voodoo::Table can't handle that currently.");
@@ -168,6 +167,10 @@ sub set_configuration {
 		$self->{'list_search'}->{$_->[1]} = 1;
 	}
 
+	$self->{'joins'}      = [];
+	$self->{'list_joins'} = [];
+	$self->{'view_joins'} = [];
+
 	if (ref($conf->{'joins'}) eq "ARRAY") {
 		foreach my $j (@{$conf->{'joins'}}) {
 			$j->{columns} ||= [];
@@ -176,9 +179,13 @@ sub set_configuration {
 				$self->{column_names}->{$self->{table}.'.'.$_} = 1;
 			}
 
-			push(@{$self->{'joins'}},
+			my $context = lc($j->{'context'}) || '';
+			$context = ($context =~ /^(list|view)$/i)?$context."_":'';
+
+			push(@{$self->{$context.'joins'}},
 				{
 					table   => $j->{table},
+					type    => $j->{type} || 'LEFT',
 					pkey    => $j->{primary_key},
 					fkey    => $j->{foreign_key},
 					columns => $j->{columns}
@@ -235,6 +242,15 @@ sub edit_details {
 	return $self->{'edit_details'} || [];
 }
 
+sub add_details {
+	my $self = shift;
+
+	# if there wasn't a successful add, then there's no details :)
+	return unless $self->{'success'};
+
+	return $self->{'add_details'} || [];
+}
+
 sub add_insert_callback {
 	my $self    = shift;
 	my $sub_ref = shift;
@@ -266,6 +282,7 @@ sub add {
 	my $errors = {};
 
 	$self->{'success'} = 0;
+	$self->{'add_details'} = [];
 
 	if ($params->{'cm'} eq "add") {
 		# we're going to attempt the addition
@@ -343,6 +360,12 @@ sub add {
 			my $q = join(",",map {"?"} @{$self->{'columns'}});		# the ? mark placeholders
 
 			my @v = map { $values->{$_} } @{$self->{'columns'}};	# and the values
+			
+			# store the values as they went into the db here incase the caller wants to
+			# use them for something.
+			foreach (@{$self->{'columns'}}) {
+				push(@{$self->{'add_details'}},[$_,'',$values->{$_}]);
+			}
 
 			if ($self->{'pkey_user_supplied'}) {
 				$c .= ",".$self->{'pkey'};
@@ -679,25 +702,23 @@ sub list {
 		}
 	}
 
-	if ($self->{'joins'}) {
-		foreach my $join (@{$self->{'joins'}}) {
-			my $fkey;
-			if ($join->{'fkey'} =~ /\./) {
-				$fkey = $join->{'fkey'};
+	foreach my $join (@{$self->{'joins'}},@{$self->{'list_joins'}}) {
+		my $fkey;
+		if ($join->{'fkey'} =~ /\./) {
+			$fkey = $join->{'fkey'};
+		}
+		else {
+			$fkey = $self->{'table'}.'.'.$join->{'fkey'};
+		}
+
+		push(@joins,"$join->{type} JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
+
+		foreach (@{$join->{'columns'}}) {
+			if ($_ =~ /\./) {
+				push(@columns,$_);
 			}
 			else {
-				$fkey = $self->{'table'}.'.'.$join->{'fkey'};
-			}
-
-			push(@joins,"LEFT JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
-
-			foreach (@{$join->{'columns'}}) {
-				if ($_ =~ /\./) {
-					push(@columns,$_);
-				}
-				else {
-					push(@columns,$join->{'table'}.".$_");
-				}
+				push(@columns,$join->{'table'}.".$_");
 			}
 		}
 	}
@@ -914,25 +935,23 @@ sub view {
 		}
 	}
 
-	if ($self->{joins}) {
-		foreach my $join (@{$self->{joins}}) {
-			my $fkey;
-			if ($join->{fkey} =~ /\./) {
-				$fkey = $join->{fkey};
+	foreach my $join (@{$self->{joins}},@{$self->{view_joins}}) {
+		my $fkey;
+		if ($join->{fkey} =~ /\./) {
+			$fkey = $join->{fkey};
+		}
+		else {
+			$fkey = $self->{table}.'.'.$join->{fkey};
+		}
+
+		push(@joins,"$join->{type} JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
+
+		foreach (@{$join->{columns}}) {
+			if ($_ =~ /\./) {
+				push(@list,$_);
 			}
 			else {
-				$fkey = $self->{table}.'.'.$join->{fkey};
-			}
-
-			push(@joins,"LEFT JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
-
-			foreach (@{$join->{columns}}) {
-				if ($_ =~ /\./) {
-					push(@list,$_);
-				}
-				else {
-					push(@list,$join->{'table'}.".$_");
-				}
+				push(@list,$join->{'table'}.".$_");
 			}
 		}
 	}
