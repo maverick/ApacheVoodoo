@@ -67,6 +67,7 @@ lib/Apache/Voodoo/Soap.pm
 lib/Apache/Voodoo/Table.pm
 lib/Apache/Voodoo/Table/Probe.pm
 lib/Apache/Voodoo/Table/Probe/MySQL.pm
+lib/Apache/Voodoo/Test.pm
 lib/Apache/Voodoo/Validate.pm
 lib/Apache/Voodoo/Validate/bit.pm
 lib/Apache/Voodoo/Validate/date.pm
@@ -96,3 +97,4 @@ t/00-distribution.t
 t/01-check_compilation.t
 t/02-validation.t
 t/03-table.t
+t/test_data/test_db.sql
