@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Test::More tests => 16;
+use Test::More tests => 17;
 
 BEGIN {
 	# fall back to eq_or_diff if we don't have Test::Differences

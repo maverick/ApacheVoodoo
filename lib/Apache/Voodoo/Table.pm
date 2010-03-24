@@ -106,6 +106,8 @@ sub set_configuration {
 			Apache::Voodoo::Exception::RunTime->throw($@);
 	}
 
+	$self->{'column_names'};
+
 	while (my ($name,$conf) = each %{$conf->{'columns'}}) {
 		if (defined($conf->{'multiple'})) {
 			push(@errors,"Column $name allows multiple values but Apache::Voodoo::Table can't handle that currently.");
@@ -118,6 +120,7 @@ sub set_configuration {
 		# keep a local list of column names for query construction.
 		if (defined($self->{'pkey'}) && $name ne $self->{'pkey'}) {
 			push(@{$self->{'columns'}},$name);
+			$self->{'column_names'}->{$self->{'table'}.'.'.$name} = 1;
 		}
 
 		if ($conf->{'type'} eq "date") { push(@{$self->{dates}},$name); }
@@ -166,32 +169,43 @@ sub set_configuration {
 	}
 
 	if (ref($conf->{'joins'}) eq "ARRAY") {
-		foreach (@{$conf->{'joins'}}) {
+		foreach my $j (@{$conf->{'joins'}}) {
+			$j->{columns} ||= [];
+			
+			foreach (@{$j->{columns}}) {
+				$self->{column_names}->{$self->{table}.'.'.$_} = 1;
+			}
+
 			push(@{$self->{'joins'}},
 				{
-					table   => $_->{table},
-					pkey    => $_->{primary_key},
-					fkey    => $_->{foreign_key},
-					columns => $_->{columns} || []
+					table   => $j->{table},
+					pkey    => $j->{primary_key},
+					fkey    => $j->{foreign_key},
+					columns => $j->{columns}
 				}
 			);
 		}
 	}
 
-	$self->{'pager'} = Apache::Voodoo::Pager->new();
-	# setup the pagination options
-	$self->{'pager'}->set_configuration(
-		'count'   => 40,
-		'window'  => 10,
-		'persist' => [ 
-			'pattern',
-			'limit',
-			'sort',
-			'last_sort',
-			'desc',
-			@{$conf->{'list_options'}->{'persist'} || []}
-		]
-	);
+	if ($conf->{'pager'}) {
+		$self->{'pager'} = $conf->{'pager'};
+	}
+	else {
+		$self->{'pager'} = Apache::Voodoo::Pager->new();
+		# setup the pagination options
+		$self->{'pager'}->set_configuration(
+			'count'   => 40,
+			'window'  => 10,
+			'persist' => [ 
+				'pattern',
+				'limit',
+				'sort',
+				'last_sort',
+				'desc',
+				@{$conf->{'list_options'}->{'persist'} || []}
+			]
+		);
+	}
 
 	if (@errors) {
 		Apache::Voodoo::Exception::RunTime::BadConfig->throw("Configuration Errors:\n\t".join("\n\t",@errors));
@@ -731,7 +745,12 @@ sub list {
 					push(@values,$clause->[2]);
 				}
 				elsif ($clause->[1] =~ /^(not )?\s*like/i) {
-					push(@where,"$clause->[0] $clause->[1] concat(?,'%')");
+					if ($dbh->get_info(17) eq "SQLite") {
+						push(@where,"$clause->[0] $clause->[1] ? || '%'");
+					}
+					else {
+						push(@where,"$clause->[0] $clause->[1] concat(?,'%')");
+					}
 					push(@values,$clause->[2]);
 				}
 			}
@@ -799,7 +818,8 @@ sub list {
 		$res_count = $dbh->selectall_arrayref("SELECT FOUND_ROWS()")->[0]->[0];
 	}
 	else {
-		$res_count = $dbh->selectall_arrayref("SELECT count(*) FROM $self->{table} ".join("\n",@joins).$where)->[0]->[0];
+		my $count_stmt = "SELECT count(*) FROM $self->{table} ".join("\n",@joins).$where;
+		$res_count = $dbh->selectall_arrayref($count_stmt,undef,@values)->[0]->[0];
 	}
 
 	my %return;
