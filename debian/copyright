@@ -1,0 +1,34 @@
+This package was debianized by Maverick Edwards <maverick@smurfbane.org> on
+Tue, 23 Mar 2010 15:43:04 -0500.
+
+It was downloaded from <url://example.com>
+
+Upstream Author(s):
+
+    Maverick Edwards <maverick@smurfbane.org>
+
+Copyright:
+
+    Copyright (C) 2010 Maverick Edwards <maverick@smurfbane.org>
+
+License:
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the "Artistic License" which comes with Debian.
+
+    THIS PACKAGE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+    WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES
+    OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+On Debian systems, the complete text of the Artistic License
+can be found in `/usr/share/common-licenses/Artistic'.
+
+The Debian packaging is:
+
+    Copyright (C) 2010 Maverick Edwards <maverick@smurfbane.org>
+
+and is licensed under the GPL version 3, 
+see `/usr/share/common-licenses/GPL-3'.
+
+# Please also look if there are files or directories which have a
+# different copyright/license attached and list them here.

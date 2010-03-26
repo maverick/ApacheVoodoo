@@ -1,0 +1,19 @@
+libapache-voodoo-perl (3.0002-1) stable; urgency=low
+
+  * Explicitly list dependence on DBI.
+  * Conditionally check compilation on modules with optional prerequisites.
+  * Corrected usage of variable name $optionals in Makefile.PL
+
+ -- Maverick Edwards <maverick@smurfbane.org>  Mon, 08 Mar 2010 00:00:00 -0000
+
+libapache-voodoo-perl (3.0001-1) stable; urgency=low
+
+  * MANIFEST.SKIP entries are regexps, not literal filenames.
+
+ -- Maverick Edwards <maverick@smurfbane.org>  Tue, 02 Feb 2010 00:00:00 -0000
+
+libapache-voodoo-perl (3.0000-1) stable; urgency=low
+
+  * Initial release.
+
+ -- Maverick Edwards <maverick@smurfbane.org>  Mon, 01 Feb 2010 00:00:00 -0000
