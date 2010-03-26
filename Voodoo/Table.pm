@@ -106,6 +106,7 @@ sub set_configuration {
 			Apache::Voodoo::Exception::RunTime->throw($@);
 	}
 
+	$self->{'column_names'} = {};
 	while (my ($name,$conf) = each %{$conf->{'columns'}}) {
 		if (defined($conf->{'multiple'})) {
 			push(@errors,"Column $name allows multiple values but Apache::Voodoo::Table can't handle that currently.");
@@ -118,6 +119,7 @@ sub set_configuration {
 		# keep a local list of column names for query construction.
 		if (defined($self->{'pkey'}) && $name ne $self->{'pkey'}) {
 			push(@{$self->{'columns'}},$name);
+			$self->{'column_names'}->{$self->{'table'}.'.'.$name} = 1;
 		}
 
 		if ($conf->{'type'} eq "date") { push(@{$self->{dates}},$name); }
@@ -165,33 +167,52 @@ sub set_configuration {
 		$self->{'list_search'}->{$_->[1]} = 1;
 	}
 
+	$self->{'joins'}      = [];
+	$self->{'list_joins'} = [];
+	$self->{'view_joins'} = [];
+
 	if (ref($conf->{'joins'}) eq "ARRAY") {
-		foreach (@{$conf->{'joins'}}) {
-			push(@{$self->{'joins'}},
+		foreach my $j (@{$conf->{'joins'}}) {
+			$j->{columns} ||= [];
+			
+			foreach (@{$j->{columns}}) {
+				$self->{column_names}->{$self->{table}.'.'.$_} = 1;
+			}
+
+			my $context = lc($j->{'context'}) || '';
+			$context = ($context =~ /^(list|view)$/i)?$context."_":'';
+
+			push(@{$self->{$context.'joins'}},
 				{
-					table   => $_->{table},
-					pkey    => $_->{primary_key},
-					fkey    => $_->{foreign_key},
-					columns => $_->{columns} || []
+					table   => $j->{table},
+					type    => $j->{type} || 'LEFT',
+					pkey    => $j->{primary_key},
+					fkey    => $j->{foreign_key},
+					columns => $j->{columns}
 				}
 			);
 		}
 	}
 
-	$self->{'pager'} = Apache::Voodoo::Pager->new();
-	# setup the pagination options
-	$self->{'pager'}->set_configuration(
-		'count'   => 40,
-		'window'  => 10,
-		'persist' => [ 
-			'pattern',
-			'limit',
-			'sort',
-			'last_sort',
-			'desc',
-			@{$conf->{'list_options'}->{'persist'} || []}
-		]
-	);
+	if ($conf->{'pager'}) {
+		$self->{'pager'} = $conf->{'pager'};
+	}
+	else {
+		$self->{'pager'} = Apache::Voodoo::Pager->new();
+		# setup the pagination options
+		$self->{'pager'}->set_configuration(
+			'count'   => 40,
+			'window'  => 10,
+			'persist' => [ 
+				'pattern',
+				'limit',
+				'sort',
+				'last_sort',
+				'desc',
+				@{$conf->{'list_options'}->{'persist'} || []}
+			]
+		);
+	}
 
 	if (@errors) {
 		Apache::Voodoo::Exception::RunTime::BadConfig->throw("Configuration Errors:\n\t".join("\n\t",@errors));
@@ -219,6 +240,15 @@ sub edit_details {
 	return unless $self->{'success'};
 
 	return $self->{'edit_details'} || [];
+}
+
+sub add_details {
+	my $self = shift;
+
+	# if there wasn't a successful add, then there's no details :)
+	return unless $self->{'success'};
+
+	return $self->{'add_details'} || [];
 }
 
 sub add_insert_callback {
@@ -252,6 +282,7 @@ sub add {
 	my $errors = {};
 
 	$self->{'success'} = 0;
+	$self->{'add_details'} = [];
 
 	if ($params->{'cm'} eq "add") {
 		# we're going to attempt the addition
@@ -329,6 +360,12 @@ sub add {
 			my $q = join(",",map {"?"} @{$self->{'columns'}});		# the ? mark placeholders
 
 			my @v = map { $values->{$_} } @{$self->{'columns'}};	# and the values
+			
+			# store the values as they went into the db here incase the caller wants to
+			# use them for something.
+			foreach (@{$self->{'columns'}}) {
+				push(@{$self->{'add_details'}},[$_,'',$values->{$_}]);
+			}
 
 			if ($self->{'pkey_user_supplied'}) {
 				$c .= ",".$self->{'pkey'};
@@ -605,6 +642,7 @@ sub list {
 	$params->{'last_sort'} ||= '';
 	$params->{'count'}     ||= '';
 	$params->{'page'}      ||= '';
+	$params->{'start'}     ||= '';
 	$params->{'desc'}      ||= '';
 	$params->{'showall'}   ||= '';
 	$params->{'pattern'}   ||= '';
@@ -615,19 +653,36 @@ sub list {
 
 	$params->{'count'}   =~ s/\D//g;
 	$params->{'page'}    =~ s/\D//g;
+	$params->{'start'}   =~ s/\D//g;
 	$params->{'desc'}    =~ s/\D//g;
 	$params->{'showall'} =~ s/\D//g;
 
 	my $pattern = $params->{'pattern'};
 	my $limit   = $params->{'limit'};
 
-	my $sort      = $params->{'sort'}      || $self->{'default_sort'};
-	my $last_sort = $params->{'last_sort'} || $self->{'default_sort'};
-	my $desc      = $params->{'desc'};
-	
-	my $count   = $params->{'count'}   || $self->{'pager'}->{'count'};
-	my $page    = $params->{'page'}    || 1;
+	my $sort;
+	if (defined($self->{'list_sort'}->{$params->{'sort'}})) {
+		$sort = $params->{'sort'};
+	}
+	else {
+		$sort = $self->{'default_sort'};
+	}
+
+	my $last_sort;
+	if (defined($self->{'list_sort'}->{$params->{'last_sort'}})) {
+		$last_sort = $params->{'last_sort'};
+	}
+	else {
+		$last_sort = $self->{'default_sort'};
+	}
+
+	my $desc    = $params->{'desc'};
 	my $showall = $params->{'showall'} || 0;
+
+	my $count = ($params->{'count'})?$params->{'count'}:$self->{'pager'}->{'count'};
+	my $page  = ($params->{'page'} )?$params->{'page'} :1;
+
+	my $offset = ($params->{'start'})?$params->{'start'}:$count * ($page -1);
 
 	my @search_params = $self->{'list_param_parser'}->($self,$dbh,$params);
 
@@ -665,25 +720,23 @@ sub list {
 		}
 	}
 
-	if ($self->{'joins'}) {
-		foreach my $join (@{$self->{'joins'}}) {
-			my $fkey;
-			if ($join->{'fkey'} =~ /\./) {
-				$fkey = $join->{'fkey'};
+	foreach my $join (@{$self->{'joins'}},@{$self->{'list_joins'}}) {
+		my $fkey;
+		if ($join->{'fkey'} =~ /\./) {
+			$fkey = $join->{'fkey'};
+		}
+		else {
+			$fkey = $self->{'table'}.'.'.$join->{'fkey'};
+		}
+
+		push(@joins,"$join->{type} JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
+
+		foreach (@{$join->{'columns'}}) {
+			if ($_ =~ /\./) {
+				push(@columns,$_);
 			}
 			else {
-				$fkey = $self->{'table'}.'.'.$join->{'fkey'};
-			}
-
-			push(@joins,"LEFT JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
-
-			foreach (@{$join->{'columns'}}) {
-				if ($_ =~ /\./) {
-					push(@columns,$_);
-				}
-				else {
-					push(@columns,$join->{'table'}.".$_");
-				}
+				push(@columns,$join->{'table'}.".$_");
 			}
 		}
 	}
@@ -731,7 +784,12 @@ sub list {
 					push(@values,$clause->[2]);
 				}
 				elsif ($clause->[1] =~ /^(not )?\s*like/i) {
-					push(@where,"$clause->[0] $clause->[1] concat(?,'%')");
+					if ($dbh->get_info(17) eq "SQLite") {
+						push(@where,"$clause->[0] $clause->[1] ? || '%'");
+					}
+					else {
+						push(@where,"$clause->[0] $clause->[1] concat(?,'%')");
+					}
 					push(@values,$clause->[2]);
 				}
 			}
@@ -763,7 +821,7 @@ sub list {
 
 
 	my $n_desc = $desc;
-	if (defined($self->{'list_sort'}->{$sort}) && defined($self->{'list_sort'}->{$last_sort})) {
+	if (defined($sort)) {
 		my $q = $self->{'list_sort'}->{$sort};
 
 		# if we're sorting on the same key as before, then we have the chance to go descending
@@ -790,8 +848,9 @@ sub list {
 		$last_sort = undef;
 	}
 
-	$select_stmt .= " LIMIT $count OFFSET ". $count * ($page -1) unless $showall;
+	$select_stmt .= " LIMIT $count OFFSET $offset " unless $showall;
 
+	#$self->debug($select_stmt);
 	my $page_set = $dbh->selectall_arrayref($select_stmt,undef,@values);
 
 	my $res_count;
@@ -799,7 +858,8 @@ sub list {
 		$res_count = $dbh->selectall_arrayref("SELECT FOUND_ROWS()")->[0]->[0];
 	}
 	else {
-		$res_count = $dbh->selectall_arrayref("SELECT count(*) FROM $self->{table} ".join("\n",@joins).$where)->[0]->[0];
+		my $count_stmt = "SELECT count(*) FROM $self->{table} ".join("\n",@joins).$where;
+		$res_count = $dbh->selectall_arrayref($count_stmt,undef,@values)->[0]->[0];
 	}
 
 	my %return;
@@ -894,25 +954,23 @@ sub view {
 		}
 	}
 
-	if ($self->{joins}) {
-		foreach my $join (@{$self->{joins}}) {
-			my $fkey;
-			if ($join->{fkey} =~ /\./) {
-				$fkey = $join->{fkey};
+	foreach my $join (@{$self->{joins}},@{$self->{view_joins}}) {
+		my $fkey;
+		if ($join->{fkey} =~ /\./) {
+			$fkey = $join->{fkey};
+		}
+		else {
+			$fkey = $self->{table}.'.'.$join->{fkey};
+		}
+
+		push(@joins,"$join->{type} JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
+
+		foreach (@{$join->{columns}}) {
+			if ($_ =~ /\./) {
+				push(@list,$_);
 			}
 			else {
-				$fkey = $self->{table}.'.'.$join->{fkey};
-			}
-
-			push(@joins,"LEFT JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
-
-			foreach (@{$join->{columns}}) {
-				if ($_ =~ /\./) {
-					push(@list,$_);
-				}
-				else {
-					push(@list,$join->{'table'}.".$_");
-				}
+				push(@list,$join->{'table'}.".$_");
 			}
 		}
 	}
@@ -927,6 +985,7 @@ sub view {
 			$self->{'table'}.$self->{'pkey'} = ?
 			$additional_constraint";
 
+	#$self->debug($select_statement);
 	my $res = $dbh->selectall_arrayref($select_statement,undef,$params->{$self->{'pkey'}});
 
 	my %v;
