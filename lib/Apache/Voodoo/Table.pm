@@ -642,6 +642,7 @@ sub list {
 	$params->{'last_sort'} ||= '';
 	$params->{'count'}     ||= '';
 	$params->{'page'}      ||= '';
+	$params->{'start'}     ||= '';
 	$params->{'desc'}      ||= '';
 	$params->{'showall'}   ||= '';
 	$params->{'pattern'}   ||= '';
@@ -652,19 +653,36 @@ sub list {
 
 	$params->{'count'}   =~ s/\D//g;
 	$params->{'page'}    =~ s/\D//g;
+	$params->{'start'}   =~ s/\D//g;
 	$params->{'desc'}    =~ s/\D//g;
 	$params->{'showall'} =~ s/\D//g;
 
 	my $pattern = $params->{'pattern'};
 	my $limit   = $params->{'limit'};
 
-	my $sort      = $params->{'sort'}      || $self->{'default_sort'};
-	my $last_sort = $params->{'last_sort'} || $self->{'default_sort'};
-	my $desc      = $params->{'desc'};
-	
-	my $count   = $params->{'count'}   || $self->{'pager'}->{'count'};
-	my $page    = $params->{'page'}    || 1;
+	my $sort;
+	if (defined($self->{'list_sort'}->{$params->{'sort'}})) {
+		$sort = $params->{'sort'};
+	}
+	else {
+		$sort = $self->{'default_sort'};
+	}
+
+	my $last_sort;
+	if (defined($self->{'list_sort'}->{$params->{'last_sort'}})) {
+		$last_sort = $params->{'last_sort'};
+	}
+	else {
+		$last_sort = $self->{'default_sort'};
+	}
+
+	my $desc    = $params->{'desc'};
 	my $showall = $params->{'showall'} || 0;
+
+	my $count = ($params->{'count'})?$params->{'count'}:$self->{'pager'}->{'count'};
+	my $page  = ($params->{'page'} )?$params->{'page'} :1;
+
+	my $offset = ($params->{'start'})?$params->{'start'}:$count * ($page -1);
 
 	my @search_params = $self->{'list_param_parser'}->($self,$dbh,$params);
 
@@ -803,7 +821,7 @@ sub list {
 
 
 	my $n_desc = $desc;
-	if (defined($self->{'list_sort'}->{$sort}) && defined($self->{'list_sort'}->{$last_sort})) {
+	if (defined($sort)) {
 		my $q = $self->{'list_sort'}->{$sort};
 
 		# if we're sorting on the same key as before, then we have the chance to go descending
@@ -830,8 +848,9 @@ sub list {
 		$last_sort = undef;
 	}
 
-	$select_stmt .= " LIMIT $count OFFSET ". $count * ($page -1) unless $showall;
+	$select_stmt .= " LIMIT $count OFFSET $offset " unless $showall;
 
+	#$self->debug($select_stmt);
 	my $page_set = $dbh->selectall_arrayref($select_stmt,undef,@values);
 
 	my $res_count;
@@ -966,6 +985,7 @@ sub view {
 			$self->{'table'}.$self->{'pkey'} = ?
 			$additional_constraint";
 
+	#$self->debug($select_statement);
 	my $res = $dbh->selectall_arrayref($select_statement,undef,$params->{$self->{'pkey'}});
 
 	my %v;
