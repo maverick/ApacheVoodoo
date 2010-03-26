@@ -137,10 +137,10 @@ sub handle_request {
 	my $uri      = $self->{'mp'}->uri();
 	my $filename = $self->{'mp'}->filename();
 
-	if ($uri =~ /\/$/) {
-		$self->{status} = $self->{mp}->not_found();
-		$self->_client_fault($self->{mp}->not_found(),'No such service.');
-	}
+	# if the SOAP endpoint happens to overlap with a directory name
+	# libapr "helpfully" appends a / to the end of the uri and filenames.
+	$uri      =~ s/\/$//;
+	$filename =~ s/\/$//;
 
 	$filename =~ s/\.tmpl$//;
 	unless ($self->{'run'}->{'method'} eq 'handle') {
