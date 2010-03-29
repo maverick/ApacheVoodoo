@@ -1,0 +1,25 @@
+Index: ApacheVoodoo/lib/Apache/Voodoo/Install/Config.pm
+===================================================================
+--- ApacheVoodoo.orig/lib/Apache/Voodoo/Install/Config.pm	2010-03-26 19:59:58.000000000 -0500
++++ ApacheVoodoo/lib/Apache/Voodoo/Install/Config.pm	2010-03-26 20:01:24.000000000 -0500
+@@ -17,6 +17,7 @@
+ # object designed for make file creation for this...oh well.
+ use ExtUtils::MakeMaker qw{ prompt };
+ use Data::Dumper;
++use File::Path qw(mkpath);
+ 
+ $Data::Dumper::Indent=1;
+ $Data::Dumper::Terse=1;
+@@ -61,9 +62,10 @@
+ 	# save settings
+ 	my %cfg = %{$self};
+ 
+-	my $path = $INC{"Apache/Voodoo/MyConfig.pm"} || $INC{"Apache/Voodoo/Install/Config.pm"};
+-	$path =~ s/Install\/Config.pm$/MyConfig\.pm/;
++	my $dir = "/etc/perl/Apache/Voodoo";
++	my $path = "${dir}/MyConfig.pm";
+ 
++	mkpath($dir) unless(-d $dir);
+ 	open(OUT,">$path") || die "Can't write to $path: $!";
+ 
+ 	# I had this as a print block, but it tripped up the cpan.org formatter
