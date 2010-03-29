@@ -13,6 +13,8 @@ install: install-stamp
 install-stamp: build-stamp
 	dh install
 	touch $@
+	mkdir -p debian/libapache-voodoo-perl/etc/perl
+	cp -a debian/config-dir/* debian/libapache-voodoo-perl/etc/perl
 
 binary-arch:
 

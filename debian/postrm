@@ -1,9 +1,0 @@
-#! /bin/sh
-
-set -e
-
-if [ "$1" = purge ]; then
-  if [ -d /etc/perl/Apache/Voodoo ]; then
-    rm -rf /etc/perl/Apache/Voodoo
-  fi
-fi
