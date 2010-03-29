@@ -173,10 +173,10 @@ sub set_configuration {
 
 	if (ref($conf->{'joins'}) eq "ARRAY") {
 		foreach my $j (@{$conf->{'joins'}}) {
-			$j->{columns} ||= [];
+			$j->{'columns'} ||= [];
 			
-			foreach (@{$j->{columns}}) {
-				$self->{column_names}->{$self->{table}.'.'.$_} = 1;
+			foreach (@{$j->{'columns'}}) {
+				$self->{'column_names'}->{$j->{'table'}.'.'.$_} = 1;
 			}
 
 			my $context = lc($j->{'context'}) || '';
@@ -184,11 +184,11 @@ sub set_configuration {
 
 			push(@{$self->{$context.'joins'}},
 				{
-					table   => $j->{table},
-					type    => $j->{type} || 'LEFT',
-					pkey    => $j->{primary_key},
-					fkey    => $j->{foreign_key},
-					columns => $j->{columns}
+					table     => $j->{'table'},
+					type      => $j->{'type'} || 'LEFT',
+					pkey      => $j->{'primary_key'},
+					fkey      => $j->{'foreign_key'},
+					columns   => $j->{'columns'}
 				}
 			);
 		}
@@ -707,12 +707,9 @@ sub list {
 	my @joins;
 	if ($self->{'references'}) {
 		foreach my $join ( sort { ($a->{'fkey'} =~ /\./) <=> ($b->{'fkey'} =~ /\./) } @{$self->{'references'}}) {
-			if ($join->{'fkey'} =~ /\./) {
-				push(@joins,"LEFT JOIN $join->{'table'} ON $join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
-			}
-			else {
-				push(@joins,"LEFT JOIN $join->{'table'} ON $self->{'table'}.$join->{'fkey'} = $join->{'table'}.$join->{'pkey'}");
-			}
+			my $fkey = ($join->{'fkey'} =~ /\./)?$join->{'fkey'} : $self->{'table'}.'.'.$join->{'fkey'};
+
+			push(@joins,"LEFT JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
 
 			foreach (@{$join->{'columns'}}) {
 				push(@columns,"$join->{'table'}.$_");
@@ -776,7 +773,7 @@ sub list {
 				push(@where,"$r->[0] = 1");
 			}
 			elsif (scalar(@{$clause}) == 3) {
-				if ($clause->[1] eq 'is' && $clause->[2] =~ /^(not )?\s*null$/i) {
+				if ($clause->[1] =~ /^is(\s+not)?$/i && $clause->[2] =~ /^null$/i) {
 					push(@where,join(" ",@{$clause}));
 				}
 				elsif ($clause->[1] =~ /^(=|!=|>|<|>=|<=)/) {
