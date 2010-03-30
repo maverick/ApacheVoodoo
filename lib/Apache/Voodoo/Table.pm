@@ -167,6 +167,11 @@ sub set_configuration {
 		$self->{'list_search'}->{$_->[1]} = 1;
 	}
 
+	if ($conf->{'list_options'}->{'group_by'}) {
+		$self->{'group_by'} = $conf->{'list_options'}->{'group_by'};
+		$self->{'group_by'} = $conf->{'table'}.".".$self->{'group_by'} unless ($self->{'group_by'} =~ /\./);
+	}
+
 	$self->{'joins'}      = [];
 	$self->{'list_joins'} = [];
 	$self->{'view_joins'} = [];
@@ -639,7 +644,7 @@ sub list {
 
 	# hello warning supression
 	$params->{'sort'}      ||= '';
-	$params->{'last_sort'} ||= '';
+	$params->{'last_sort'} ||= $params->{'sort'};
 	$params->{'count'}     ||= '';
 	$params->{'page'}      ||= '';
 	$params->{'start'}     ||= '';
@@ -747,7 +752,7 @@ sub list {
 		    defined($additional_constraint->{'additional_constraint'})) {
 
 			# make sure our additional constraint won't break the sql
-			my $ac = $additional_constraint;
+			my $ac = $additional_constraint->{'additional_constraint'};
 			$ac =~ s/^\s*(where|and|or)\s+//go;
 			push(@search_params,$ac);
 		}
@@ -757,6 +762,7 @@ sub list {
 		}
 	}
 
+	$self->debug(\@search_params);
 	# Make sure the search params are sane
 	my @where;
 	my @values;
@@ -805,14 +811,17 @@ sub list {
 		$where = "\nWHERE\n".join(" AND\n",@where)."\n";
 	}
 
+	if ($self->{'group_by'}) {
+		$where .= "GROUP BY ".$self->{'group_by'}."\n";
+	}
+
 	# From the DBI docs. This will give us the database server name.
 	my $is_mysql = ($dbh->get_info(17) eq "MySQL")?1:0;
 
-	my $select_stmt = "
-		SELECT". (($is_mysql)?" SQL_CALC_FOUND_ROWS ": " ").
-			join(",\n",@columns). "
-		FROM 
-			$self->{'table'} ".
+	my $select_stmt = 
+		"SELECT". (($is_mysql)?" SQL_CALC_FOUND_ROWS ": " ").
+		join(",\n",@columns)."\n".
+		"FROM $self->{'table'}\n".
 		join("\n",@joins).
 		$where;
 
@@ -837,7 +846,7 @@ sub list {
 			$desc = 0;
 		}
 
-		$select_stmt .= " ORDER BY $q";
+		$select_stmt .= "ORDER BY $q\n";
 	}
 	else {
 		# bogus, fry it.
@@ -845,9 +854,9 @@ sub list {
 		$last_sort = undef;
 	}
 
-	$select_stmt .= " LIMIT $count OFFSET $offset " unless $showall;
+	$select_stmt .= "LIMIT $count OFFSET $offset\n" unless $showall;
 
-	#$self->debug($select_stmt);
+	$self->debug($select_stmt);
 	my $page_set = $dbh->selectall_arrayref($select_stmt,undef,@values);
 
 	my $res_count;
