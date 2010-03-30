@@ -225,7 +225,7 @@ sub mkurlparams {
 				push(@return, map { "$key=$_" } @{$h->{$key}} );
 			}
 			else {
-				push(@return,"$key=$h->{$key}") if length($h->{$key});
+				push(@return,"$key=$h->{$key}") if defined($h->{$key}) && length($h->{$key});
 			}
 		}
 	}
