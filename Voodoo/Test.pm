@@ -23,6 +23,22 @@ use File::Spec;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Engine;
 
+# FIXME: Hack to prefer my extended version of Pod::WSDL over the
+# one on CPAN.  This will need to stay in place until either the
+# author of Pod::WSDL replys or I release my own version.
+my $PWSDL;
+BEGIN {
+	eval {
+		require Pod::WSDL2;
+		$PWSDL = 'Pod::WSDL2';
+	};
+	if ($@) {
+		require Pod::WSDL;
+		$PWSDL = 'Pod::WSDL';
+	}
+}
+
+
 sub new {
 	my $class = shift;
 	my %opts  = @_;
@@ -78,9 +94,9 @@ sub make_request {
 
 	my $filename = $self->filename();
 
-   	# remove the optional trailing .tmpl
-   	$filename =~ s/\.tmpl$//o;
-   	$uri      =~ s/\.tmpl$//o;
+	# remove the optional trailing .tmpl
+	$filename =~ s/\.tmpl$//o;
+	$uri      =~ s/\.tmpl$//o;
 	
 	unless (-e "$filename.tmpl") { return $self->declined;  }
 	unless (-r "$filename.tmpl") { return $self->forbidden; } 
@@ -158,6 +174,47 @@ sub make_request {
 	####################
 	$self->{'engine'}->status($self->ok);
 	$view->finish();
+
+	return $self->ok;
+}
+
+sub get_wsdl {
+	my $self = shift;
+	my $uri = $self->uri(shift);
+
+	# copied straight from Soap.pm
+	# FIXME hack.  Shouldn't be looking in there to get this
+	$uri =~ s/^\/+//;
+
+	unless ($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}) {
+		return $self->not_found();
+	}
+
+	my $m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri});
+	if ($m eq "Apache::Voodoo::Loader::Dynamic") {
+		$m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}->{'object'});
+	}
+	# FIXME here ends the hackery
+	
+	my $wsdl;
+	eval {
+		# FIXME the other part of the Pod::WSDL version hack
+		$wsdl = $PWSDL->new(
+			source   => $m,
+			location => $self->server_url().$uri,
+			pretty   => 1,
+			withDocumentation => 1
+		);
+		$wsdl->targetNS($self->server_url());
+	};
+	if ($@) {
+		$self->content_type('text/plain');
+		$self->print("Error generating WDSL:\n\n$@");
+	}
+	else {
+		$self->content_type('text/xml');
+		$self->print($wsdl->WSDL);
+	}
 
 	return $self->ok;
 }
