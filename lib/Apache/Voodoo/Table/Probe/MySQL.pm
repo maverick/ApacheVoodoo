@@ -15,6 +15,7 @@ use strict;
 use warnings;
 
 use DBI;
+use Data::Dumper;
 
 our $DEBUG = 0;
 
@@ -46,10 +47,20 @@ sub probe_table {
 	my $data = {};
 	$data->{table} = $table;
 
-	my $table_info = $dbh->selectall_arrayref("explain $table") || return { 'ERRORS' => [ "explain of table $table failed. $DBI::errstr" ] };
+	# get foreign key infomation about the given table
+	my $db_name = $dbh->{'Name'};
+	$db_name =~ s/:.*//;
+	my $sth = $dbh->foreign_key_info(undef,undef,undef,undef,$db_name,$table) || die DBI->errstr;
+	my %foreign_keys;
+	foreach (@{$sth->fetchall_arrayref()}) {
+		next unless $_->[2];	# not a foreign key
+		$foreign_keys{$_->[7]} = [ $_->[2], $_->[3] ];
+	}
 
-	foreach (@{$table_info}) {
-		my $row = $_;
+	# Sadly the column_info method doesn't tell us if the column is auto increment or not.
+	# So we're going after the column info using ye olde explain.
+	my $table_info = $dbh->selectall_arrayref("explain $table") || return { 'ERRORS' => [ "explain of table $table failed. $DBI::errstr" ] };
+	foreach my $row (@{$table_info}) {
 		my $name = $row->[0];
 		my $column = {};
 
@@ -79,18 +90,32 @@ sub probe_table {
 		$type =~ s/[,\d\(\) ]+/_/g;
 		$type =~ s/_$//g;
 
-		eval {
+		if ($self->can($type)) {
 			$self->$type($column,$size);
-		};
-		if ($@) {
+		}
+		else {
 			push(@{$data->{'ERRORS'}},"unsupported type $row->[1]");
 		}
+
 		#
 		# figure out foreign keys
 		#
-		if ($name =~ /^(\w+)_id$/) {
-			my $ref_table = $1;
+		my $ref_table = '';
+		my $ref_id    = '';
+		if (scalar(%foreign_keys)) {
+			# there are foreign keys defined for this table
+			if (defined($foreign_keys{$name})) {
+				# this column is a foreign key
+				($ref_table,$ref_id) = @{$foreign_keys{$name}};
+			}
+		}
+		elsif ($name =~ /^(\w+)_id$/) {
+			# this column follows the standard naming convention
+			# let's assume that it's supposed to be a foreign key.
+			$ref_table = $1;
+		}
 
+		if ($ref_table) {
 			my $ref_table_info = $dbh->selectall_arrayref("explain $ref_table");
 			if (ref($ref_table_info)) {
 				# figure out table structure
@@ -103,7 +128,7 @@ sub probe_table {
 
 				my $ref_info = { 
 					'table'          => $ref_table,
-					'primary_key'    => $ref_data->{'primary_key'},
+					'primary_key'    => $ref_id || $ref_data->{'primary_key'},
 					'select_label'   => $ref_table,
 					'select_default' => $row->[4]
 				};
