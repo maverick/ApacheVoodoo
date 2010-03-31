@@ -17,9 +17,6 @@ use_ok('Apache::Voodoo::Exception');
 use_ok('Apache::Voodoo::Table');
 use_ok('Apache::Voodoo::Table::Probe');
 
-# number of tests to skip if a driver for the db can't be found.
-my $nd_skip = 4;
-
 ################################################################################
 # Tests related to checking the config syntax
 ################################################################################
@@ -80,7 +77,7 @@ my $dbh;
 
 SKIP: {
 	eval { require DBD::mysql; };
-	skip "DBD::mysql not found, skipping these tests",$nd_skip if $@;
+	skip "DBD::mysql not found, skipping these tests",6 if $@;
 	$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1}) || BAIL_OUT("Couldn't connect to test db: $DBI::errstr");
 
 	setup_db(   'MySQL',$dbh);
@@ -95,7 +92,7 @@ SKIP: {
 
 SKIP: {
 	eval { require DBD::SQLite; };
-	skip "DBD::SQLite not found, skipping these tests",$nd_skip if $@;
+	skip "DBD::SQLite not found, skipping these tests",4 if $@;
 
 	my ($fh,$filename) = File::Temp::tmpnam();
 	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: $DBI::errstr");
