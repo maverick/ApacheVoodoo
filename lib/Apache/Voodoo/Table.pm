@@ -193,7 +193,8 @@ sub set_configuration {
 					type      => $j->{'type'} || 'LEFT',
 					pkey      => $j->{'primary_key'},
 					fkey      => $j->{'foreign_key'},
-					columns   => $j->{'columns'}
+					columns   => $j->{'columns'},
+					extra     => $j->{'extra'}
 				}
 			);
 		}
@@ -745,15 +746,24 @@ sub list {
 	}
 
 	foreach my $join (@{$self->{'joins'}},@{$self->{'list_joins'}}) {
-		my $fkey;
-		if ($join->{'fkey'} =~ /\./) {
-			$fkey = $join->{'fkey'};
+		my @join_clauses = ();
+		my $join_stmt = "$join->{type} JOIN $join->{'table'} ON ";
+
+		if($join->{'pkey'} and $join->{'fkey'}){
+			push(@join_clauses,
+		 		(($join->{'fkey'} =~ /\./) ? $join->{'fkey'} : $self->{'table'} .".". $join->{'fkey'}).
+		 			" = " .
+				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'table'} .".". $join->{'pkey'})
+			);
 		}
-		else {
-			$fkey = $self->{'table'}.'.'.$join->{'fkey'};
+		
+		if($join->{'extra'}){
+			push(@join_clauses, $join->{'extra'}) unless ref $join->{'extra'};
+			push(@join_clauses, @{$join->{'extra'}}) if ref($join->{'extra'}) eq 'ARRAY';
 		}
 
-		push(@joins,"$join->{type} JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
+		next unless scalar @join_clauses;
+		push(@joins,$join_stmt . join(" AND ", @join_clauses));
 
 		foreach (@{$join->{'columns'}}) {
 			if ($_ =~ /\./) {
@@ -983,15 +993,24 @@ sub view {
 	}
 
 	foreach my $join (@{$self->{joins}},@{$self->{view_joins}}) {
-		my $fkey;
-		if ($join->{fkey} =~ /\./) {
-			$fkey = $join->{fkey};
+		my @join_clauses = ();
+		my $join_stmt = "$join->{type} JOIN $join->{'table'} ON ";
+
+		if($join->{'pkey'} and $join->{'fkey'}){
+			push(@join_clauses,
+		 		(($join->{'fkey'} =~ /\./) ? $join->{'fkey'} : $self->{'table'} .".". $join->{'fkey'}).
+		 			" = " .
+				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'table'} .".". $join->{'pkey'})
+			);
 		}
-		else {
-			$fkey = $self->{table}.'.'.$join->{fkey};
+		
+		if($join->{'extra'}){
+			push(@join_clauses, $join->{'extra'}) unless ref $join->{'extra'};
+			push(@join_clauses, @{$join->{'extra'}}) if ref($join->{'extra'}) eq 'ARRAY';
 		}
 
-		push(@joins,"$join->{type} JOIN $join->{'table'} ON $fkey = $join->{'table'}.$join->{'pkey'}");
+		next unless scalar @join_clauses;
+		push(@joins,$join_stmt . join(" AND ", @join_clauses));
 
 		foreach (@{$join->{columns}}) {
 			if ($_ =~ /\./) {
