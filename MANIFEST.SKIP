@@ -6,8 +6,8 @@
 .old$
 ^MANIFEST\.
 ^Makefile$
-^blib/
-^pm_to_blib/
+^blib
+^pm_to_blib
 .tar.gz$
 \#
 Voodoo/Table/Probe/mysql.pm
