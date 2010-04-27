@@ -71,12 +71,11 @@ sub handler {
 	my $return;
 	if ($self->{mp}->is_get() && $r->unparsed_uri =~ /\?wsdl$/) {
 		my $uri = $self->{'mp'}->uri();
-		if ($uri =~ /\/$/) {
-			return $self->{mp}->not_found();
-		}
+
+		$uri =~ s/^\///;
+		$uri =~ s/\/$//;
 
 		# FIXME hack.  Shouldn't be looking in there to get this
-		$uri =~ s/^\///;
 		unless ($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}) {
 			return $self->{mp}->not_found();
 		}
@@ -100,7 +99,9 @@ sub handler {
 		};
 		if ($@) {
 			$self->{'mp'}->content_type('text/plain');
-			$self->{'mp'}->print("Error generating WDSL:\n\n$@");
+			my $s = "Error generating WSDL:\n\n$@";
+			$s =~ s/\^J/\n/g;
+			$self->{'mp'}->print($s);
 		}
 		else {
 			$self->{'mp'}->content_type('text/xml');
