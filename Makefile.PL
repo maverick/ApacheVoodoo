@@ -21,6 +21,7 @@ my %required_modules = (
 	'IPC::SharedCache'      => 1.3,
 	'JSON::DWIW'            => 0.32,
 	'Proc::UID'             => 0.05,
+	'Tie::Hash::Indexed'    => 0.05,    # Used by Table/Probe/MySQL.pm
 	'Time::HiRes'           => 1.65,
 	'XML::Checker'          => 0.13
 );

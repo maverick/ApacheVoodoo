@@ -15,7 +15,7 @@ use strict;
 use warnings;
 
 use DBI;
-use Data::Dumper;
+use Tie::Hash::Indexed;
 
 our $DEBUG = 0;
 
@@ -44,8 +44,13 @@ sub probe_table {
 
 	my $dbh = $self->{'dbh'};
 
-	my $data = {};
-	$data->{table} = $table;
+	tie my %data, 'Tie::Hash::Indexed';
+
+	$data{table} = $table;
+	$data{primary_key} = '';
+
+	tie my %columns, 'Tie::Hash::Indexed';
+	$data{columns} = \%columns;
 
 	# get foreign key infomation about the given table
 	my $db_name = $dbh->{'Name'};
@@ -62,24 +67,8 @@ sub probe_table {
 	my $table_info = $dbh->selectall_arrayref("explain $table") || return { 'ERRORS' => [ "explain of table $table failed. $DBI::errstr" ] };
 	foreach my $row (@{$table_info}) {
 		my $name = $row->[0];
-		my $column = {};
 
-		# is this param required for add / edit (does the column allow nulls)
-		$column->{'required'} = 1 unless $row->[2] eq "YES";
-
-		if ($row->[3] eq "PRI") {
-			# primary key.  NOTE THAT CLUSTERED PRIMARY KEYS ARE NOT SUPPORTED
-			$data->{'primary_key'} = $name;
-
-			# is the primary key user supplied
-			unless ($row->[5] eq "auto_increment") {
-				$data->{'pkey_user_supplied'} = 1;
-			}
-		}
-		elsif ($row->[3] eq "UNI") {
-			# unique index.
-			$column->{'unique'} = 1;
-		}
+		tie my %column, 'Tie::Hash::Indexed';
 
 		#
 		# figure out the column type
@@ -91,10 +80,27 @@ sub probe_table {
 		$type =~ s/_$//g;
 
 		if ($self->can($type)) {
-			$self->$type($column,$size);
+			$self->$type(\%column,$size);
 		}
 		else {
-			push(@{$data->{'ERRORS'}},"unsupported type $row->[1]");
+			push(@{$data{'ERRORS'}},"unsupported type $row->[1]");
+		}
+
+		# is this param required for add / edit (does the column allow nulls)
+		$column{'required'} = 1 unless $row->[2] eq "YES";
+
+		if ($row->[3] eq "PRI") {
+			# primary key.  NOTE THAT CLUSTERED PRIMARY KEYS ARE NOT SUPPORTED
+			$data{'primary_key'} = $name;
+
+			# is the primary key user supplied
+			unless ($row->[5] eq "auto_increment") {
+				$data{'pkey_user_supplied'} = 1;
+			}
+		}
+		elsif ($row->[3] eq "UNI") {
+			# unique index.
+			$column{'unique'} = 1;
 		}
 
 		#
@@ -120,38 +126,37 @@ sub probe_table {
 			if (ref($ref_table_info)) {
 				# figure out table structure
 
-				my $ref_data;
-				my $ref_fields;
-				{ 
-					($ref_data,$ref_fields) = $self->probe_table($ref_table);
-				}
+				my $ref_data = $self->probe_table($ref_table);
 
-				my $ref_info = { 
+				tie my %ref_info, 'Tie::Hash::Indexed';
+				%ref_info = (
 					'table'          => $ref_table,
 					'primary_key'    => $ref_id || $ref_data->{'primary_key'},
 					'select_label'   => $ref_table,
-					'select_default' => $row->[4]
-				};
+					'select_default' => $row->[4],
+					'columns'        => [
+						grep { $ref_data->{'columns'}->{$_}->{'type'} eq "varchar" }
+						keys %{$ref_data->{'columns'}}
+					]
+				);
 
-				$ref_info->{columns} = [ grep {$ref_data->{columns}->{$_}->{type} eq "varchar"} keys %{$ref_data->{columns}} ];
-
-				$column->{references} = $ref_info;
+				$column{'references'} = \%ref_info;
 			}
 			else {
 				warn("No such table $ref_table: $DBI::errstr");
 			}
 		}
 
-		$data->{columns}->{$name} = $column;
+		$data{'columns'}->{$name} = \%column;
 	}
 
-	if (defined($data->{'ERRORS'})) {
-		print STDERR join("\n",@{$data->{'ERRORS'}});
+	if (defined($data{'ERRORS'})) {
+		print STDERR join("\n",@{$data{'ERRORS'}});
 		print "\n";
 		exit;
 	}
 
-	return $data;
+	return \%data;
 }
 
 sub tinyint_unsigned   { shift()->int_handler_unsigned(@_,1); }
