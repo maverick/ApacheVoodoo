@@ -16,3 +16,4 @@ Voodoo/MyConfig.pm
 Voodoo/experimental
 ^docs
 ^utils
+^debian
