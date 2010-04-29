@@ -187,7 +187,7 @@ sub finish {
 	my $self   = shift;
 	my $status = shift;
 
-	$self->status($status) if $status;
+	$self->status($status);
 
 	if (defined($self->{'run'}) && defined($self->{'run'}->{'session_handler'})) {
 		if ($self->{'run'}->{'p'}->{'uri'} =~ /\/?logout(_[^\/]+)?$/) {
