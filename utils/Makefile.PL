@@ -10,17 +10,15 @@ my %required_modules = (
 	'Config::General'       => 2.27,
 	'DBI'                   => 1.609,
 	'Devel::StackTrace'     => 1.20,
-	'Daemon::Generic'       => 0.51,
 	'Digest::MD5'           => 2.36,
 	'Email::Valid'          => 0.15,
 	'Exception::Class'      => 1.26,
 	'Exception::Class::DBI' => 1.00,
 	'File::Pid'             => 1.01,
 	'HTML::Template'        => 2.7,
-	'IO::Handle::Record'    => 0.13,
 	'IPC::SharedCache'      => 1.3,
 	'JSON::DWIW'            => 0.32,
-	'Proc::UID'             => 0.05,
+	'Tie::Hash::Indexed'    => 0.05,    # Used by Table/Probe/MySQL.pm
 	'Time::HiRes'           => 1.65,
 	'XML::Checker'          => 0.13
 );
@@ -32,7 +30,9 @@ my %optionals = (
 	'Apache2::Cookie'  => 2.08,
 
 	'SOAP::Lite'       => 0.710,
-	'Pod::WSDL'        => 0.05,
+
+	'Pod::WSDL2'       => 0.06,	# prefer my forked version,
+	'Pod::WSDL'        => 0.05,	# fallback to the main one if it's not installed
 	
 	'Log::Log4Perl'    => 1.24
 );
@@ -82,14 +82,22 @@ if ($@) {
 
 	if ($answer =~ /^y/i) {
 		$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
-		$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
-
 		print "Adding prequisites for SOAP...\n";
 	}
 }
 else {
 	$required_modules{'SOAP::Lite'} = $optionals{'SOAP::Lite'};
-	$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
+}
+
+if ($required_modules{'SOAP::Lite'}) {
+	eval { require Pod::WSDL2; };
+	if ($@) {
+		$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
+	}
+	else {
+		print "Pod::WSDL2 found\n";
+		$required_modules{'Pod::WSDL2'}  = $optionals{'Pod::WSDL2'};
+	}
 }
 
 if (defined($required_modules{'Pod::WSDL'})) {

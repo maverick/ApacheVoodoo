@@ -5,9 +5,9 @@ $VERSION = "3.0002";
 use strict;
 use warnings;
 
-use DBI;
-
 use base("Apache::Voodoo");
+
+use DBI;
 
 sub set_dbh {
 	my $self = shift;
@@ -16,6 +16,13 @@ sub set_dbh {
 
 sub get_dbh {
 	return $_[0]->{dbh};
+}
+
+sub db_disconnect {
+	my $self = shift;
+	if ($self->{dbh}) {
+		$self->{dbh}->disconnect;
+	}
 }
 
 sub create_schema {
@@ -148,7 +155,7 @@ sub _create_profile {
 	$self->{dbh}->do("CREATE TABLE profile (
 		request_id integer      not null,
 		timestamp  varchar(64)  not null,
-		data       varchar(255) not null
+		data       varchar(255)
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX profile_request_id ON profile(request_id)") || $self->db_error();
@@ -185,11 +192,11 @@ sub _create_debug {
 	my $self = shift;
 
 	$self->{dbh}->do("CREATE TABLE debug (
-		request_id integer         not null,
+		request_id integer          not null,
 		seq        integer unsigned not null,
 		level      varchar(64)      not null,
 		stack      text             not null,
-		data       text             not null
+		data       text
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX debug_request_id ON debug(request_id)") || $self->db_error();
@@ -246,7 +253,7 @@ sub _create_params {
 
 	$self->{dbh}->do("CREATE TABLE params (
 		request_id integer not null,
-		data       text    not null
+		data       text
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX params_request_id ON params(request_id)") || $self->db_error();
@@ -280,7 +287,7 @@ sub _create_session {
 
 	$self->{dbh}->do("CREATE TABLE session (
 		request_id integer not null,
-		data       text    not null
+		data       text
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX session_request_id ON session(request_id)") || $self->db_error();
@@ -314,7 +321,7 @@ sub _create_template_conf {
 
 	$self->{dbh}->do("CREATE TABLE template_conf (
 		request_id integer not null,
-		data       text    not null
+		data       text
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX tc_request_id ON template_conf(request_id)") || $self->db_error();
@@ -351,7 +358,7 @@ sub _create_return_data {
 		seq        integer      not null,
 		handler    varchar(128) not null,
 		method     varchar(64)  not null,
-		data       text         not null
+		data       text
 	)") || $self->db_error();
 
 	$self->{dbh}->do("CREATE INDEX return_request_id ON return_data(request_id)") || $self->db_error();

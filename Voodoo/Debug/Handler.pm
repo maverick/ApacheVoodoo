@@ -144,19 +144,22 @@ sub generate_content {
 	my $self = shift;
 	my $run  = shift;
 
+	use Data::Dumper;
 	my $return;
 	eval {
 		my ($obj,$method) = @{$self->{handlers}->{$run->{uri}}};
+		warn "$method\n";
 
 		$return = $obj->$method(
 			{
 				"dbh"    => $run->{'dbh'},
 				"params" => $run->{'input_params'},
-				"mp"     => $self->{mp},
+				"mp"     => $self->{'mp'},
 			}
 		);
 	};
 
+	warn Dumper $@;
 	if ($@) {
 		return $self->display_host_error("Module: $run->{uri}\n$@");
 	}

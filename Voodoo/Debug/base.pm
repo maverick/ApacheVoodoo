@@ -100,6 +100,14 @@ sub json_error {
 	return $self->raw_mode('text/plain',$json->to_json($return));
 }
 
+sub raw_mode {
+	my $self = shift;
+	my $type = shift;
+	my $data = shift;
+	my $headers = shift;
+
+	return ['RAW_MODE',$type,$data,$headers];
+}
 1;
 
 ################################################################################

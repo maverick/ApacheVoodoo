@@ -33,8 +33,10 @@ BEGIN {
 		$PWSDL = 'Pod::WSDL2';
 	};
 	if ($@) {
-		require Pod::WSDL;
-		$PWSDL = 'Pod::WSDL';
+		eval {
+			require Pod::WSDL;
+			$PWSDL = 'Pod::WSDL';
+		};
 	}
 }
 
@@ -181,6 +183,12 @@ sub make_request {
 sub get_wsdl {
 	my $self = shift;
 	my $uri = $self->uri(shift);
+
+	unless (ref($PWSDL)) {
+		$self->content_type('text/plain');
+		$self->print("No WSDL generator installed.  Either install POD::WSDL or POD::WSDL2");
+		return $self->ok;
+	}
 
 	# copied straight from Soap.pm
 	# FIXME hack.  Shouldn't be looking in there to get this

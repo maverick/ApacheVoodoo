@@ -17,12 +17,10 @@ use warnings;
 
 use base("Apache::Voodoo::Debug::Common");
 
-use IO::Socket::UNIX;
-use IO::Handle::Record;
-use HTML::Template;
-
-use JSON::DWIW;
 use Apache::Voodoo::Constants;
+
+use HTML::Template;
+use JSON::DWIW;
 
 sub new {
 	my $class = shift;
@@ -36,7 +34,6 @@ sub new {
 	$self->{id}->{app_id} = $id;
 
 	my $ac = Apache::Voodoo::Constants->new();
-	$self->{socket_file} = $ac->socket_file();
 
 	my @flags = qw(debug info warn error exception table trace);
 	my @flag2 = qw(profile params template_conf return_data session);
@@ -44,22 +41,22 @@ sub new {
 	$self->{enabled} = 0;
 	if ($conf eq "1" || (ref($conf) eq "HASH" && $conf->{all})) {
 		foreach (@flags,@flag2) {
-			$self->{conf}->{$_} = 1;
+			$self->{enable}->{$_} = 1;
 		}
-		$self->{conf}->{anydebug} = 1;
+		$self->{enable}->{anydebug} = 1;
 		$self->{enabled} = 1;
 	}
 	elsif (ref($conf) eq "HASH") {
 		foreach (@flags) {
 			if ($conf->{$_}) {
-				$self->{conf}->{$_} = 1;
-				$self->{conf}->{anydebug} = 1;
+				$self->{enable}->{$_} = 1;
+				$self->{enable}->{anydebug} = 1;
 				$self->{enabled} = 1;
 			}
 		}
 		foreach (@flag2) {
 			if ($conf->{$_}) {
-				$self->{conf}->{$_} = 1;
+				$self->{enable}->{$_} = 1;
 				$self->{enabled} = 1;
 			}
 		}
@@ -82,47 +79,43 @@ sub new {
 		);
 
 		$self->{json} = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});
+
+		$self->{db_info} = $ac->debug_dbd();
+		my $dbh = DBI->connect(@{$self->{db_info}});
+
+		# From the DBI docs.  This will give use the database server name
+		my $db_type = $dbh->get_info(17);
+
+		eval {
+			require "Apache/Voodoo/Debug/Native/$db_type.pm";
+			my $class = 'Apache::Voodoo::Debug::Native::'.$db_type;
+			$self->{db} = $class->new();
+		};
+		if ($@) {
+			die "$db_type is not supported: $@";
+		}
+
+		$self->{db}->init_db($dbh,$ac);
 	}
 
 	# we always send this since is fundamental to identifying the request chain
 	# regardless of what other info we log
-	$self->{conf}->{url}        = 1;
-	$self->{conf}->{status}     = 1;
-	$self->{conf}->{session_id} = 1;
-
+	$self->{enable}->{url}        = 1;
+	$self->{enable}->{status}     = 1;
+	$self->{enable}->{session_id} = 1;
+	
 	return $self;
 }
 
 sub init {
 	my $self = shift;
-
-	my $mp = shift;
-
-	$self->{id}->{request_id} = $mp->request_id();
+	my $mp   = shift;
 
 	return unless $self->{enabled};
 
-	unless (defined($self->{'socket'}) && $self->{'socket'}->connected) {
-		eval {
-			$self->{'socket'} = IO::Socket::UNIX->new(
-				Type => SOCK_STREAM,
-				Peer => $self->{socket_file}
-			);
-		};
+	$self->{id}->{request_id} = $mp->request_id();
 
-		if ($@ || 
-			!defined($self->{'socket'}) ||
-			!$self->{'socket'}->connected) {
-
-			CORE::warn "Failed to open socket.  Debug info will be lost. $@ $!\n";
-			$self->{enable}  = undef;
-			$self->{enabled} = 0;
-			return;
-		}
-	}
-
-	# socket looks good, enable the public facing calls.
-	$self->{enable} = $self->{conf};
+	$self->{db}->set_dbh(DBI->connect(@{$self->{db_info}}) || die DBI->errstr);
 
 	$self->_write({
 		type => 'request',
@@ -137,6 +130,7 @@ sub enabled {
 }
 
 sub shutdown {
+	$_[0]->{db}->db_disconnect();
 	return;
 }
 
@@ -263,16 +257,11 @@ sub _write {
 	my $self = shift;
 	my $data = shift;
 
-	eval {
-		$self->{'socket'}->write_record($data);
+	my $handler = 'handle_'.$data->{'type'};
 
-		# might be unneccessary, being paranoid
-		$self->{'socket'}->sync;
-		$self->{'socket'}->flush;
-	};
-	if ($@) {
-		CORE::warn "Failed to write to debug database: $@ $!\n";
-	}
+#	if ($self->{db}->can($handler)) {
+		$self->{db}->$handler($data);
+#	}
 }
 
 sub finalize {

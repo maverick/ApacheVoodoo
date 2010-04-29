@@ -277,6 +277,116 @@ sub list_param_parser {
 	$self->{'list_param_parser'} = $sub_ref;
 }
 
+sub validate_add {
+	my $self   = shift;
+	my $p      = shift;
+
+	my $dbh    = $p->{'dbh'};
+	my $params = $p->{'params'};
+
+	my $errors = {};
+
+	# call each of the insert callbacks
+	foreach (@{$self->{'insert_callbacks'}}) {
+		my $callback_errors = $_->($dbh,$params);
+		@{$errors}{keys %{$callback_errors}} = values %{$callback_errors};
+	}
+
+	# do all the normal parameter checking
+	my ($values,$e) = $self->{valid}->validate($params);
+
+	if (defined($e)) {
+		# copy the errors from the process_params
+		$errors = { %{$errors}, %{$e} };
+	}
+
+	# check to see if the user supplied primary key (optional) is unique
+	if ($self->{'pkey_user_supplied'}) {
+		if ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
+			my $res = $dbh->selectall_arrayref("
+				SELECT 
+					1 
+				FROM 
+					$self->{'table'} 
+				WHERE 
+					$self->{'pkey'} = ?",
+				undef,
+				$params->{$self->{'pkey'}} );
+
+			if ($res->[0]->[0] == 1) {
+				$errors->{'DUP_'.$self->{'pkey'}} = 1;
+			}
+		}
+		else {
+			$errors->{'BAD_'.$self->{'pkey'}} = 1;
+		}
+	}
+
+	# check each unique column constraint
+	foreach (@{$self->{'unique'}}) {
+		my $res = $dbh->selectall_arrayref("
+			SELECT 
+				1 
+			FROM 
+				$self->{'table'}
+			WHERE 
+				$_ = ?",
+			undef,
+			$values->{$_});
+		if ($res->[0]->[0] == 1) {
+			$errors->{"DUP_$_"} = 1;
+		}
+	}
+
+	return ($values,$errors);
+}
+
+sub validate_edit {
+	my $self   = shift;
+	my $p      = shift;
+
+	my $dbh    = $p->{'dbh'};
+	my $params = $p->{'params'};
+
+	unless ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
+		return $self->display_error("Invalid ID");
+	}
+
+	my $errors = {};
+	# call each of the update callbacks
+	foreach (@{$self->{'update_callbacks'}}) {
+		# call back should return a list of error strings
+		my $callback_errors = $_->($dbh,$params);
+		@{$errors}{keys %{$callback_errors}} = values %{$callback_errors};
+	}
+
+	# run the standard error checks
+	my ($values,$e) = $self->{valid}->validate($params);
+
+	# copy the errors from the process_params
+	$errors = { %{$errors}, %{$e} };
+
+	# check all the unique columns
+	foreach (@{$self->{'unique'}}) {
+		my $res = $dbh->selectall_arrayref("
+			SELECT 
+				1
+			FROM 
+				$self->{'table'}
+			WHERE 
+				$_ = ? AND 
+				$self->{'pkey'} != ?",
+			undef,
+			$values->{$_},
+		$params->{$self->{'pkey'}});
+		if ($res->[0]->[0] == 1) {
+			$errors->{"DUP_$_"} = 1;
+		}
+	}
+
+	return $values,$errors;
+}
+
 sub add {
 	my $self = shift;
 	my $p = shift;
@@ -290,62 +400,7 @@ sub add {
 	$self->{'add_details'} = [];
 
 	if ($params->{'cm'} eq "add") {
-		# we're going to attempt the addition
-		my $values;
-
-		# call each of the insert_callbacks
-		foreach (@{$self->{'insert_callbacks'}}) {
-			my $callback_errors = $_->($dbh,$params);
-			@{$errors}{keys %{$callback_errors}} = values %{$callback_errors};
-		}
-
-		my $e;
-
-		# do all the normal parameter checking
-		($values,$e) = $self->{valid}->validate($params);
-
-		if (defined($e)) {
-			# copy the errors from the process_params
-			$errors = { %{$errors}, %{$e} };
-		}
-
-		# check to see if the user supplied primary key (optional) is unique
-		if ($self->{'pkey_user_supplied'}) {
-			if ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
-				my $res = $dbh->selectall_arrayref("
-					SELECT 
-						1 
-					FROM 
-						$self->{'table'} 
-					WHERE 
-						$self->{'pkey'} = ?",
-					undef,
-					$params->{$self->{'pkey'}} );
-
-				if ($res->[0]->[0] == 1) {
-					$errors->{'DUP_'.$self->{'pkey'}} = 1;
-				}
-			}
-			else {
-				$errors->{'BAD_'.$self->{'pkey'}} = 1;
-			}
-		}
-
-		# check each unique column constraint
-		foreach (@{$self->{'unique'}}) {
-			my $res = $dbh->selectall_arrayref("
-				SELECT 
-					1 
-				FROM 
-					$self->{'table'}
-				WHERE 
-					$_ = ?",
-				undef,
-				$values->{$_});
-			if ($res->[0]->[0] == 1) {
-				$errors->{"DUP_$_"} = 1;
-			}
-		}
+		my ($values,$errors) = $self->validate_add($p);
 
 		if (scalar keys %{$errors}) {
 			$errors->{'HAS_ERRORS'} = 1;
@@ -416,9 +471,8 @@ sub edit {
 	$self->{'success'} = 0;
 	$self->{'edit_details'} = [];
 
-	my $dbh       = $p->{'dbh'};
-	my $session   = $p->{'session'};
-	my $params    = $p->{'params'};
+	my $dbh    = $p->{'dbh'};
+	my $params = $p->{'params'};
 
 	# make sure our additional constraint won't break the sql
 	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
@@ -453,39 +507,7 @@ sub edit {
 
 	my $errors = {};
 	if ($params->{'cm'} eq "update") {
-		my $values;
-
-		# call each of the insert_callbacks
-		foreach (@{$self->{'update_callbacks'}}) {
-			# call back should return a list of error strings
-			my $callback_errors = $_->($dbh,$params);
-			@{$errors}{keys %{$callback_errors}} = values %{$callback_errors};
-		}
-
-		my $e;
-		# run the standard error checks
-		($values,$e) = $self->{valid}->validate($params);
-
-		# copy the errors from the process_params
-		$errors = { %{$errors}, %{$e} };
-
-		# check all the unique columns
-		foreach (@{$self->{'unique'}}) {
-			my $res = $dbh->selectall_arrayref("
-				SELECT 
-					1
-				FROM 
-					$self->{'table'}
-				WHERE 
-					$_ = ? AND 
-					$self->{'pkey'} != ?",
-				undef,
-				$values->{$_},
-				$params->{$self->{'pkey'}});
-			if ($res->[0]->[0] == 1) {
-				$errors->{"DUP_$_"} = 1;
-			}
-		}
+		my ($values,$errors) = $self->validate_edit($p);
 
 		if (scalar keys %{$errors}) {
 			$errors->{'has_errors'} = 1;
