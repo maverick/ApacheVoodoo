@@ -8,7 +8,7 @@
 ################################################################################
 package Apache::Voodoo::Constants;
 
-$VERSION = "3.0002";
+$VERSION = "3.0100";
 
 use strict;
 use warnings;

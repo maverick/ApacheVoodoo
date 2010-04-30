@@ -1,5 +1,5 @@
 package Apache::Voodoo::Validate::signed_decimal;
-$VERSION = "3.0002";
+$VERSION = "3.0100";
 
 use strict;
 use warnings;
