@@ -137,7 +137,7 @@ ok(!defined $e->{MISSING_regexp_opt}, 'regexp optional');
 ok(!defined $e->{MISSING_datetime},   'datetime optional'); 
 
 # bogus values
-($v,$e) = $V->validate({
+my $params = {
 	u_int_new_r => 'abc',
 	u_int_new_o => 'abc',
 	u_int_old_r => 'abc',
@@ -152,15 +152,17 @@ ok(!defined $e->{MISSING_datetime},   'datetime optional');
 	varchar_req => 'docheck',
 	varchar_opt => 'bogus',
 	datetime => '2009-01-01 asdfasdf'
-});
+};
+
+($v,$e) = $V->validate($params);
 
 ok(scalar keys %{$v} == 0,'$values is empty');
 ok(defined $e->{BAD_u_int_new_r},'bad unsigned int 1');
 ok(defined $e->{BAD_u_int_new_o},'bad unsigned int 2');
 ok(defined $e->{BAD_u_int_old_r},'bad unsigned int 3');
 ok(defined $e->{BAD_u_int_old_o},'bad unsigned int 4');
-ok(defined $e->{BAD_email_req},  'bad email 1');
-ok(defined $e->{BAD_email_opt},  'bad email 2');
+ok(defined $e->{BAD_email_req},  'bad email (format)');
+ok(defined $e->{BAD_email_opt},  'bad email (no such domain)') || diag("using this email address: ".$params->{email_opt});
 ok(defined $e->{BAD_url_req},    'bad url 1');
 ok(defined $e->{BAD_url_opt},    'bad url 2');
 ok(defined $e->{BAD_regexp_req}, 'bad regexp 1');
