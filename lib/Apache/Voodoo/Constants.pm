@@ -22,22 +22,21 @@ sub new {
 		return $self;
 	}
 
-	eval "
-		use Apache::Voodoo::MyConfig;
-	";
-
-	# copy the config.
-	$self = { %{$Apache::Voodoo::MyConfig::CONFIG} };
-
+	eval {
+		require "Apache/Voodoo/MyConfig.pm";
+	};
 	if ($@) {
 		die "$@\n".
 		    "Can't find Apache::Voodoo::MyConfig.  This probably means that Apache Voodoo hasn't been configured yet.\n".
 		    "Please do so by running \"voodoo-control setconfig\"\n";
 	}
 
-	unless (ref($self) eq "HASH") {
+	unless (ref($Apache::Voodoo::MyConfig::CONFIG) eq "HASH") {
 		die "There was an error loading Apache::Voodoo::MyConfig.  Please run \"voodoo-control setconfig\"\n";
 	}
+
+	# copy the config.
+	$self = { %{$Apache::Voodoo::MyConfig::CONFIG} };
 
 	bless($self,$class);
 
@@ -54,8 +53,6 @@ sub prefix        { return $_[0]->{PREFIX};        }
 sub session_path  { return $_[0]->{SESSION_PATH};  }
 sub tmpl_path     { return $_[0]->{TMPL_PATH};     }
 sub updates_path  { return $_[0]->{UPDATES_PATH};  }
-sub socket_file   { return $_[0]->{SOCKET_FILE};   }
-sub pid_file      { return $_[0]->{PID_FILE};      }
 sub debug_dbd     { return $_[0]->{DEBUG_DBD};     }
 sub debug_path    { return $_[0]->{DEBUG_PATH};    }
 sub use_log4perl  { return $_[0]->{USE_LOG4PERL};  }

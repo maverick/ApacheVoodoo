@@ -97,4 +97,11 @@ t/00-distribution.t
 t/01-check_compilation.t
 t/02-validation.t
 t/03-table.t
+t/Application-ConfigParser.pm
+t/Constants.t
+t/Table.t
 t/test_data/test_db.sql
+t/test_data/voodoo-defaults.conf
+t/test_data/voodoo1.conf
+t/test_data/voodoo2.conf
+t/Validate.t
