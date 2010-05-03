@@ -2,3 +2,4 @@ Makefile
 lib/Apache/Voodoo/MyConfig.pm
 blib
 pm_to_blib
+cover_db
