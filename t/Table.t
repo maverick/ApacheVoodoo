@@ -4,13 +4,6 @@ use warnings;
 use Data::Dumper;
 use Test::More tests => 17;
 
-BEGIN {
-	# fall back to eq_or_diff if we don't have Test::Differences
-	if (!eval q{ use Test::Differences; 1 }) {
-		*eq_or_diff = \&is_deeply;
-	}
-}
-
 use_ok('File::Temp');
 use_ok('DBI');
 use_ok('Apache::Voodoo::Exception');
@@ -127,17 +120,17 @@ sub table_tests {
 
 
 	my $table = Apache::Voodoo::Table->new($avt_table_config);
-	eq_or_diff(
+	is_deeply(
 		$table->view({dbh => $dbh,'params' => {'id' => 1}}),
 		{
           'a_text' => 'a much larger text string',
           'a_date' => '01/01/2009',
           'a_varchar' => 'a text string',
-          'avt_ref_table_id' => '1',
+          'avt_ref_table_id' => 1,
           'a_datetime' => '2000-02-01 12:00:00',
           'a_time' => ' 1:00 PM',
 		  'avt_ref_table.name' => 'First Value',
-          'id' => '1'
+          'id' => 1
         },
 		"($type) Simple view with valid id"
 	);
@@ -149,7 +142,7 @@ sub table_tests {
 	$e = Exception::Class->caught();
 	isa_ok($e,"Apache::Voodoo::Exception::Application::DisplayError");
 
-	eq_or_diff(
+	is_deeply(
 		$table->list({ dbh => $dbh }),
 		{
 			'PATTERN' => '',
@@ -161,8 +154,8 @@ sub table_tests {
 					'a_varchar' => 'a text string',
 					'avt_ref_table.name' => 'First Value',
 					'a_datetime' => '2000-02-01 12:00:00',
-					'avt_ref_table_id' => '1',
-					'id' => '1',
+					'avt_ref_table_id' => 1,
+					'id' => 1,
 					'a_time' => ' 1:00 PM'
 				},
 				{
@@ -171,8 +164,8 @@ sub table_tests {
 					'a_varchar' => 'another text string',
 					'avt_ref_table.name' => 'Second Value',
 					'a_datetime' => '2010-02-01 14:00:00',
-					'avt_ref_table_id' => '2',
-					'id' => '2',
+					'avt_ref_table_id' => 2,
+					'id' => 2,
 					'a_time' => ' 5:00 PM'
 				},
 				{
@@ -181,18 +174,18 @@ sub table_tests {
 					'a_date' => '03/15/2010',
 					'avt_ref_table.name' => 'Fourth Value',
 					'a_datetime' => '2010-01-01 12:00:00',
-					'avt_ref_table_id' => '4',
-					'id' => '3',
+					'avt_ref_table_id' => 4,
+					'id' => 3,
 					'a_time' => ' 4:00 PM'
 				}
 			],
-			'NUM_MATCHES' => '3',
+			'NUM_MATCHES' => 3,
 			'LIMIT' => []
 		},
 		"($type) list results"
 	);
 
-	eq_or_diff(
+	is_deeply(
 		$table->list({ dbh => $dbh, params => { 'search_a_varchar' => 'a text' }}),
 		{
 			'PATTERN' => '',
@@ -204,12 +197,12 @@ sub table_tests {
 					'a_varchar' => 'a text string',
 					'avt_ref_table.name' => 'First Value',
 					'a_datetime' => '2000-02-01 12:00:00',
-					'avt_ref_table_id' => '1',
-					'id' => '1',
+					'avt_ref_table_id' => 1,
+					'id' => 1,
 					'a_time' => ' 1:00 PM'
 				}
 			],
-			'NUM_MATCHES' => '1',
+			'NUM_MATCHES' => 1,
 			'LIMIT' => []
 		},
 		"($type) list search results"
