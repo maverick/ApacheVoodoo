@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 15;
+use Test::More tests => 16;
 
 use_ok('Apache::Voodoo::Constants') || 
 	BAIL_OUT("Can't load constants, all other test will fail");
@@ -21,6 +21,8 @@ elsif($@) {
 	# This means that we found a config but it's broken.
 	BAIL_OUT($@);
 }
+
+is($c,Apache::Voodoo::Constants->new(),'is a singleton');
 
 # Since we might be upgrading an existing install, we don't know
 # if the config we have is an existing one on the system or one the one
