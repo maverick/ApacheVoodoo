@@ -14,33 +14,53 @@ use strict;
 use warnings;
 
 my $self;
-
 sub new {
-	my $class = shift;
+	my $class       = shift;
+	my $config_file = shift || 'Apache::Voodoo::MyConfig';
 
 	if (ref($self)) {
+		$self->{_conf_package} = $config_file;
+		$self->_init();
 		return $self;
 	}
 
-	eval {
-		require "Apache/Voodoo/MyConfig.pm";
+	$self = {
+		_conf_package => $config_file
 	};
-	if ($@) {
-		die "$@\n".
-		    "Can't find Apache::Voodoo::MyConfig.  This probably means that Apache Voodoo hasn't been configured yet.\n".
-		    "Please do so by running \"voodoo-control setconfig\"\n";
-	}
-
-	unless (ref($Apache::Voodoo::MyConfig::CONFIG) eq "HASH") {
-		die "There was an error loading Apache::Voodoo::MyConfig.  Please run \"voodoo-control setconfig\"\n";
-	}
-
-	# copy the config.
-	$self = { %{$Apache::Voodoo::MyConfig::CONFIG} };
 
 	bless($self,$class);
 
+	$self->_init();
+
 	return $self;
+}
+
+sub _init {
+	my $self = shift;
+
+	my $p = $self->{_conf_package};
+	my $f = $self->{_conf_package};
+	$f =~ s/::/\//g;
+	$f .= '.pm';
+
+	eval {
+		require $f;
+	};
+	if ($@) {
+		die "$@\n".
+		    "Can't find $p.  This probably means that Apache Voodoo hasn't been configured yet.\n".
+		    "Please do so by running \"voodoo-control setconfig\"\n";
+	}
+
+	unless (ref(eval '$'.$p."::CONFIG") eq "HASH") {
+		die "There was an error loading $p.  Please run \"voodoo-control setconfig\"\n";
+	}
+
+	# copy the config.
+	my %h = eval '%{$'.$p."::CONFIG}";
+	foreach (keys %h) {
+		$self->{$_} = $h{$_};
+	}
 }
 
 sub apache_gid    { return $_[0]->{APACHE_GID};    }
