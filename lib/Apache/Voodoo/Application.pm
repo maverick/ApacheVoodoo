@@ -29,7 +29,7 @@ sub new {
 		$self->refresh(1);
 	}
 	else {
-		$self->{'errors'} = "ID is a requried parameter.";
+		$self->{'errors'} = "ID is a required parameter.";
 	}
 
 	return $self;
