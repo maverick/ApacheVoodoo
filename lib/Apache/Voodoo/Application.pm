@@ -24,13 +24,10 @@ sub new {
 	$self->{'id'}        = shift;
 	$self->{'constants'} = shift || Apache::Voodoo::Constants->new();
 
-	if (defined($self->{'id'})) {
-		$self->{'parser'} = Apache::Voodoo::Application::ConfigParser->new($self->{'id'},$self->{'constants'});
-		$self->refresh(1);
-	}
-	else {
-		$self->{'errors'} = "ID is a required parameter.";
-	}
+	die "ID is a required parameter." unless (defined($self->{'id'}));
+
+	$self->{'parser'} = Apache::Voodoo::Application::ConfigParser->new($self->{'id'},$self->{'constants'});
+	$self->refresh(1);
 
 	return $self;
 }

@@ -4,6 +4,8 @@ use warnings;
 use Test::More tests => 55;
 use Data::Dumper;
 
+use lib("t");
+
 BEGIN {
 	# fall back to eq_or_diff if we don't have Test::Differences
 	if (!eval q{ use Test::Differences; 1 }) {
@@ -14,44 +16,45 @@ BEGIN {
 use_ok('Apache::Voodoo::Constants')                 || BAIL_OUT($@);
 use_ok('Apache::Voodoo::Application::ConfigParser') || BAIL_OUT($@);
 
+my $c = Apache::Voodoo::Constants->new('test_data::MyConfig');
+
+my $loc = $INC{'Apache/Voodoo/Constants.pm'};
+$loc =~ s/lib\/Apache\/Voodoo\/Constants.pm//;
+
+$c->{'PREFIX'}       = $loc;
+$c->{'INSTALL_PATH'} = $loc."t/";
 eval {
 	Apache::Voodoo::Application::ConfigParser->new();
 };
 ok($@ =~ /ID is a required parameter/, "ID is a required param");
 
-chdir('t');
-chdir('test_data');
-
 my $cp;
 eval {
-	$cp = Apache::Voodoo::Application::ConfigParser->new('test');
+	$cp = Apache::Voodoo::Application::ConfigParser->new('app_blank');
 };
 ok(!$@,'ID alone works');
 
 is(ref($cp->{'constants'}),'Apache::Voodoo::Constants','No constants object creates one');
 
 eval {
-	$cp = Apache::Voodoo::Application::ConfigParser->new('test',Apache::Voodoo::Constants->new());
+	$cp = Apache::Voodoo::Application::ConfigParser->new('app_blank',$c);
 };
 ok(!$@,'ID and constants object works');
 
-# We're overridding the default search location
-$cp->{conf_file} = 'voodoo-defaults.conf';
 $cp->parse;
-
 foreach (
-	['id',    'test'],
+	['id',    'app_blank'],
 	['old_ns', 0]
 	) {
 
 	is($cp->{$_->[0]}, $_->[1],"default value for $_->[0] set correctly");
 }
 foreach (
-	['id',             'test'],
-	['base_package',   'test'],
+	['id',             'app_blank'],
+	['base_package',   'app_blank'],
 	['session_timeout', 900 ],
 	['upload_size_max', 5*1024*1024],
-	['cookie_name',     'TEST_SID'],
+	['cookie_name',     'APP_BLANK_SID'],
 	['https_cookies',   0,],
 	['logout_target',   '/index'],
 	['devel_mode',      0],
@@ -74,19 +77,18 @@ foreach (
 	eq_or_diff($cp->{$_->[0]}, $_->[1], "default value for $_->[0] set correctly");
 }
 
-$cp = Apache::Voodoo::Application::ConfigParser->new('test2');
-$cp->{conf_file} = 'voodoo1.conf';
+$cp = Apache::Voodoo::Application::ConfigParser->new('app_oldstyle');
 $cp->parse;
 
 foreach (
-	['id',    'test2'],
+	['id',    'app_oldstyle'],
 	['old_ns', 1]
 	) {
 
 	is($cp->{$_->[0]}, $_->[1],"$_->[0] set correctly");
 }
 foreach (
-	['id',             'test2'],
+	['id',             'app_oldstyle'],
 	['base_package',   'foo'],
 	['session_timeout', 0 ],
 	['upload_size_max', 10],
@@ -118,12 +120,11 @@ foreach (
 	eq_or_diff($cp->{$_->[0]}, $_->[1], "$_->[0] set correctly");
 }
 
-$cp = Apache::Voodoo::Application::ConfigParser->new('test3');
-$cp->{conf_file} = 'voodoo2.conf';
+$cp = Apache::Voodoo::Application::ConfigParser->new('app_newstyle');
 $cp->parse;
 
 foreach (
-	['id',    'test3'],
+	['id',    'app_newstyle'],
 	['old_ns', 0]
 	) {
 

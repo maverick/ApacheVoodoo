@@ -18,22 +18,22 @@ my $app;
 eval {
 	$app = Apache::Voodoo::Application->new();
 };
-is($app->{errors},'ID is a required parameter.', "ID is a required param");
+ok($@ =~ /ID is a required parameter/, "ID is a required param");
 
 my $loc = $INC{'Apache/Voodoo/Constants.pm'};
 $loc =~ s/lib\/Apache\/Voodoo\/Constants.pm/t/;
 
 my $constants = Apache::Voodoo::Constants->new();
 $constants->{INSTALL_PATH} = $loc;
-$constants->{CONF_FILE} = 'voodoo2.conf';
 
 eval {
-	$app = Apache::Voodoo::Application->new('test_data');
+	$app = Apache::Voodoo::Application->new('app_blank');
 };
+print STDERR $@;
 ok(!$@,'ID alone works') || diag($@);
 
 eval {
-	$app = Apache::Voodoo::Application->new('test',$constants);
+	$app = Apache::Voodoo::Application->new('app_oldstyle',$constants);
 };
 ok(!$@,'ID and constants object works') || diag($@);
 

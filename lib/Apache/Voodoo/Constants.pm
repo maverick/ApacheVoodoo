@@ -16,16 +16,18 @@ use warnings;
 my $self;
 sub new {
 	my $class       = shift;
-	my $config_file = shift || 'Apache::Voodoo::MyConfig';
+	my $config_file = shift;
 
 	if (ref($self)) {
-		$self->{_conf_package} = $config_file;
-		$self->_init();
+		if ($config_file) {
+			$self->{_conf_package} = $config_file;
+			$self->_init();
+		}
 		return $self;
 	}
 
 	$self = {
-		_conf_package => $config_file
+		_conf_package => $config_file || 'Apache::Voodoo::MyConfig'
 	};
 
 	bless($self,$class);
