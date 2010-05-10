@@ -89,7 +89,7 @@ foreach (
 }
 foreach (
 	['id',             'app_oldstyle'],
-	['base_package',   'foo'],
+	['base_package',   'app_newstyle'],
 	['session_timeout', 0 ],
 	['upload_size_max', 10],
 	['cookie_name',     'bar_sid'],
