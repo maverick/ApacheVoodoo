@@ -19,11 +19,7 @@ use_ok('Apache::Voodoo::Constants')   || BAIL_OUT($@);
 use_ok('Apache::Voodoo::Application') || BAIL_OUT($@);
 
 my $path = $INC{'Apache/Voodoo/Constants.pm'};
-$path =~ s:lib/Apache/Voodoo/Constants.pm:t/app_newstyle:;
-
-copy("$path/C/a/controller.pm.orig","$path/C/a/controller.pm") || die "can't reset controller.pm: $!";
-copy("$path/M/a/model.pm.orig",     "$path/M/a/model.pm")      || die "can't reset model.pm: $!";
-copy("$path/V/a/view.pm.orig",      "$path/V/a/view.pm")       || die "can't reset view.pm: $!";
+$path =~ s:(blib/)?lib/Apache/Voodoo/Constants.pm:t:;
 
 my $app;
 eval {
@@ -31,11 +27,8 @@ eval {
 };
 ok($@ =~ /ID is a required parameter/, "ID is a required param");
 
-my $loc = $INC{'Apache/Voodoo/Constants.pm'};
-$loc =~ s/lib\/Apache\/Voodoo\/Constants.pm/t/;
-
 my $constants = Apache::Voodoo::Constants->new();
-$constants->{INSTALL_PATH} = $loc;
+$constants->{INSTALL_PATH} = $path;
 
 eval {
 	$app = Apache::Voodoo::Application->new('app_blank');
@@ -53,6 +46,15 @@ isa_ok($app->{'controllers'}->{'test_module'}->{'object'},"app_newstyle::test_mo
 
 isa_ok($app->{'controllers'}->{'skeleton'},            "Apache::Voodoo::Loader::Dynamic");
 isa_ok($app->{'controllers'}->{'skeleton'}->{'object'},"app_newstyle::skeleton");
+
+
+#
+# make sure the .pms are the original ones.
+#
+$path .= "/app_newstyle";
+copy("$path/C/a/controller.pm.orig","$path/C/a/controller.pm") || die "can't reset controller.pm: $!";
+copy("$path/M/a/model.pm.orig",     "$path/M/a/model.pm")      || die "can't reset model.pm: $!";
+copy("$path/V/a/view.pm.orig",      "$path/V/a/view.pm")       || die "can't reset view.pm: $!";
 
 eval {
 	$app = Apache::Voodoo::Application->new('app_newstyle',$constants);

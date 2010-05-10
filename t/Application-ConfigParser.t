@@ -19,7 +19,7 @@ use_ok('Apache::Voodoo::Application::ConfigParser') || BAIL_OUT($@);
 my $c = Apache::Voodoo::Constants->new('test_data::MyConfig');
 
 my $loc = $INC{'Apache/Voodoo/Constants.pm'};
-$loc =~ s/lib\/Apache\/Voodoo\/Constants.pm//;
+$loc =~ s/(blib\/)?lib\/Apache\/Voodoo\/Constants.pm//;
 
 $c->{'PREFIX'}       = $loc;
 $c->{'INSTALL_PATH'} = $loc."t/";
