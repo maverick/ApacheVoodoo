@@ -6,5 +6,5 @@ use Test::More;
 eval {
 	require Test::Distribution;
 };
-plan(skip_all => 'Text::Distribution not installed') if $@;
+plan(skip_all => 'Test::Distribution not installed') if $@;
 import Test::Distribution only => ['description','pod'];

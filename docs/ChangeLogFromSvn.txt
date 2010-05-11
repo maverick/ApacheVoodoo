@@ -1,0 +1,3929 @@
+------------------------------------------------------------------------
+r20509 | medwards | 2009-11-17 12:12:05 -0600 (Tue, 17 Nov 2009) | 5 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Debug/Log4perl.pm
+   D /Voodoo/trunk/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/trunk/Voodoo/Debug.pm
+   M /Voodoo/trunk/t/01-check_compilation.t
+
+Fixed line number output in Log4Perl.  This required that the depth of the wrappers between
+Voodoo and Log4perl was a known constant.  Therefore Debug.pm is no longer a factory which
+might return a secondary wrapper to multiplex debugs across the different backends, it's
+all handled internally.
+
+------------------------------------------------------------------------
+r20084 | medwards | 2009-11-04 15:25:15 -0600 (Wed, 04 Nov 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+
+DB handles were being shared across processes; this lead to ugh with a side of blech.
+
+------------------------------------------------------------------------
+r19856 | medwards | 2009-10-30 10:18:57 -0500 (Fri, 30 Oct 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo.pm
+
+squish a warnings.
+
+------------------------------------------------------------------------
+r19649 | medwards | 2009-10-26 10:46:30 -0500 (Mon, 26 Oct 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+
+
+------------------------------------------------------------------------
+r19618 | medwards | 2009-10-23 11:19:59 -0500 (Fri, 23 Oct 2009) | 4 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+
+$e->isa("Exception::Class") shouldn't return false but does.  
+Worked around it by using can() to see if the object had the method 
+I was interested in in the first place.
+
+------------------------------------------------------------------------
+r19609 | medwards | 2009-10-23 10:30:24 -0500 (Fri, 23 Oct 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+
+Made the exception handling more robust.
+
+------------------------------------------------------------------------
+r18568 | medwards | 2009-09-10 11:44:52 -0500 (Thu, 10 Sep 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Validate.pm
+   M /Voodoo/trunk/t/02-validation.t
+
+Empty configurations now throw an exception.
+
+------------------------------------------------------------------------
+r18531 | medwards | 2009-09-08 15:14:10 -0500 (Tue, 08 Sep 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo.pm
+
+eh? eh?
+
+------------------------------------------------------------------------
+r18530 | medwards | 2009-09-08 15:06:16 -0500 (Tue, 08 Sep 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo.pm
+
+Let's see if the svn post commit hook fires correctly.
+
+------------------------------------------------------------------------
+r18529 | medwards | 2009-09-08 14:50:39 -0500 (Tue, 08 Sep 2009) | 3 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Zombie.pm
+
+Made the error message also get sent through the debugging object.  This makes it show up in
+FirePhp for AJAX requests.
+
+------------------------------------------------------------------------
+r18490 | msemich | 2009-09-03 16:10:29 -0500 (Thu, 03 Sep 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Soap.pm
+
+cull some warn()ings
+
+------------------------------------------------------------------------
+r18390 | medwards | 2009-08-28 14:16:21 -0500 (Fri, 28 Aug 2009) | 3 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Debug/FirePHP.pm
+
+FirePHP expects the length of a message to be in bytes.  length() returns the number
+of characters and thus produced the wrong value when the string contained Unicode characters.
+
+------------------------------------------------------------------------
+r18359 | medwards | 2009-08-27 12:52:01 -0500 (Thu, 27 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Exception.pm
+
+Removed warning.
+
+------------------------------------------------------------------------
+r18145 | medwards | 2009-08-14 16:04:36 -0500 (Fri, 14 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Application.pm
+
+Models weren't getting a passed the hash of models on init()
+
+------------------------------------------------------------------------
+r18029 | medwards | 2009-08-10 21:30:16 -0500 (Mon, 10 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Exception.pm
+
+Test for defined-ness on the stack frame before trying to call subroutine() and args() on it.
+
+------------------------------------------------------------------------
+r17993 | medwards | 2009-08-10 09:45:14 -0500 (Mon, 10 Aug 2009) | 4 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+
+Expanded the trigger url for session destruction.  In addition to the 
+traditional /logout->handle(),  any method named logout() or .*/logout->handle() will
+also destroy the session.  
+
+------------------------------------------------------------------------
+r17987 | medwards | 2009-08-07 17:40:16 -0500 (Fri, 07 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Soap.pm
+
+Trap errors in WSDL formatting.
+
+------------------------------------------------------------------------
+r17955 | medwards | 2009-08-06 15:04:50 -0500 (Thu, 06 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+   M /Voodoo/trunk/Voodoo.pm
+
+Made stack traces appear in the soap faults when devel_mode is enabled.
+
+------------------------------------------------------------------------
+r17944 | medwards | 2009-08-06 09:06:10 -0500 (Thu, 06 Aug 2009) | 3 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Application/ConfigParser.pm
+
+Added the 'IncludeAgain' option to Config::General.  This allows the same file to be include
+more than once in voodoo.conf
+
+------------------------------------------------------------------------
+r17925 | medwards | 2009-08-05 12:38:58 -0500 (Wed, 05 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Soap.pm
+
+Now with proper HTTP status code goodness...
+
+------------------------------------------------------------------------
+r17920 | medwards | 2009-08-04 23:05:14 -0500 (Tue, 04 Aug 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/t/00-distribution.t
+
+
+------------------------------------------------------------------------
+r17919 | medwards | 2009-08-04 22:57:20 -0500 (Tue, 04 Aug 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/MP.pm
+   M /Voodoo/trunk/Voodoo/Session.pm
+   M /Voodoo/trunk/t/00-distribution.t
+
+
+------------------------------------------------------------------------
+r17918 | medwards | 2009-08-04 22:37:01 -0500 (Tue, 04 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/t/00-distribution.t
+
+is this the magic?
+
+------------------------------------------------------------------------
+r17917 | medwards | 2009-08-04 22:18:31 -0500 (Tue, 04 Aug 2009) | 7 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/MyConfig.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+   M /Voodoo/trunk/Voodoo/Table.pm
+   M /Voodoo/trunk/Voodoo.pm
+   M /Voodoo/trunk/t/00-distribution.t
+   M /Voodoo/trunk/t/03-table.t
+
+Not well tested at this point...may go boom.
+
+Changed redirect, display_error, access_denied and raw_mode to be true exceptions.
+display_error can also take a error code as the optional first param (defaults to 500).
+Also added the ability to return more than just hashrefs from the controllers.
+
+
+------------------------------------------------------------------------
+r17908 | medwards | 2009-08-04 09:07:50 -0500 (Tue, 04 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Debug/FirePHP.pm
+
+index line is no longer needed.
+
+------------------------------------------------------------------------
+r17907 | medwards | 2009-08-04 09:05:42 -0500 (Tue, 04 Aug 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/MP/Common.pm
+
+Added remote_ip and remote_host methods.  remote_host returns null if HostnameLookups are not enabled in apache.
+
+------------------------------------------------------------------------
+r17894 | medwards | 2009-07-31 17:02:32 -0500 (Fri, 31 Jul 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Validate.pm
+   M /Voodoo/trunk/t/03-table.t
+
+
+------------------------------------------------------------------------
+r17893 | medwards | 2009-07-31 17:01:56 -0500 (Fri, 31 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Validate/date.pm
+   M /Voodoo/trunk/Voodoo/Validate/datetime.pm
+   M /Voodoo/trunk/Voodoo/Validate/time.pm
+   M /Voodoo/trunk/t/02-validation.t
+
+Data time types were broken.
+
+------------------------------------------------------------------------
+r17877 | medwards | 2009-07-31 10:34:02 -0500 (Fri, 31 Jul 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/t/03-table.t
+
+
+------------------------------------------------------------------------
+r17867 | medwards | 2009-07-30 17:14:02 -0500 (Thu, 30 Jul 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+   M /Voodoo/trunk/Voodoo/Validate.pm
+   D /Voodoo/trunk/t/00-check_compilation.t
+   A /Voodoo/trunk/t/00-distribution.t
+   A /Voodoo/trunk/t/01-check_compilation.t (from /Voodoo/trunk/t/00-check_compilation.t:17667)
+   M /Voodoo/trunk/t/02-validation.t
+   A /Voodoo/trunk/t/03-table.t
+   M /Voodoo/trunk/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r17818 | medwards | 2009-07-27 17:55:06 -0500 (Mon, 27 Jul 2009) | 8 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Soap.pm
+
+Changed to use forked version of Pod::WSDL called Pod::WSDL2.
+Rather than pulling it out of svn, you can get it by using our internal CPAN mirror
+which has this module injected into it.
+
+In your CPAN configuration use http://galactica.nasba.dev/cpan as the first entry
+in your URL list.  Then 'reload index' to update your local CPAN indexes.
+
+
+------------------------------------------------------------------------
+r17786 | medwards | 2009-07-23 17:01:05 -0500 (Thu, 23 Jul 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Soap.pm
+   M /Voodoo/trunk/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r17740 | medwards | 2009-07-22 14:50:42 -0500 (Wed, 22 Jul 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/MP/Common.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+   M /Voodoo/trunk/Voodoo/Validate.pm
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+   M /Voodoo/trunk/Voodoo/View/JSON.pm
+   M /Voodoo/trunk/Voodoo/Zombie.pm
+
+
+------------------------------------------------------------------------
+r17674 | medwards | 2009-07-20 16:13:04 -0500 (Mon, 20 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+
+See...that's what happens when someone interrupts me...poorly formed commit messages.
+
+------------------------------------------------------------------------
+r17672 | medwards | 2009-07-20 15:43:43 -0500 (Mon, 20 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+
+Made the over ridding of the display_error template work correctly.
+
+------------------------------------------------------------------------
+r17667 | medwards | 2009-07-20 15:20:07 -0500 (Mon, 20 Jul 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+   M /Voodoo/trunk/t/00-check_compilation.t
+
+
+------------------------------------------------------------------------
+r17650 | medwards | 2009-07-20 12:31:13 -0500 (Mon, 20 Jul 2009) | 2 lines
+Changed paths:
+   A /Voodoo/trunk/Voodoo.pod
+   M /Voodoo/trunk/utils/Changes
+   M /Voodoo/trunk/utils/README
+   M /Voodoo/trunk/utils/prepare_dist.sh
+
+Updated docs.
+
+------------------------------------------------------------------------
+r17646 | medwards | 2009-07-20 12:00:30 -0500 (Mon, 20 Jul 2009) | 2 lines
+Changed paths:
+   D /Voodoo/trunk/utils/MANIFEST
+   M /Voodoo/trunk/utils/MANIFEST.SKIP
+   M /Voodoo/trunk/utils/prepare_dist.sh
+
+The MANIFEST file is autogenerated now.
+
+------------------------------------------------------------------------
+r17644 | medwards | 2009-07-20 11:42:13 -0500 (Mon, 20 Jul 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/MP/Common.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+
+
+------------------------------------------------------------------------
+r17554 | medwards | 2009-07-14 14:10:28 -0500 (Tue, 14 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/MP/V1.pm
+   M /Voodoo/trunk/Voodoo/MP/V2.pm
+
+Added missing V1 cookie methods.
+
+------------------------------------------------------------------------
+r17549 | medwards | 2009-07-14 13:10:28 -0500 (Tue, 14 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Application/ConfigParser.pm
+
+Bug fix: not having a database configured would produce an error.
+
+------------------------------------------------------------------------
+r17548 | medwards | 2009-07-14 12:44:18 -0500 (Tue, 14 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+
+Bug fixes.
+
+------------------------------------------------------------------------
+r17534 | medwards | 2009-07-13 15:22:03 -0500 (Mon, 13 Jul 2009) | 2 lines
+Changed paths:
+   D /Voodoo/trunk/Voodoo/Validate/Config.pm
+   A /Voodoo/trunk/Voodoo/Validate/Plugin.pm
+   D /Voodoo/trunk/Voodoo/Validate/URL.pm
+   A /Voodoo/trunk/Voodoo/Validate/bit.pm
+   A /Voodoo/trunk/Voodoo/Validate/date.pm
+   A /Voodoo/trunk/Voodoo/Validate/datetime.pm
+   A /Voodoo/trunk/Voodoo/Validate/signed_decimal.pm
+   A /Voodoo/trunk/Voodoo/Validate/signed_int.pm
+   A /Voodoo/trunk/Voodoo/Validate/text.pm
+   A /Voodoo/trunk/Voodoo/Validate/time.pm
+   A /Voodoo/trunk/Voodoo/Validate/unsigned_decimal.pm
+   A /Voodoo/trunk/Voodoo/Validate/unsigned_int.pm
+   A /Voodoo/trunk/Voodoo/Validate/varchar.pm
+   M /Voodoo/trunk/Voodoo/Validate.pm
+
+Refactored to be plugin based.
+
+------------------------------------------------------------------------
+r17507 | medwards | 2009-07-10 17:50:59 -0500 (Fri, 10 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Validate/Config.pm
+   M /Voodoo/trunk/Voodoo/Validate.pm
+
+Added the ability to override the default date parser.
+
+------------------------------------------------------------------------
+r17504 | medwards | 2009-07-10 14:59:16 -0500 (Fri, 10 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Validate.pm
+   M /Voodoo/trunk/t/02-validation.t
+
+Added callbacks and test cases for them.
+
+------------------------------------------------------------------------
+r17501 | medwards | 2009-07-10 13:20:03 -0500 (Fri, 10 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Validate.pm
+   M /Voodoo/trunk/t/02-validation.t
+
+minor refactor.
+
+------------------------------------------------------------------------
+r17500 | medwards | 2009-07-10 12:52:06 -0500 (Fri, 10 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Validate/Config.pm
+   M /Voodoo/trunk/Voodoo/Validate.pm
+   M /Voodoo/trunk/t/02-validation.t
+
+more data types, more tests.
+
+------------------------------------------------------------------------
+r17485 | medwards | 2009-07-09 17:22:23 -0500 (Thu, 09 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/t/00-check_compilation.t
+   M /Voodoo/trunk/t/02-validation.t
+
+property set on files.
+
+------------------------------------------------------------------------
+r17484 | medwards | 2009-07-09 17:21:23 -0500 (Thu, 09 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Validate/Config.pm
+   M /Voodoo/trunk/Voodoo/Validate.pm
+   M /Voodoo/trunk/t/02-validation.t
+
+More functions, more tests.
+
+------------------------------------------------------------------------
+r17393 | medwards | 2009-07-08 10:45:26 -0500 (Wed, 08 Jul 2009) | 2 lines
+Changed paths:
+   D /Voodoo/trunk/Voodoo/ValidURL.pm
+   D /Voodoo/trunk/Voodoo/experimental/Config.pm
+   D /Voodoo/trunk/Voodoo/experimental/ParamValidate.pm
+
+missed in the last commit.
+
+------------------------------------------------------------------------
+r17392 | medwards | 2009-07-08 10:44:52 -0500 (Wed, 08 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Table.pm
+   A /Voodoo/trunk/Voodoo/Validate
+   A /Voodoo/trunk/Voodoo/Validate/Config.pm (from /Voodoo/trunk/Voodoo/experimental/Config.pm:16125)
+   A /Voodoo/trunk/Voodoo/Validate/URL.pm (from /Voodoo/trunk/Voodoo/ValidURL.pm:17252)
+   A /Voodoo/trunk/Voodoo/Validate.pm (from /Voodoo/trunk/Voodoo/experimental/ParamValidate.pm:16125)
+   A /Voodoo/trunk/t/00-check_compilation.t (from /Voodoo/trunk/t/check_compilation.t:16125)
+   A /Voodoo/trunk/t/02-validation.t
+   D /Voodoo/trunk/t/check_compilation.t
+
+Added abstracted data validation.
+
+------------------------------------------------------------------------
+r17252 | medwards | 2009-07-02 13:46:35 -0500 (Thu, 02 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/ValidURL.pm
+
+removed cruft
+
+------------------------------------------------------------------------
+r17250 | medwards | 2009-07-02 13:35:14 -0500 (Thu, 02 Jul 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/trunk/Voodoo/Loader.pm
+
+Still chasing the blasted redefine warning.
+
+------------------------------------------------------------------------
+r16316 | medwards | 2009-06-08 17:22:40 -0500 (Mon, 08 Jun 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Debug/html/i/debug.png
+
+better image.
+
+------------------------------------------------------------------------
+r16315 | medwards | 2009-06-08 17:14:23 -0500 (Mon, 08 Jun 2009) | 3 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Debug/Common.pm
+   M /Voodoo/trunk/Voodoo/Debug/Log4perl.pm
+   M /Voodoo/trunk/Voodoo/Debug/Native.pm
+   M /Voodoo/trunk/Voodoo/Debug/html/debug.js
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/View/HTML/exception.tmpl
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+
+Fixed debug stack printing bug in debug.js.
+Made trace for Log4perl produce a stack trace.
+
+------------------------------------------------------------------------
+r16248 | medwards | 2009-06-04 14:56:34 -0500 (Thu, 04 Jun 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo.pm
+
+Made exception() always die regardless of if debugging is turned on.
+
+------------------------------------------------------------------------
+r16247 | medwards | 2009-06-04 14:55:35 -0500 (Thu, 04 Jun 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Install/Config.pm
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+   M /Voodoo/trunk/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r16242 | medwards | 2009-06-04 12:45:01 -0500 (Thu, 04 Jun 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/bin/voodoo-control
+   M /Voodoo/trunk/bin/voodoo-daemon
+
+set svn:keywords property
+
+------------------------------------------------------------------------
+r16206 | medwards | 2009-06-03 11:46:33 -0500 (Wed, 03 Jun 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/Loader.pm
+   M /Voodoo/trunk/Voodoo/View/HTML/db_error.tmpl
+   A /Voodoo/trunk/Voodoo/View/HTML/display_error.tmpl
+   M /Voodoo/trunk/Voodoo/View/HTML/exception.tmpl
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+   M /Voodoo/trunk/Voodoo/Zombie.pm
+
+
+------------------------------------------------------------------------
+r16181 | medwards | 2009-06-02 16:52:54 -0500 (Tue, 02 Jun 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Debug/Common.pm
+   R /Voodoo/trunk/Voodoo/View/HTML/db_error.tmpl (from /Voodoo/trunk/Voodoo/View/HTML/exception.tmpl:16125)
+   M /Voodoo/trunk/Voodoo/View/HTML/exception.tmpl
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+   M /Voodoo/trunk/Voodoo/View/JSON.pm
+   M /Voodoo/trunk/Voodoo.pm
+
+Now with human readable exceptions.
+
+------------------------------------------------------------------------
+r16134 | medwards | 2009-06-01 14:20:57 -0500 (Mon, 01 Jun 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Application.pm
+   M /Voodoo/trunk/Voodoo/Debug/Common.pm
+   M /Voodoo/trunk/Voodoo/Debug/Log4perl.pm
+   M /Voodoo/trunk/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/trunk/Voodoo/Debug.pm
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   M /Voodoo/trunk/Voodoo/MP/V2.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+
+Log4Perl config is local to the app again.
+
+------------------------------------------------------------------------
+r16113 | medwards | 2009-05-29 13:38:23 -0500 (Fri, 29 May 2009) | 1 line
+Changed paths:
+   D /Voodoo/trunk/Voodoo/log4perl.conf
+   A /Voodoo/trunk/Voodoo/log4perl.conf.example (from /Voodoo/trunk/Voodoo/log4perl.conf:16108)
+
+
+------------------------------------------------------------------------
+r16110 | medwards | 2009-05-29 12:09:13 -0500 (Fri, 29 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Application/ConfigParser.pm
+   M /Voodoo/trunk/Voodoo/Application.pm
+   M /Voodoo/trunk/Voodoo/Constants.pm
+   M /Voodoo/trunk/Voodoo/Debug/Common.pm
+   M /Voodoo/trunk/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/trunk/Voodoo/Debug/Handler.pm
+   M /Voodoo/trunk/Voodoo/Debug/Log4perl.pm
+   M /Voodoo/trunk/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/trunk/Voodoo/Debug/Native/SQLite.pm
+   M /Voodoo/trunk/Voodoo/Debug/Native/common.pm
+   M /Voodoo/trunk/Voodoo/Debug/Native.pm
+   M /Voodoo/trunk/Voodoo/Debug/base.pm
+   M /Voodoo/trunk/Voodoo/Debug/debug.pm
+   M /Voodoo/trunk/Voodoo/Debug/html/debug.js
+   M /Voodoo/trunk/Voodoo/Debug/index.pm
+   M /Voodoo/trunk/Voodoo/Debug/parameters.pm
+   M /Voodoo/trunk/Voodoo/Debug/profile.pm
+   M /Voodoo/trunk/Voodoo/Debug/request.pm
+   M /Voodoo/trunk/Voodoo/Debug/return_data.pm
+   M /Voodoo/trunk/Voodoo/Debug/session.pm
+   M /Voodoo/trunk/Voodoo/Debug/template_conf.pm
+   M /Voodoo/trunk/Voodoo/Debug.pm
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   M /Voodoo/trunk/Voodoo/Install/Config.pm
+   M /Voodoo/trunk/Voodoo/Install/Distribution.pm
+   M /Voodoo/trunk/Voodoo/Install/Pid.pm
+   M /Voodoo/trunk/Voodoo/Install/Post.pm
+   M /Voodoo/trunk/Voodoo/Install/Updater.pm
+   M /Voodoo/trunk/Voodoo/Install.pm
+   M /Voodoo/trunk/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/trunk/Voodoo/Loader/Static.pm
+   M /Voodoo/trunk/Voodoo/Loader.pm
+   M /Voodoo/trunk/Voodoo/MP/Common.pm
+   M /Voodoo/trunk/Voodoo/MP/V1.pm
+   M /Voodoo/trunk/Voodoo/MP/V2.pm
+   M /Voodoo/trunk/Voodoo/MP.pm
+   M /Voodoo/trunk/Voodoo/MyConfig.pm
+   M /Voodoo/trunk/Voodoo/Pager.pm
+   M /Voodoo/trunk/Voodoo/Session/File.pm
+   M /Voodoo/trunk/Voodoo/Session/Instance.pm
+   M /Voodoo/trunk/Voodoo/Session/MySQL.pm
+   M /Voodoo/trunk/Voodoo/Session.pm
+   M /Voodoo/trunk/Voodoo/Soap.pm
+   M /Voodoo/trunk/Voodoo/Table/Probe/MySQL.pm
+   M /Voodoo/trunk/Voodoo/Table/Probe.pm
+   M /Voodoo/trunk/Voodoo/Table.pm
+   M /Voodoo/trunk/Voodoo/ValidURL.pm
+   M /Voodoo/trunk/Voodoo/View/HTML/Theme.pm
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+   M /Voodoo/trunk/Voodoo/View/JSON.pm
+   M /Voodoo/trunk/Voodoo/View.pm
+   M /Voodoo/trunk/Voodoo/Zombie.pm
+   M /Voodoo/trunk/Voodoo/experimental/Config.pm
+   M /Voodoo/trunk/Voodoo/experimental/Driver.pm
+   M /Voodoo/trunk/Voodoo/experimental/ParamValidate.pm
+   M /Voodoo/trunk/Voodoo/experimental/Storage/Table.pm
+   M /Voodoo/trunk/Voodoo/experimental/Template/newapp/code/skeleton.pm
+   M /Voodoo/trunk/Voodoo/experimental/Template/table/template.pm
+   M /Voodoo/trunk/Voodoo/experimental/UI/extjs.pm
+   M /Voodoo/trunk/Voodoo/experimental/UI.pm
+
+
+------------------------------------------------------------------------
+r16108 | medwards | 2009-05-29 11:37:56 -0500 (Fri, 29 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Constants.pm
+   M /Voodoo/trunk/Voodoo/Debug/Log4perl.pm
+   M /Voodoo/trunk/Voodoo/Debug.pm
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   M /Voodoo/trunk/Voodoo/MyConfig.pm
+   M /Voodoo/trunk/Voodoo/View/HTML.pm
+   A /Voodoo/trunk/Voodoo/log4perl.conf
+
+
+------------------------------------------------------------------------
+r16106 | medwards | 2009-05-29 10:39:48 -0500 (Fri, 29 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo.pm
+   M /Voodoo/trunk/t/check_compilation.t
+   M /Voodoo/trunk/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r16098 | medwards | 2009-05-28 17:17:33 -0500 (Thu, 28 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   M /Voodoo/trunk/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/trunk/Voodoo/Loader.pm
+
+
+------------------------------------------------------------------------
+r16092 | medwards | 2009-05-28 14:44:51 -0500 (Thu, 28 May 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   A /Voodoo/trunk/Voodoo/Soap.pm (from /Voodoo/trunk/Voodoo/experimental/Soap.pm:16082)
+   D /Voodoo/trunk/Voodoo/experimental/Soap.pm
+
+It seems we have a winner.
+
+------------------------------------------------------------------------
+r16082 | medwards | 2009-05-28 11:34:22 -0500 (Thu, 28 May 2009) | 1 line
+Changed paths:
+   A /Voodoo/trunk/Voodoo/Debug/Common.pm (from /Voodoo/trunk/Voodoo/Debug/Null.pm:16054)
+   M /Voodoo/trunk/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/trunk/Voodoo/Debug/Log4perl.pm
+   M /Voodoo/trunk/Voodoo/Debug/Native.pm
+   D /Voodoo/trunk/Voodoo/Debug/Null.pm
+   M /Voodoo/trunk/Voodoo/Debug.pm
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/MP/V1.pm
+   M /Voodoo/trunk/Voodoo/MP/V2.pm
+   M /Voodoo/trunk/Voodoo/experimental/Soap.pm
+
+
+------------------------------------------------------------------------
+r16074 | medwards | 2009-05-27 16:36:00 -0500 (Wed, 27 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   M /Voodoo/trunk/Voodoo/experimental/Soap.pm
+
+
+------------------------------------------------------------------------
+r16053 | medwards | 2009-05-26 17:59:09 -0500 (Tue, 26 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Application.pm
+   M /Voodoo/trunk/Voodoo/Debug/FirePHP.pm
+   A /Voodoo/trunk/Voodoo/Debug/Log4perl.pm
+   M /Voodoo/trunk/Voodoo/Debug/Native.pm
+   M /Voodoo/trunk/Voodoo/Engine.pm
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   M /Voodoo/trunk/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/trunk/Voodoo/Loader.pm
+   M /Voodoo/trunk/Voodoo/Zombie.pm
+   M /Voodoo/trunk/Voodoo/experimental/Soap.pm
+
+
+------------------------------------------------------------------------
+r16026 | msemich | 2009-05-26 09:29:30 -0500 (Tue, 26 May 2009) | 2 lines
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Handler.pm
+
+Gross little hack to support handling the logout process by including its standard name template.  Instantiates the "logout_is_handled" directive
+
+------------------------------------------------------------------------
+r16015 | medwards | 2009-05-22 12:28:09 -0500 (Fri, 22 May 2009) | 1 line
+Changed paths:
+   A /Voodoo/trunk/Voodoo/Engine.pm (from /Voodoo/trunk/Voodoo/Handler.pm:15930)
+   M /Voodoo/trunk/Voodoo/Exception.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+   M /Voodoo/trunk/Voodoo/MP/V1.pm
+   M /Voodoo/trunk/Voodoo/MP/V2.pm
+   M /Voodoo/trunk/Voodoo/experimental/Soap.pm
+
+
+------------------------------------------------------------------------
+r15930 | medwards | 2009-05-19 17:40:05 -0500 (Tue, 19 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Debug/Handler.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r15879 | medwards | 2009-05-18 17:23:53 -0500 (Mon, 18 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/experimental/Soap.pm
+
+
+------------------------------------------------------------------------
+r15866 | medwards | 2009-05-18 09:11:19 -0500 (Mon, 18 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/trunk/Voodoo/Application/ConfigParser.pm
+   M /Voodoo/trunk/Voodoo/Application.pm
+   M /Voodoo/trunk/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r15786 | medwards | 2009-05-14 11:09:11 -0500 (Thu, 14 May 2009) | 1 line
+Changed paths:
+   D /Voodoo/core
+   A /Voodoo/trunk (from /Voodoo/core:15785)
+
+
+------------------------------------------------------------------------
+r15238 | medwards | 2009-05-05 15:23:35 -0500 (Tue, 05 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application/ConfigParser.pm
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/MP/Common.pm
+   M /Voodoo/core/Voodoo/View/HTML/Theme.pm
+   M /Voodoo/core/Voodoo/View/HTML.pm
+   M /Voodoo/core/Voodoo/View/JSON.pm
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r15146 | medwards | 2009-05-01 17:35:09 -0500 (Fri, 01 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+
+------------------------------------------------------------------------
+r15145 | medwards | 2009-05-01 17:28:09 -0500 (Fri, 01 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+
+
+------------------------------------------------------------------------
+r15143 | medwards | 2009-05-01 14:49:51 -0500 (Fri, 01 May 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+
+
+------------------------------------------------------------------------
+r15129 | medwards | 2009-04-30 16:48:22 -0500 (Thu, 30 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r15128 | medwards | 2009-04-30 16:46:48 -0500 (Thu, 30 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/View/HTML.pm
+
+
+------------------------------------------------------------------------
+r15127 | medwards | 2009-04-30 16:05:27 -0500 (Thu, 30 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application/ConfigParser.pm
+   M /Voodoo/core/Voodoo/Application.pm
+   A /Voodoo/core/Voodoo/View/JSON.pm
+
+
+------------------------------------------------------------------------
+r15096 | medwards | 2009-04-30 12:16:28 -0500 (Thu, 30 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application/ConfigParser.pm
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r15045 | medwards | 2009-04-29 17:04:32 -0500 (Wed, 29 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application/ConfigParser.pm
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug/base.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   D /Voodoo/core/Voodoo/Soap.pm
+   A /Voodoo/core/Voodoo/View/HTML (from /Voodoo/core/Voodoo/View/HtmlTemplate:14741)
+   M /Voodoo/core/Voodoo/View/HTML/Theme.pm
+   A /Voodoo/core/Voodoo/View/HTML.pm (from /Voodoo/core/Voodoo/View/HtmlTemplate.pm:14963)
+   D /Voodoo/core/Voodoo/View/HtmlTemplate
+   D /Voodoo/core/Voodoo/View/HtmlTemplate.pm
+   A /Voodoo/core/Voodoo/experimental/Soap.pm (from /Voodoo/core/Voodoo/Soap.pm:14741)
+   D /Voodoo/core/Voodoo.pod
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r14963 | medwards | 2009-04-29 09:34:35 -0500 (Wed, 29 Apr 2009) | 3 lines
+Changed paths:
+   D /Voodoo/core/Voodoo/Config.pm
+   D /Voodoo/core/Voodoo/Driver.pm
+   D /Voodoo/core/Voodoo/ParamValidate.pm
+   D /Voodoo/core/Voodoo/Storage
+   D /Voodoo/core/Voodoo/Table.pod
+   D /Voodoo/core/Voodoo/Template
+   D /Voodoo/core/Voodoo/UI
+   D /Voodoo/core/Voodoo/UI.pm
+   M /Voodoo/core/Voodoo/View/HtmlTemplate.pm
+   M /Voodoo/core/Voodoo/View.pm
+   D /Voodoo/core/Voodoo/api.pod
+   D /Voodoo/core/Voodoo/basics.pod
+   A /Voodoo/core/Voodoo/docs
+   A /Voodoo/core/Voodoo/docs/Table.pod (from /Voodoo/core/Voodoo/Table.pod:14741)
+   A /Voodoo/core/Voodoo/docs/Voodoo.pod (from /Voodoo/core/Voodoo.pod:14741)
+   A /Voodoo/core/Voodoo/docs/api.pod (from /Voodoo/core/Voodoo/api.pod:14741)
+   A /Voodoo/core/Voodoo/docs/basics.pod (from /Voodoo/core/Voodoo/basics.pod:14741)
+   A /Voodoo/core/Voodoo/docs/license.pod (from /Voodoo/core/Voodoo/license.pod:14741)
+   A /Voodoo/core/Voodoo/experimental
+   A /Voodoo/core/Voodoo/experimental/Config.pm (from /Voodoo/core/Voodoo/Config.pm:14741)
+   A /Voodoo/core/Voodoo/experimental/Driver.pm (from /Voodoo/core/Voodoo/Driver.pm:14741)
+   A /Voodoo/core/Voodoo/experimental/ParamValidate.pm (from /Voodoo/core/Voodoo/ParamValidate.pm:14741)
+   A /Voodoo/core/Voodoo/experimental/Storage (from /Voodoo/core/Voodoo/Storage:14741)
+   A /Voodoo/core/Voodoo/experimental/Template (from /Voodoo/core/Voodoo/Template:14741)
+   A /Voodoo/core/Voodoo/experimental/UI (from /Voodoo/core/Voodoo/UI:14741)
+   A /Voodoo/core/Voodoo/experimental/UI.pm (from /Voodoo/core/Voodoo/UI.pm:14741)
+   D /Voodoo/core/Voodoo/license.pod
+
+Move all the experimental stuff into it's own space to keep it separated.
+Docs too, since they're going to need rewriting.
+
+------------------------------------------------------------------------
+r14921 | medwards | 2009-04-28 21:03:23 -0500 (Tue, 28 Apr 2009) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Application
+   A /Voodoo/core/Voodoo/Application/ConfigParser.pm (from /Voodoo/core/Voodoo/Application.pm:14741)
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+
+
+------------------------------------------------------------------------
+r14741 | medwards | 2009-04-26 22:03:47 -0500 (Sun, 26 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r14731 | medwards | 2009-04-24 14:49:30 -0500 (Fri, 24 Apr 2009) | 2 lines
+Changed paths:
+   D /Voodoo/core/Voodoo/DisplayError.pm
+
+Not needed anymore.  It's operation has been consumed by the View::HtmlTemplate 
+
+------------------------------------------------------------------------
+r14723 | medwards | 2009-04-24 11:44:48 -0500 (Fri, 24 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Exception.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/View/HtmlTemplate.pm
+
+
+------------------------------------------------------------------------
+r14453 | medwards | 2009-04-20 18:03:29 -0500 (Mon, 20 Apr 2009) | 6 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   A /Voodoo/core/Voodoo/Exception.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   D /Voodoo/core/Voodoo/Template.pm
+   D /Voodoo/core/Voodoo/Theme.pm
+   A /Voodoo/core/Voodoo/View
+   A /Voodoo/core/Voodoo/View/HtmlTemplate
+   A /Voodoo/core/Voodoo/View/HtmlTemplate/Theme.pm (from /Voodoo/core/Voodoo/Theme.pm:14098)
+   A /Voodoo/core/Voodoo/View/HtmlTemplate/db_error.tmpl
+   A /Voodoo/core/Voodoo/View/HtmlTemplate/exception.tmpl
+   A /Voodoo/core/Voodoo/View/HtmlTemplate.pm (from /Voodoo/core/Voodoo/Template.pm:14098)
+   A /Voodoo/core/Voodoo/View.pm (from /Voodoo/core/Voodoo/Template.pm:14098)
+   M /Voodoo/core/Voodoo.pm
+
+Let's see how the new svn mailer likes this one.
+
+Exceptions are somewhat mostly operational.
+Exception::Class::DBI->statement doesn't seem to work as advertised...bummer.
+
+
+------------------------------------------------------------------------
+r14070 | medwards | 2009-04-09 16:32:53 -0500 (Thu, 09 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r14039 | medwards | 2009-04-08 16:41:50 -0500 (Wed, 08 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r13966 | medwards | 2009-04-07 19:15:06 -0500 (Tue, 07 Apr 2009) | 2 lines
+Changed paths:
+   M /Voodoo/core/utils/Makefile.PL
+
+Added prerequisites fo Exception::Class and Exception::Class::DBI
+
+------------------------------------------------------------------------
+r13961 | medwards | 2009-04-07 16:33:08 -0500 (Tue, 07 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r13928 | medwards | 2009-04-07 10:36:42 -0500 (Tue, 07 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+
+
+------------------------------------------------------------------------
+r13925 | medwards | 2009-04-06 23:51:14 -0500 (Mon, 06 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+
+
+------------------------------------------------------------------------
+r13918 | medwards | 2009-04-06 15:29:10 -0500 (Mon, 06 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+
+
+------------------------------------------------------------------------
+r13790 | medwards | 2009-04-01 17:27:27 -0500 (Wed, 01 Apr 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+
+
+------------------------------------------------------------------------
+r13745 | medwards | 2009-03-31 17:13:40 -0500 (Tue, 31 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/base.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   M /Voodoo/core/Voodoo/Debug/request.pm
+
+
+------------------------------------------------------------------------
+r13742 | medwards | 2009-03-31 15:45:17 -0500 (Tue, 31 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/debug.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+
+
+------------------------------------------------------------------------
+r13118 | medwards | 2009-03-09 17:17:57 -0500 (Mon, 09 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+
+
+------------------------------------------------------------------------
+r13117 | medwards | 2009-03-09 16:46:54 -0500 (Mon, 09 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/debug.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+
+
+------------------------------------------------------------------------
+r13097 | medwards | 2009-03-08 23:31:09 -0500 (Sun, 08 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+
+
+------------------------------------------------------------------------
+r13029 | medwards | 2009-03-03 13:25:28 -0600 (Tue, 03 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/base.pm
+   M /Voodoo/core/Voodoo/Debug/debug.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   M /Voodoo/core/Voodoo/Debug/parameters.pm
+   M /Voodoo/core/Voodoo/Debug/return_data.pm
+   M /Voodoo/core/Voodoo/Debug/session.pm
+   M /Voodoo/core/Voodoo/Debug/template_conf.pm
+
+
+------------------------------------------------------------------------
+r13026 | medwards | 2009-03-03 12:01:31 -0600 (Tue, 03 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/i/table.png
+
+
+------------------------------------------------------------------------
+r13025 | medwards | 2009-03-03 11:57:19 -0600 (Tue, 03 Mar 2009) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Debug/html/i/debug.png
+   M /Voodoo/core/Voodoo/Debug/html/i/error.png
+   M /Voodoo/core/Voodoo/Debug/html/i/exception.png
+   M /Voodoo/core/Voodoo/Debug/html/i/info.png
+   M /Voodoo/core/Voodoo/Debug/html/i/table.png
+   M /Voodoo/core/Voodoo/Debug/html/i/trace.png
+   M /Voodoo/core/Voodoo/Debug/html/i/warn.png
+
+
+------------------------------------------------------------------------
+r13016 | medwards | 2009-03-02 17:12:45 -0600 (Mon, 02 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+
+
+------------------------------------------------------------------------
+r13011 | medwards | 2009-03-02 10:16:12 -0600 (Mon, 02 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/MyConfig.pm
+
+
+------------------------------------------------------------------------
+r13002 | medwards | 2009-03-02 02:22:55 -0600 (Mon, 02 Mar 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+
+
+------------------------------------------------------------------------
+r13001 | medwards | 2009-02-28 00:12:47 -0600 (Sat, 28 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/core/Voodoo/Debug/Native/common.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug/Null.pm
+   M /Voodoo/core/Voodoo/Debug/debug.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   M /Voodoo/core/Voodoo/Debug/html/i/error.png
+   M /Voodoo/core/Voodoo/Debug/html/i/exception.png
+   M /Voodoo/core/Voodoo/Debug/html/i/info.png
+   M /Voodoo/core/Voodoo/Debug/html/i/warn.png
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Table/Probe/MySQL.pm
+
+
+------------------------------------------------------------------------
+r12994 | medwards | 2009-02-26 23:14:09 -0600 (Thu, 26 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Native/SQLite.pm
+   M /Voodoo/core/Voodoo/Debug/Native/common.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+
+
+------------------------------------------------------------------------
+r12993 | medwards | 2009-02-26 21:16:30 -0600 (Thu, 26 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/i/exception.png
+   M /Voodoo/core/Voodoo/Debug/html/i/warn.png
+
+
+------------------------------------------------------------------------
+r12980 | medwards | 2009-02-26 04:52:57 -0600 (Thu, 26 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   A /Voodoo/core/Voodoo/Debug/html/i/error.png
+   A /Voodoo/core/Voodoo/Debug/html/i/exception.png
+   A /Voodoo/core/Voodoo/Debug/html/i/info.png
+   D /Voodoo/core/Voodoo/Debug/html/i/minus.gif
+   A /Voodoo/core/Voodoo/Debug/html/i/minus.png
+   D /Voodoo/core/Voodoo/Debug/html/i/plus.gif
+   A /Voodoo/core/Voodoo/Debug/html/i/plus.png
+   A /Voodoo/core/Voodoo/Debug/html/i/table.png
+   A /Voodoo/core/Voodoo/Debug/html/i/trace.png
+   A /Voodoo/core/Voodoo/Debug/html/i/warn.png
+   M /Voodoo/core/Voodoo/MyConfig.pm
+
+
+------------------------------------------------------------------------
+r12979 | medwards | 2009-02-26 00:14:26 -0600 (Thu, 26 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+
+
+------------------------------------------------------------------------
+r12978 | medwards | 2009-02-25 20:37:30 -0600 (Wed, 25 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug/Null.pm
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r12963 | medwards | 2009-02-23 19:58:36 -0600 (Mon, 23 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Debug/Native/common.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r12962 | medwards | 2009-02-23 19:21:29 -0600 (Mon, 23 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Native/SQLite.pm
+   M /Voodoo/core/Voodoo/Debug/Native/common.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/bin/voodoo-daemon
+
+
+------------------------------------------------------------------------
+r12953 | medwards | 2009-02-23 15:11:10 -0600 (Mon, 23 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+
+------------------------------------------------------------------------
+r12912 | medwards | 2009-02-21 14:13:05 -0600 (Sat, 21 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+
+------------------------------------------------------------------------
+r12910 | medwards | 2009-02-21 02:09:08 -0600 (Sat, 21 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+
+------------------------------------------------------------------------
+r12908 | medwards | 2009-02-20 17:56:57 -0600 (Fri, 20 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/MP/Common.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r12907 | medwards | 2009-02-20 17:09:25 -0600 (Fri, 20 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Config.pm
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/core/Voodoo/Debug/Native/SQLite.pm
+   M /Voodoo/core/Voodoo/Debug/Native/common.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug/Null.pm
+   M /Voodoo/core/Voodoo/Debug/base.pm
+   M /Voodoo/core/Voodoo/Debug/debug.pm
+   M /Voodoo/core/Voodoo/Debug/index.pm
+   M /Voodoo/core/Voodoo/Debug/parameters.pm
+   M /Voodoo/core/Voodoo/Debug/profile.pm
+   M /Voodoo/core/Voodoo/Debug/request.pm
+   M /Voodoo/core/Voodoo/Debug/return_data.pm
+   M /Voodoo/core/Voodoo/Debug/session.pm
+   M /Voodoo/core/Voodoo/Debug/template_conf.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Driver.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/MP/Common.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/Voodoo/MP.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ParamValidate.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   M /Voodoo/core/Voodoo/Session/Instance.pm
+   M /Voodoo/core/Voodoo/Session/MySQL.pm
+   M /Voodoo/core/Voodoo/Session.pm
+   M /Voodoo/core/Voodoo/Soap.pm
+   M /Voodoo/core/Voodoo/Storage/Table.pm
+   M /Voodoo/core/Voodoo/Table/Probe/MySQL.pm
+   M /Voodoo/core/Voodoo/Table/Probe.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Template/newapp/code/skeleton.pm
+   M /Voodoo/core/Voodoo/Template/table/template.pm
+   M /Voodoo/core/Voodoo/Template.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/UI/extjs.pm
+   M /Voodoo/core/Voodoo/UI.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+
+
+------------------------------------------------------------------------
+r12906 | medwards | 2009-02-20 17:08:10 -0600 (Fri, 20 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Config.pm
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/core/Voodoo/Debug/Native/SQLite.pm
+   M /Voodoo/core/Voodoo/Debug/Native/common.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   M /Voodoo/core/Voodoo/Debug/Null.pm
+   M /Voodoo/core/Voodoo/Debug/base.pm
+   M /Voodoo/core/Voodoo/Debug/debug.pm
+   M /Voodoo/core/Voodoo/Debug/index.pm
+   M /Voodoo/core/Voodoo/Debug/parameters.pm
+   M /Voodoo/core/Voodoo/Debug/profile.pm
+   M /Voodoo/core/Voodoo/Debug/request.pm
+   M /Voodoo/core/Voodoo/Debug/return_data.pm
+   M /Voodoo/core/Voodoo/Debug/session.pm
+   M /Voodoo/core/Voodoo/Debug/template_conf.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Driver.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/MP/Common.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/Voodoo/MP.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ParamValidate.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   M /Voodoo/core/Voodoo/Session/Instance.pm
+   M /Voodoo/core/Voodoo/Session/MySQL.pm
+   M /Voodoo/core/Voodoo/Session.pm
+   M /Voodoo/core/Voodoo/Soap.pm
+   M /Voodoo/core/Voodoo/Storage/Table.pm
+   M /Voodoo/core/Voodoo/Table/Probe/MySQL.pm
+   M /Voodoo/core/Voodoo/Table/Probe.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Template/newapp/code/skeleton.pm
+   M /Voodoo/core/Voodoo/Template/table/template.pm
+   M /Voodoo/core/Voodoo/Template.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/UI/extjs.pm
+   M /Voodoo/core/Voodoo/UI.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+
+
+------------------------------------------------------------------------
+r12905 | medwards | 2009-02-20 17:06:52 -0600 (Fri, 20 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug/Multiplex.pm
+   M /Voodoo/core/Voodoo/Debug/Native.pm
+   A /Voodoo/core/Voodoo/Debug/Null.pm (from /Voodoo/core/Voodoo/Debug/Multiplex.pm:12788)
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/MP/Common.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+
+
+------------------------------------------------------------------------
+r12788 | medwards | 2009-02-19 17:06:38 -0600 (Thu, 19 Feb 2009) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Debug/App
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   A /Voodoo/core/Voodoo/Debug/Multiplex.pm (from /Voodoo/core/Voodoo/Debug.pm:12584)
+   A /Voodoo/core/Voodoo/Debug/Native
+   A /Voodoo/core/Voodoo/Debug/Native/SQLite.pm (from /Voodoo/core/Voodoo/Debug/SQLite.pm:12584)
+   A /Voodoo/core/Voodoo/Debug/Native/common.pm (from /Voodoo/core/Voodoo/Debug/common.pm:12584)
+   A /Voodoo/core/Voodoo/Debug/Native.pm (from /Voodoo/core/Voodoo/Debug.pm:12584)
+   D /Voodoo/core/Voodoo/Debug/SQLite.pm
+   D /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+
+
+------------------------------------------------------------------------
+r12627 | medwards | 2009-02-18 15:45:33 -0600 (Wed, 18 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r12540 | medwards | 2009-02-18 00:03:37 -0600 (Wed, 18 Feb 2009) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+Fixed behaviour of group start and end
+
+------------------------------------------------------------------------
+r12537 | medwards | 2009-02-17 17:02:54 -0600 (Tue, 17 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+
+------------------------------------------------------------------------
+r12505 | medwards | 2009-02-17 14:47:13 -0600 (Tue, 17 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+
+
+------------------------------------------------------------------------
+r12456 | medwards | 2009-02-14 22:36:43 -0600 (Sat, 14 Feb 2009) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+Fixed the indentation
+
+------------------------------------------------------------------------
+r12455 | medwards | 2009-02-13 16:43:56 -0600 (Fri, 13 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+
+------------------------------------------------------------------------
+r12448 | medwards | 2009-02-12 18:00:47 -0600 (Thu, 12 Feb 2009) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Debug/FirePHP.pm
+
+
+------------------------------------------------------------------------
+r12191 | medwards | 2009-02-04 16:55:51 -0600 (Wed, 04 Feb 2009) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+
+
+------------------------------------------------------------------------
+r12189 | medwards | 2009-02-04 15:04:07 -0600 (Wed, 04 Feb 2009) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   D /Voodoo/core/Voodoo/SIPC.pm
+   M /Voodoo/core/bin/voodoo-daemon
+   M /Voodoo/core/utils/Makefile.PL
+
+Now uses IO::Handle::Record instead of IO::Socket::SIPC
+
+------------------------------------------------------------------------
+r12175 | medwards | 2009-02-04 11:37:51 -0600 (Wed, 04 Feb 2009) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   M /Voodoo/core/Voodoo/Session/MySQL.pm
+   M /Voodoo/core/Voodoo/Session.pm
+
+Warnings go poof.
+
+------------------------------------------------------------------------
+r11966 | msemich | 2009-01-16 12:51:11 -0600 (Fri, 16 Jan 2009) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   A /Voodoo/core/Voodoo/SIPC.pm
+
+SIPC is no longer on CPAN, a final copy is now included in Voodoo and Debug.pm was modified accordingly.  
+
+------------------------------------------------------------------------
+r11537 | medwards | 2008-12-11 15:36:23 -0600 (Thu, 11 Dec 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Config.pm
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/SQLite.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Driver.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/MP/Common.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/Voodoo/MP.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ParamValidate.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   M /Voodoo/core/Voodoo/Session/Instance.pm
+   M /Voodoo/core/Voodoo/Session/MySQL.pm
+   M /Voodoo/core/Voodoo/Session.pm
+   M /Voodoo/core/Voodoo/Storage/Table.pm
+   M /Voodoo/core/Voodoo/Table/Probe.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Template.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/UI/extjs.pm
+   M /Voodoo/core/Voodoo/UI.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r11495 | medwards | 2008-12-10 09:04:30 -0600 (Wed, 10 Dec 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   A /Voodoo/core/Voodoo/MP/Common.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/Voodoo/Soap.pm
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r11035 | medwards | 2008-11-25 09:17:29 -0600 (Tue, 25 Nov 2008) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Debug/html/display_error.tmpl
+   M /Voodoo/core/Voodoo/Debug/html/index.tmpl
+   A /Voodoo/core/Voodoo/Debug/html/profile.tmpl
+   M /Voodoo/core/Voodoo/Debug/html/skeleton.tmpl
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   M /Voodoo/core/Voodoo/Session/Instance.pm
+   M /Voodoo/core/Voodoo/Session/MySQL.pm
+   A /Voodoo/core/Voodoo/Soap.pm
+
+
+------------------------------------------------------------------------
+r9369 | medwards | 2008-10-21 13:17:30 -0500 (Tue, 21 Oct 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/SQLite.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/bin/voodoo-daemon
+
+squish
+
+------------------------------------------------------------------------
+r8865 | medwards | 2008-10-08 12:21:26 -0500 (Wed, 08 Oct 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/bin/voodoo-daemon
+
+
+------------------------------------------------------------------------
+r8586 | medwards | 2008-10-03 14:28:34 -0500 (Fri, 03 Oct 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/bin/voodoo-daemon
+   M /Voodoo/core/t/check_compilation.t
+   M /Voodoo/core/utils/Makefile.PL
+
+Changed to use Daemon::Generic instead of Proc::Daemon
+
+------------------------------------------------------------------------
+r8549 | medwards | 2008-10-02 16:40:39 -0500 (Thu, 02 Oct 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug.pm
+
+
+------------------------------------------------------------------------
+r8477 | medwards | 2008-10-01 17:05:48 -0500 (Wed, 01 Oct 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/debug.css
+   M /Voodoo/core/Voodoo/Debug/html/debug.js
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r8447 | medwards | 2008-10-01 14:05:56 -0500 (Wed, 01 Oct 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Debug/debug.pm
+   D /Voodoo/core/Voodoo/Debug/html/ajax.js
+   A /Voodoo/core/Voodoo/Debug/html/debug.css (from /Voodoo/core/Voodoo/Debug/html/style.css:8379)
+   A /Voodoo/core/Voodoo/Debug/html/debug.js (from /Voodoo/core/Voodoo/Debug/html/ajax.js:8379)
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   M /Voodoo/core/Voodoo/Debug/html/index.tmpl
+   D /Voodoo/core/Voodoo/Debug/html/style.css
+   M /Voodoo/core/Voodoo/Debug/index.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/bin/voodoo-daemon
+
+Debugging indention works now.  woo.
+
+------------------------------------------------------------------------
+r8379 | medwards | 2008-09-29 17:12:43 -0500 (Mon, 29 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/base.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Debug/debug.pm
+   M /Voodoo/core/Voodoo/Debug/html/ajax.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   A /Voodoo/core/Voodoo/Debug/html/i/minus.gif (from /Voodoo/core/Voodoo/Debug/html/minus.gif:8284)
+   A /Voodoo/core/Voodoo/Debug/html/i/plus.gif (from /Voodoo/core/Voodoo/Debug/html/plus.gif:8284)
+   A /Voodoo/core/Voodoo/Debug/html/i/spinner.gif (from /Voodoo/core/Voodoo/Debug/html/spinner.gif:8254)
+   M /Voodoo/core/Voodoo/Debug/html/index.tmpl
+   D /Voodoo/core/Voodoo/Debug/html/minus.gif
+   D /Voodoo/core/Voodoo/Debug/html/plus.gif
+   M /Voodoo/core/Voodoo/Debug/html/skeleton.tmpl
+   D /Voodoo/core/Voodoo/Debug/html/spinner.gif
+   M /Voodoo/core/Voodoo/Debug/html/style.css
+   M /Voodoo/core/Voodoo/Debug/index.pm
+   M /Voodoo/core/Voodoo/Debug/profile.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r8340 | medwards | 2008-09-29 10:45:23 -0500 (Mon, 29 Sep 2008) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Debug/html/i
+
+
+------------------------------------------------------------------------
+r8286 | medwards | 2008-09-25 16:53:54 -0500 (Thu, 25 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/ajax.js
+   M /Voodoo/core/Voodoo/Debug/html/style.css
+
+
+------------------------------------------------------------------------
+r8284 | medwards | 2008-09-25 13:55:45 -0500 (Thu, 25 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   D /Voodoo/core/Voodoo/Debug/headers.pm
+   M /Voodoo/core/Voodoo/Debug/html/ajax.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   A /Voodoo/core/Voodoo/Debug/html/minus.gif
+   A /Voodoo/core/Voodoo/Debug/html/plus.gif
+   M /Voodoo/core/Voodoo/Debug/html/style.css
+   M /Voodoo/core/Voodoo/Debug/profile.pm
+   M /Voodoo/core/Voodoo/Debug/return_data.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+
+
+------------------------------------------------------------------------
+r8245 | medwards | 2008-09-23 17:30:40 -0500 (Tue, 23 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   A /Voodoo/core/Voodoo/Debug/base.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   A /Voodoo/core/Voodoo/Debug/debug.pm
+   A /Voodoo/core/Voodoo/Debug/headers.pm
+   M /Voodoo/core/Voodoo/Debug/html/ajax.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   M /Voodoo/core/Voodoo/Debug/html/style.css
+   A /Voodoo/core/Voodoo/Debug/parameters.pm
+   A /Voodoo/core/Voodoo/Debug/profile.pm
+   A /Voodoo/core/Voodoo/Debug/return_data.pm
+   A /Voodoo/core/Voodoo/Debug/session.pm
+   A /Voodoo/core/Voodoo/Debug/template_conf.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+
+
+------------------------------------------------------------------------
+r8214 | medwards | 2008-09-23 09:30:36 -0500 (Tue, 23 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   A /Voodoo/core/Voodoo/Debug/index.pm
+   A /Voodoo/core/Voodoo/Debug/request.pm
+   M /Voodoo/core/t/check_compilation.t
+
+
+------------------------------------------------------------------------
+r8189 | medwards | 2008-09-19 11:24:26 -0500 (Fri, 19 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Debug/html/ajax.js
+   A /Voodoo/core/Voodoo/Debug/html/spinner.gif
+
+
+------------------------------------------------------------------------
+r8180 | medwards | 2008-09-18 15:27:48 -0500 (Thu, 18 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   M /Voodoo/core/Voodoo/Debug/html/ajax.js
+   M /Voodoo/core/Voodoo/Debug/html/debug.tmpl
+   M /Voodoo/core/Voodoo/Debug/html/style.css
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Template.pm
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r8158 | medwards | 2008-09-18 10:23:26 -0500 (Thu, 18 Sep 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/html/ajax.js
+
+JSON parse made a method of the ajax object.
+
+------------------------------------------------------------------------
+r8145 | medwards | 2008-09-17 21:10:50 -0500 (Wed, 17 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/Handler.pm
+   A /Voodoo/core/Voodoo/Debug/html/index.tmpl
+   A /Voodoo/core/Voodoo/Debug/html/skeleton.tmpl
+   A /Voodoo/core/Voodoo/Debug/html/style.css
+
+
+------------------------------------------------------------------------
+r8143 | medwards | 2008-09-17 16:58:41 -0500 (Wed, 17 Sep 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   A /Voodoo/core/Voodoo/Debug/Handler.pm
+   D /Voodoo/core/Voodoo/Debug/ajax.js
+   D /Voodoo/core/Voodoo/Debug/debug.tmpl
+   A /Voodoo/core/Voodoo/Debug/html/ajax.js (from /Voodoo/core/Voodoo/Debug/ajax.js:8124)
+   A /Voodoo/core/Voodoo/Debug/html/debug.tmpl (from /Voodoo/core/Voodoo/Debug/debug.tmpl:8124)
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/t/check_compilation.t
+
+weeee...
+
+------------------------------------------------------------------------
+r8141 | medwards | 2008-09-17 16:04:12 -0500 (Wed, 17 Sep 2008) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Debug/html
+
+
+------------------------------------------------------------------------
+r8120 | medwards | 2008-09-16 17:09:38 -0500 (Tue, 16 Sep 2008) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Debug/ajax.js (from /Voodoo/core/Voodoo/Debug/featherajax.js:8119)
+   D /Voodoo/core/Voodoo/Debug/featherajax.js
+   D /Voodoo/core/Voodoo/Debug/json2.js
+
+
+------------------------------------------------------------------------
+r8119 | medwards | 2008-09-16 17:09:15 -0500 (Tue, 16 Sep 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/featherajax.js
+
+combine with json.js, minimized.
+
+------------------------------------------------------------------------
+r8108 | medwards | 2008-09-16 11:11:11 -0500 (Tue, 16 Sep 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+
+The individual debugging switches work now.
+
+------------------------------------------------------------------------
+r8102 | medwards | 2008-09-15 17:02:37 -0500 (Mon, 15 Sep 2008) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Debug/debug.tmpl (from /Voodoo/core/Voodoo/Template/debug.tmpl:7912)
+   A /Voodoo/core/Voodoo/Debug/featherajax.js
+   A /Voodoo/core/Voodoo/Debug/json2.js
+   M /Voodoo/core/Voodoo/Debug.pm
+   D /Voodoo/core/Voodoo/Template/debug.tmpl
+
+
+------------------------------------------------------------------------
+r8037 | medwards | 2008-09-12 17:02:37 -0500 (Fri, 12 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r8036 | medwards | 2008-09-12 16:36:10 -0500 (Fri, 12 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug/SQLite.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/bin/voodoo-daemon
+
+
+------------------------------------------------------------------------
+r8008 | medwards | 2008-09-12 13:36:07 -0500 (Fri, 12 Sep 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Config.pm
+   M /Voodoo/core/Voodoo/Debug/SQLite.pm
+   M /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/UI/extjs.pm
+   M /Voodoo/core/Voodoo/UI.pm
+   M /Voodoo/core/bin/voodoo-daemon
+
+Basic frame work is in place, now I just have to fill in handlers for everything.
+
+------------------------------------------------------------------------
+r7919 | medwards | 2008-09-11 14:51:03 -0500 (Thu, 11 Sep 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/bin/voodoo-daemon
+
+Writing Daemons is like walking in a room full of marbles...one slight misstep and comedy ensues.
+
+------------------------------------------------------------------------
+r7912 | medwards | 2008-09-11 08:08:36 -0500 (Thu, 11 Sep 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   A /Voodoo/core/Voodoo/Debug
+   A /Voodoo/core/Voodoo/Debug/SQLite.pm
+   A /Voodoo/core/Voodoo/Debug/common.pm
+   M /Voodoo/core/Voodoo/Driver.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/Voodoo/MP.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   M /Voodoo/core/Voodoo/Session/Instance.pm
+   M /Voodoo/core/Voodoo/Session/MySQL.pm
+   M /Voodoo/core/Voodoo/Session.pm
+   M /Voodoo/core/Voodoo/UI/extjs.pm
+   M /Voodoo/core/Voodoo/UI.pm
+   M /Voodoo/core/bin/voodoo-daemon
+
+
+------------------------------------------------------------------------
+r7893 | medwards | 2008-09-09 23:35:41 -0500 (Tue, 09 Sep 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/bin/voodoo-daemon
+   M /Voodoo/core/utils/Makefile.PL
+
+Lessons learned:  IO::Socket::SIPC works gloriously...unless you pass it a bless object.
+
+------------------------------------------------------------------------
+r7809 | medwards | 2008-08-28 16:11:18 -0500 (Thu, 28 Aug 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+Set cookies to be http only.
+
+------------------------------------------------------------------------
+r7801 | medwards | 2008-08-27 19:27:14 -0500 (Wed, 27 Aug 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Config.pm
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/Voodoo/ParamValidate.pm
+   A /Voodoo/core/bin/voodoo-daemon
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r7789 | medwards | 2008-08-27 10:51:22 -0500 (Wed, 27 Aug 2008) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Application.pm
+   M /Voodoo/core/Voodoo/Config.pm
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Driver.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/Voodoo/MP.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ParamValidate.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   M /Voodoo/core/Voodoo/Session/Instance.pm
+   M /Voodoo/core/Voodoo/Session/MySQL.pm
+   M /Voodoo/core/Voodoo/Session.pm
+   M /Voodoo/core/Voodoo/Storage/Table.pm
+   M /Voodoo/core/Voodoo/Table/Probe/MySQL.pm
+   M /Voodoo/core/Voodoo/Table/Probe.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Template/newapp/code/skeleton.pm
+   M /Voodoo/core/Voodoo/Template/table/template.pm
+   M /Voodoo/core/Voodoo/Template.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/UI/extjs.pm
+   M /Voodoo/core/Voodoo/UI.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+
+Removed warning about passing undef to the sprintf that sets $VERSION.
+Made sure that everything has svn keywords Id and HeadURL set.
+
+------------------------------------------------------------------------
+r7788 | medwards | 2008-08-27 10:43:09 -0500 (Wed, 27 Aug 2008) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Config.pm (from /Voodoo/core/Voodoo/Storage/Config.pm:7739)
+   D /Voodoo/core/Voodoo/Storage/Config.pm
+
+
+------------------------------------------------------------------------
+r7758 | medwards | 2008-08-26 10:21:48 -0500 (Tue, 26 Aug 2008) | 2 lines
+Changed paths:
+   A /Voodoo/core/Voodoo/Application.pm (from /Voodoo/core/Voodoo/ServerConfig.pm:7739)
+   M /Voodoo/core/Voodoo/Driver.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   D /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/t/check_compilation.t
+   M /Voodoo/core/utils/MANIFEST
+
+Cleaned up internal naming conventions to be cleaner and more consistent.
+
+------------------------------------------------------------------------
+r7757 | medwards | 2008-08-26 10:04:54 -0500 (Tue, 26 Aug 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+Apache Internal redirects have always been touchy, now they're complaining again.  removing for now.
+
+------------------------------------------------------------------------
+r7747 | medwards | 2008-08-25 10:38:03 -0500 (Mon, 25 Aug 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/utils/Makefile.PL
+
+Maybe this will make the CPAN auto tester happy.
+
+------------------------------------------------------------------------
+r7740 | medwards | 2008-08-22 12:43:19 -0500 (Fri, 22 Aug 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r7739 | medwards | 2008-08-22 12:42:30 -0500 (Fri, 22 Aug 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Driver.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/Voodoo/MP.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ParamValidate.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   M /Voodoo/core/Voodoo/Session/Instance.pm
+   M /Voodoo/core/Voodoo/Session/MySQL.pm
+   M /Voodoo/core/Voodoo/Session.pm
+   M /Voodoo/core/Voodoo/Storage/Config.pm
+   M /Voodoo/core/Voodoo/Storage/Table.pm
+   M /Voodoo/core/Voodoo/Table/Probe/MySQL.pm
+   M /Voodoo/core/Voodoo/Table/Probe.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Template.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/UI/extjs.pm
+   M /Voodoo/core/Voodoo/UI.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+
+Added $VERSION variable to every .pm so CPAN will be happy.
+
+------------------------------------------------------------------------
+r7737 | medwards | 2008-08-22 09:09:03 -0500 (Fri, 22 Aug 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r7719 | medwards | 2008-08-20 16:49:59 -0500 (Wed, 20 Aug 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/utils/Changes
+   M /Voodoo/core/utils/MANIFEST
+
+Updated Change log and Manifest
+
+------------------------------------------------------------------------
+r7716 | medwards | 2008-08-20 15:26:58 -0500 (Wed, 20 Aug 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Session/File.pm
+   A /Voodoo/core/Voodoo/Session/MySQL.pm
+
+Sessions can now be stored in the database.
+
+------------------------------------------------------------------------
+r7713 | medwards | 2008-08-20 14:54:16 -0500 (Wed, 20 Aug 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   A /Voodoo/core/Voodoo/Session
+   A /Voodoo/core/Voodoo/Session/File.pm
+   A /Voodoo/core/Voodoo/Session/Instance.pm
+   A /Voodoo/core/Voodoo/Session.pm
+
+Session handling has been abstracted out of Handler.pm
+
+------------------------------------------------------------------------
+r7637 | msemich | 2008-08-07 12:01:46 -0500 (Thu, 07 Aug 2008) | 4 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+
+We do not and cannot have the site_root value at this point in the execution.  It is not written *in* the conf file anywhere and if the server hasn't started then you can't ask for the site root
+(unless I'm mistaken here, all my tests indicated it didn't exist in full yet).  This must have been broken for a while as it was just moved over for the logout_target issue.  
+If we popuplate with /index, it still works just fine as a relative URI to the ApacheRequest/mod_perl stuff.  The error produced prior to this fix did not shut down the server, it was just chatty.
+
+------------------------------------------------------------------------
+r7606 | medwards | 2008-08-04 13:43:17 -0500 (Mon, 04 Aug 2008) | 1 line
+Changed paths:
+   D /Voodoo/core/Voodoo/Data
+   A /Voodoo/core/Voodoo/Storage (from /Voodoo/core/Voodoo/Data:7577)
+   D /Voodoo/core/Voodoo/Storage/UI
+   D /Voodoo/core/Voodoo/Storage/UI.pm
+   D /Voodoo/core/Voodoo/Storage/Validate.pm
+
+
+------------------------------------------------------------------------
+r7605 | medwards | 2008-08-04 13:42:30 -0500 (Mon, 04 Aug 2008) | 2 lines
+Changed paths:
+   D /Voodoo/core/Voodoo/Data/UI
+   D /Voodoo/core/Voodoo/Data/UI.pm
+   D /Voodoo/core/Voodoo/Data/Validate.pm
+   A /Voodoo/core/Voodoo/ParamValidate.pm (from /Voodoo/core/Voodoo/Data/Validate.pm:7577)
+   A /Voodoo/core/Voodoo/UI (from /Voodoo/core/Voodoo/Data/UI:7577)
+   A /Voodoo/core/Voodoo/UI.pm (from /Voodoo/core/Voodoo/Data/UI.pm:7577)
+   M /Voodoo/core/Voodoo/basics.pod
+   M /Voodoo/core/utils/prepare_dist.sh
+
+shuffle, shuffle.
+
+------------------------------------------------------------------------
+r7604 | medwards | 2008-08-04 13:42:04 -0500 (Mon, 04 Aug 2008) | 5 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/api.pod
+
+access_denied now accepts two additional params.  The first is appended to the url as the
+value of error.  This can be used to provide a hint to the receiving module to describe why
+access was denied.  The second param can be used to have the access_denied call redirect somewhere else.
+(based on modifications made by Mike)
+
+------------------------------------------------------------------------
+r7603 | medwards | 2008-08-04 12:56:15 -0500 (Mon, 04 Aug 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r7602 | anelson | 2008-08-04 12:24:50 -0500 (Mon, 04 Aug 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+pretty_time had the wrong array members being used.
+
+------------------------------------------------------------------------
+r7577 | medwards | 2008-07-31 17:11:12 -0500 (Thu, 31 Jul 2008) | 2 lines
+Changed paths:
+   A /Voodoo/core/Voodoo/Data
+   A /Voodoo/core/Voodoo/Data/Config.pm (from /Voodoo/core/Voodoo/Table.pm:6847)
+   A /Voodoo/core/Voodoo/Data/Table.pm
+   A /Voodoo/core/Voodoo/Data/UI
+   A /Voodoo/core/Voodoo/Data/UI/extjs.pm
+   A /Voodoo/core/Voodoo/Data/UI.pm
+   A /Voodoo/core/Voodoo/Data/Validate.pm (from /Voodoo/core/Voodoo/Table.pm:6847)
+
+Let the mess making commence.
+
+------------------------------------------------------------------------
+r7543 | medwards | 2008-07-22 14:42:07 -0500 (Tue, 22 Jul 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+
+Per user theme selection works again.
+
+------------------------------------------------------------------------
+r7041 | medwards | 2008-05-23 09:51:11 -0500 (Fri, 23 May 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Template/debug.tmpl
+
+Insure that the text in the debug block is black.
+
+------------------------------------------------------------------------
+r6847 | jhamilton | 2008-04-18 14:17:14 -0500 (Fri, 18 Apr 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+
+Modify for 'logout_target' (for KPMG behavior)
+
+------------------------------------------------------------------------
+r6846 | jhamilton | 2008-04-18 14:16:43 -0500 (Fri, 18 Apr 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+Modified to specifiy a logout_target in the config file (for KPMG logout behavior)
+
+------------------------------------------------------------------------
+r6786 | medwards | 2008-04-07 20:48:45 -0500 (Mon, 07 Apr 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+
+Added follow => 1 option to find path so that it will process update files that are symlinked in from somewhere else.
+
+------------------------------------------------------------------------
+r6730 | medwards | 2008-04-03 11:21:35 -0500 (Thu, 03 Apr 2008) | 1 line
+Changed paths:
+   A /Voodoo/core/t (from /Voodoo/core/utils/t:6521)
+   D /Voodoo/core/utils/t
+
+
+------------------------------------------------------------------------
+r6700 | medwards | 2008-03-27 12:32:31 -0500 (Thu, 27 Mar 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/MP/V2.pm
+
+
+------------------------------------------------------------------------
+r6693 | medwards | 2008-03-27 10:36:28 -0500 (Thu, 27 Mar 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+
+Prettier handling of the maximum upload size.
+
+------------------------------------------------------------------------
+r6538 | medwards | 2008-02-04 13:11:38 -0600 (Mon, 04 Feb 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+
+
+------------------------------------------------------------------------
+r6532 | medwards | 2008-02-04 11:00:21 -0600 (Mon, 04 Feb 2008) | 1 line
+Changed paths:
+   M /Voodoo/core/utils/MANIFEST
+
+
+------------------------------------------------------------------------
+r6522 | medwards | 2008-01-25 16:50:27 -0600 (Fri, 25 Jan 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Template.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+
+Working again but probably not perfectly stable.
+
+------------------------------------------------------------------------
+r6521 | medwards | 2008-01-25 08:00:52 -0600 (Fri, 25 Jan 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   A /Voodoo/core/Voodoo/Template.pm
+
+Mid refactor.  This one is most likely busted...use the previous version to get a working copy.
+
+------------------------------------------------------------------------
+r6499 | medwards | 2008-01-17 09:55:40 -0600 (Thu, 17 Jan 2008) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Pager.pm
+
+Added variations of the next, previous and more pages in order to make building ajaxed pagination easier.
+
+------------------------------------------------------------------------
+r6370 | medwards | 2007-12-06 14:27:50 -0600 (Thu, 06 Dec 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+Added arbitrary join syntax.
+
+------------------------------------------------------------------------
+r6359 | medwards | 2007-12-03 13:22:17 -0600 (Mon, 03 Dec 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+
+
+------------------------------------------------------------------------
+r6352 | medwards | 2007-12-03 09:47:50 -0600 (Mon, 03 Dec 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r6349 | medwards | 2007-12-03 09:31:16 -0600 (Mon, 03 Dec 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+
+
+------------------------------------------------------------------------
+r6318 | medwards | 2007-11-19 11:50:35 -0600 (Mon, 19 Nov 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r6317 | medwards | 2007-11-16 13:09:10 -0600 (Fri, 16 Nov 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+
+
+------------------------------------------------------------------------
+r6316 | medwards | 2007-11-16 13:04:54 -0600 (Fri, 16 Nov 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+
+
+------------------------------------------------------------------------
+r6315 | medwards | 2007-11-16 12:52:40 -0600 (Fri, 16 Nov 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/MySQL.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Template/table/template.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/utils/Makefile.PL
+
+Installer now handles standard Perl modules.
+
+------------------------------------------------------------------------
+r6171 | kdsmith | 2007-10-11 16:03:52 -0500 (Thu, 11 Oct 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Post.pm
+
+tweak for scope on config::general
+
+------------------------------------------------------------------------
+r6132 | medwards | 2007-10-02 09:50:37 -0500 (Tue, 02 Oct 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+
+Insured that each update command is executed relative to the install directory.
+
+------------------------------------------------------------------------
+r6076 | medwards | 2007-09-17 13:05:24 -0500 (Mon, 17 Sep 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table/Probe.pm
+
+Added copyright notice.
+
+------------------------------------------------------------------------
+r6075 | medwards | 2007-09-17 13:03:10 -0500 (Mon, 17 Sep 2007) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Table/Probe/MySQL.pm (from /Voodoo/core/Voodoo/Table/Probe/mysql.pm:6074)
+   D /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   A /Voodoo/core/Voodoo/Table/Probe.pm
+
+Added probe factory to isolate the database specific parts
+------------------------------------------------------------------------
+r6074 | medwards | 2007-09-17 13:01:10 -0500 (Mon, 17 Sep 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+
+Updated to support the "new" table syntax.
+
+------------------------------------------------------------------------
+r6072 | medwards | 2007-09-17 09:20:44 -0500 (Mon, 17 Sep 2007) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Template/table
+   A /Voodoo/core/Voodoo/Template/table/template.pm
+
+
+------------------------------------------------------------------------
+r6071 | medwards | 2007-09-17 09:15:41 -0500 (Mon, 17 Sep 2007) | 1 line
+Changed paths:
+   D /Voodoo/core/Voodoo/Scaffold
+
+
+------------------------------------------------------------------------
+r6070 | medwards | 2007-09-17 09:14:47 -0500 (Mon, 17 Sep 2007) | 2 lines
+Changed paths:
+   D /Voodoo/core/Voodoo/Table/Probe/templates
+
+more directory shuffling.
+
+------------------------------------------------------------------------
+r6069 | medwards | 2007-09-17 09:12:34 -0500 (Mon, 17 Sep 2007) | 1 line
+Changed paths:
+   D /Voodoo/core/Voodoo/Scaffold/newapp
+   A /Voodoo/core/Voodoo/Template/newapp (from /Voodoo/core/Voodoo/Scaffold/newapp:5995)
+
+
+------------------------------------------------------------------------
+r6026 | medwards | 2007-09-06 10:25:05 -0500 (Thu, 06 Sep 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r5995 | medwards | 2007-08-30 13:42:02 -0500 (Thu, 30 Aug 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r5977 | medwards | 2007-08-29 15:28:22 -0500 (Wed, 29 Aug 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo.pod
+   M /Voodoo/core/utils/Makefile.PL
+   M /Voodoo/core/utils/README
+
+Removed IPC::Shareable usage from Dynamic loader.
+
+------------------------------------------------------------------------
+r5819 | medwards | 2007-07-30 17:25:44 -0500 (Mon, 30 Jul 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r5818 | medwards | 2007-07-30 17:25:38 -0500 (Mon, 30 Jul 2007) | 16 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+Net::DNS (which is used by Email::Valid) carelessly overwrites $_ in several places.
+To neutralize this effect, $_ is localized before the call to Email::Valid.
+Patching information to fix Net::DNS is listed below:
+
+In Net::DNS::Question replace
+	my $qname = defined ($_ = shift) ? $_ : '';
+with
+	my $qname = shift;
+	$qname = '' unless defined ($qname);
+
+In Net::DNS::Resolver::Base in the subroutines _ip_is_ipv4 and _ip_is_ipv6 replace
+	$_ = shift;
+with
+	local $_ = shift;
+
+
+------------------------------------------------------------------------
+r5550 | medwards | 2007-06-20 10:30:29 -0500 (Wed, 20 Jun 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   A /Voodoo/core/Voodoo/Driver.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+
+Added testing harness driver and sorting of debugging output.
+
+------------------------------------------------------------------------
+r5465 | medwards | 2007-06-04 09:41:30 -0500 (Mon, 04 Jun 2007) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+Added in padding of $self->{mp},  deprecated {r,dir_config,header_in} which 
+are rarely used and may differ from one version of mod_perl to another.
+
+------------------------------------------------------------------------
+r5399 | medwards | 2007-05-20 16:08:38 -0500 (Sun, 20 May 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r5396 | medwards | 2007-05-20 15:52:20 -0500 (Sun, 20 May 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+lengthened history.
+
+------------------------------------------------------------------------
+r5382 | medwards | 2007-05-18 23:36:32 -0500 (Fri, 18 May 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Template/debug.tmpl
+   M /Voodoo/core/Voodoo.pm
+
+Tweaks to make debugging ajax easier.
+
+------------------------------------------------------------------------
+r5353 | medwards | 2007-05-18 11:13:09 -0500 (Fri, 18 May 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+
+
+------------------------------------------------------------------------
+r5269 | medwards | 2007-05-10 12:46:56 -0500 (Thu, 10 May 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+Make the regexp option for varchars work correctly again.
+
+------------------------------------------------------------------------
+r5121 | medwards | 2007-05-01 14:38:45 -0500 (Tue, 01 May 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+changed the default history storage from 10 to 20 items
+
+------------------------------------------------------------------------
+r5110 | medwards | 2007-05-01 10:11:43 -0500 (Tue, 01 May 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Pager.pm
+
+
+------------------------------------------------------------------------
+r4955 | medwards | 2007-04-19 14:43:28 -0500 (Thu, 19 Apr 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+Fixed a glitch in the tardis that kept it from redirecting to the first page.
+
+------------------------------------------------------------------------
+r4954 | medwards | 2007-04-19 14:34:36 -0500 (Thu, 19 Apr 2007) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Pager.pm
+
+Fixed a rounding error in the window size code.  This bug was only triggered when the window size was set to an odd number; and event which rarely happens.  This has allowed this bug to go unnoticed for 9 years.
+
+
+------------------------------------------------------------------------
+r4916 | medwards | 2007-04-15 11:29:02 -0500 (Sun, 15 Apr 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/bin/voodoo-control
+
+Added new command hooks, refactored some of voodoo-control, fixed bugs
+
+------------------------------------------------------------------------
+r4901 | medwards | 2007-04-09 10:11:31 -0500 (Mon, 09 Apr 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/bin/voodoo-control
+
+Changed option handling.  Removed all global variables.
+
+------------------------------------------------------------------------
+r4900 | medwards | 2007-04-09 09:36:17 -0500 (Mon, 09 Apr 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/bin/voodoo-control
+
+Changed command processing structure into a dispatch table.
+
+------------------------------------------------------------------------
+r4899 | medwards | 2007-04-09 09:35:56 -0500 (Mon, 09 Apr 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+Cleaner handling on &quote;
+
+------------------------------------------------------------------------
+r4897 | medwards | 2007-04-08 18:26:31 -0500 (Sun, 08 Apr 2007) | 2 lines
+Changed paths:
+   A /Voodoo/core/Voodoo/Scaffold
+   A /Voodoo/core/Voodoo/Scaffold/newapp
+   A /Voodoo/core/Voodoo/Scaffold/newapp/code
+   A /Voodoo/core/Voodoo/Scaffold/newapp/code/skeleton.pm
+   A /Voodoo/core/Voodoo/Scaffold/newapp/etc
+   A /Voodoo/core/Voodoo/Scaffold/newapp/etc/updates
+   A /Voodoo/core/Voodoo/Scaffold/newapp/etc/voodoo.conf
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/css
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/css/style.css
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/display_error.tmpl
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_date
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_decimal
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_email
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_extension
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_month
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_option
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_phone
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_text
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_year
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/bad_zip
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/dup_email
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/end_before_start
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/max_128
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/max_25
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/max_255
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/max_5
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/max_64
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/missing
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/missing_month
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/errors/missing_year
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/index.tmpl
+   A /Voodoo/core/Voodoo/Scaffold/newapp/html/skeleton.tmpl
+   A /Voodoo/core/Voodoo/Scaffold/newapp/tests
+   A /Voodoo/core/Voodoo/Scaffold/newapp/tests/code_compilation.t
+   A /Voodoo/core/Voodoo/Scaffold/newapp/tests/required_modules.t
+   A /Voodoo/core/Voodoo/Scaffold/newapp/tests/template_parse.t
+
+Added basic application template.
+
+------------------------------------------------------------------------
+r4857 | medwards | 2007-03-30 16:14:27 -0500 (Fri, 30 Mar 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r4825 | medwards | 2007-03-29 13:54:49 -0500 (Thu, 29 Mar 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+
+------------------------------------------------------------------------
+r4777 | medwards | 2007-03-27 13:08:56 -0500 (Tue, 27 Mar 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo.pm
+
+Replaced & with &amp; in url params.
+
+------------------------------------------------------------------------
+r4676 | medwards | 2007-03-20 09:17:52 -0500 (Tue, 20 Mar 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/bin/voodoo-control
+
+
+------------------------------------------------------------------------
+r4504 | medwards | 2007-02-12 12:43:33 -0600 (Mon, 12 Feb 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Table.pm
+
+
+------------------------------------------------------------------------
+r4444 | medwards | 2007-01-19 16:52:41 -0600 (Fri, 19 Jan 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/utils/Changes
+
+Fixed glitch in upload code for Apache 2
+
+------------------------------------------------------------------------
+r4437 | medwards | 2007-01-18 13:03:02 -0600 (Thu, 18 Jan 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/utils/Changes
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/README
+   M /Voodoo/core/utils/t/check_compilation.t
+
+
+------------------------------------------------------------------------
+r4436 | medwards | 2007-01-18 10:25:07 -0600 (Thu, 18 Jan 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/utils/t/check_compilation.t
+   D /Voodoo/core/utils/t/check_mod_perl_hooks.t
+
+
+------------------------------------------------------------------------
+r4435 | medwards | 2007-01-18 10:20:46 -0600 (Thu, 18 Jan 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r4434 | medwards | 2007-01-18 10:12:17 -0600 (Thu, 18 Jan 2007) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/basics.pod
+   M /Voodoo/core/Voodoo.pod
+
+Last commit before making the 2.0 release.
+
+------------------------------------------------------------------------
+r4433 | medwards | 2007-01-18 09:58:06 -0600 (Thu, 18 Jan 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r4419 | medwards | 2007-01-09 10:49:16 -0600 (Tue, 09 Jan 2007) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+
+
+------------------------------------------------------------------------
+r4391 | medwards | 2006-12-31 22:28:11 -0600 (Sun, 31 Dec 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/MP/V2.pm
+
+Uploads should work now.
+
+------------------------------------------------------------------------
+r4382 | medwards | 2006-12-28 16:34:52 -0600 (Thu, 28 Dec 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+bumped version number.
+
+------------------------------------------------------------------------
+r4381 | medwards | 2006-12-28 14:59:42 -0600 (Thu, 28 Dec 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   D /Voodoo/core/Voodoo/Log.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/Makefile.PL
+   M /Voodoo/core/utils/t/check_compilation.t
+
+Uploads under apache2 should work, but are untested.  makefile.PL and associated CPAN parts update.
+
+------------------------------------------------------------------------
+r4373 | medwards | 2006-12-26 15:51:34 -0600 (Tue, 26 Dec 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/MP/V2.pm
+
+Fixed internal redirect
+
+------------------------------------------------------------------------
+r4372 | medwards | 2006-12-26 15:45:20 -0600 (Tue, 26 Dec 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+
+------------------------------------------------------------------------
+r4371 | medwards | 2006-12-26 14:22:34 -0600 (Tue, 26 Dec 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/MP/V1.pm
+   M /Voodoo/core/Voodoo/MP/V2.pm
+
+Apache 1 seems to be working now.
+
+------------------------------------------------------------------------
+r4370 | medwards | 2006-12-26 11:22:47 -0600 (Tue, 26 Dec 2006) | 10 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   A /Voodoo/core/Voodoo/MP
+   A /Voodoo/core/Voodoo/MP/V1.pm
+   A /Voodoo/core/Voodoo/MP/V2.pm
+   A /Voodoo/core/Voodoo/MP.pm
+
+*WARNING* *WARNING*
+
+Support for Apache2 has just been added.  From my cursory testing it appears to working fine with the 
+exception of upload support.  The upload api changed a decent bit and hasn't been updated yet. 
+
+It is quite likely that Apache1 support has been totally hosed.  The internalls have been structured to support both,
+but Apache1 support is totally untested.
+
+*WARNING* *WARNING*
+
+------------------------------------------------------------------------
+r4344 | medwards | 2006-12-18 17:25:07 -0600 (Mon, 18 Dec 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+
+------------------------------------------------------------------------
+r4343 | medwards | 2006-12-18 17:24:03 -0600 (Mon, 18 Dec 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+
+
+------------------------------------------------------------------------
+r4342 | medwards | 2006-12-18 17:21:06 -0600 (Mon, 18 Dec 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/utils/Changes
+
+
+------------------------------------------------------------------------
+r4341 | medwards | 2006-12-18 17:20:26 -0600 (Mon, 18 Dec 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Config.pm
+
+
+------------------------------------------------------------------------
+r4340 | medwards | 2006-12-18 17:19:28 -0600 (Mon, 18 Dec 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/bin/voodoo-control
+
+
+------------------------------------------------------------------------
+r4339 | medwards | 2006-12-18 17:06:10 -0600 (Mon, 18 Dec 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+updated version number
+------------------------------------------------------------------------
+r4338 | medwards | 2006-12-18 17:05:12 -0600 (Mon, 18 Dec 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+
+copy config before blessing
+------------------------------------------------------------------------
+r4274 | medwards | 2006-11-29 09:51:36 -0600 (Wed, 29 Nov 2006) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+
+Moved the merging of the template_conf sections of the config file to ServerConfig so that it happens
+at load time rather than run time on each page request.
+
+------------------------------------------------------------------------
+r4273 | medwards | 2006-11-27 23:49:41 -0600 (Mon, 27 Nov 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+
+Added $VERSION numbers.
+
+------------------------------------------------------------------------
+r4272 | medwards | 2006-11-27 23:39:27 -0600 (Mon, 27 Nov 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Config.pm
+
+print pod in a block trips up the cpan.org formatter.
+
+------------------------------------------------------------------------
+r4269 | medwards | 2006-11-27 15:14:10 -0600 (Mon, 27 Nov 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/Changes
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/MANIFEST.SKIP
+   M /Voodoo/core/utils/prepare_dist.sh
+
+prep for release.
+
+------------------------------------------------------------------------
+r4267 | medwards | 2006-11-27 13:32:47 -0600 (Mon, 27 Nov 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   A /Voodoo/core/Voodoo/Install/Config.pm
+   M /Voodoo/core/Voodoo/Log.pm
+   M /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/bin/voodoo-control
+
+added setconfig command.
+
+------------------------------------------------------------------------
+r4266 | medwards | 2006-11-26 17:50:47 -0600 (Sun, 26 Nov 2006) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   A /Voodoo/core/Voodoo/MyConfig.pm
+   M /Voodoo/core/bin/voodoo-control
+
+Split the config settings out of Constants.pm.  This will make it easier to programatically change them.
+
+
+------------------------------------------------------------------------
+r4144 | medwards | 2006-10-10 19:09:46 -0500 (Tue, 10 Oct 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Log.pm
+
+Wonky fix for logging errors...better double-check this one
+
+------------------------------------------------------------------------
+r4045 | medwards | 2006-09-08 10:18:31 -0500 (Fri, 08 Sep 2006) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+sub init() now receives the extra params from a call to new.
+
+
+------------------------------------------------------------------------
+r4001 | medwards | 2006-08-28 12:57:17 -0500 (Mon, 28 Aug 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+fixed an update kluge in a non-critical section
+
+------------------------------------------------------------------------
+r4000 | medwards | 2006-08-28 10:34:14 -0500 (Mon, 28 Aug 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/utils/MANIFEST
+
+Added Log.pm object to Manifest
+
+------------------------------------------------------------------------
+r3997 | medwards | 2006-08-25 18:02:07 -0500 (Fri, 25 Aug 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table.pod
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo/basics.pod
+
+Documentation updates.
+
+------------------------------------------------------------------------
+r3995 | medwards | 2006-08-25 15:44:25 -0500 (Fri, 25 Aug 2006) | 4 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   A /Voodoo/core/Voodoo/Log.pm
+   M /Voodoo/core/bin/voodoo-control
+
+Abstracted and fixed logging.
+Added a wizard only option to voodoo-control.  "mark_updates_applied" it does
+exactly what you think it does.
+
+------------------------------------------------------------------------
+r3994 | medwards | 2006-08-24 13:10:09 -0500 (Thu, 24 Aug 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/MANIFEST.SKIP
+   M /Voodoo/core/utils/Makefile.PL
+
+
+------------------------------------------------------------------------
+r3983 | medwards | 2006-08-17 14:59:30 -0500 (Thu, 17 Aug 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+
+Minor bug fixes.
+
+------------------------------------------------------------------------
+r3937 | medwards | 2006-07-31 10:12:23 -0500 (Mon, 31 Jul 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+date_to_sql now handles nulls cleanly.
+
+------------------------------------------------------------------------
+r3919 | medwards | 2006-07-24 17:07:01 -0500 (Mon, 24 Jul 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+
+Just plain silly bug.  It does little good to merge the voodoo config if you don't bother to write the altered config to disk.
+
+------------------------------------------------------------------------
+r3918 | medwards | 2006-07-24 17:02:47 -0500 (Mon, 24 Jul 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Template/debug.tmpl
+
+added internal scrolling of large regions.  This prevents a debug message or long template var for stretching beyond screen resolution.
+
+------------------------------------------------------------------------
+r3735 | medwards | 2006-05-18 10:23:23 -0500 (Thu, 18 May 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Template/debug.tmpl
+   M /Voodoo/core/Voodoo/basics.pod
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/utils/Changes
+
+
+------------------------------------------------------------------------
+r3712 | medwards | 2006-05-15 10:36:52 -0500 (Mon, 15 May 2006) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+
+Loop Context Vars now work on the skeleton as well (controlled by context_vars in voodoo.conf)
+Made database creation in the installer more forgiving.
+
+------------------------------------------------------------------------
+r3678 | kdsmith | 2006-04-26 15:59:14 -0500 (Wed, 26 Apr 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+Added in ID.value and NAME.value params into the prep_select method
+
+------------------------------------------------------------------------
+r3447 | medwards | 2006-03-02 10:43:13 -0600 (Thu, 02 Mar 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/bin/voodoo-control
+
+Removed warning about verbose being uninitilalized when not used as a command line option.
+
+------------------------------------------------------------------------
+r3422 | dgruber | 2006-02-23 13:22:16 -0600 (Thu, 23 Feb 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+fixed typos
+------------------------------------------------------------------------
+r3386 | dgruber | 2006-02-15 15:43:20 -0600 (Wed, 15 Feb 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+added handleing for additional_column
+------------------------------------------------------------------------
+r3375 | medwards | 2006-02-14 15:55:52 -0600 (Tue, 14 Feb 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/utils/README
+
+Bumped version number.  Minor update to docs.
+
+------------------------------------------------------------------------
+r3374 | medwards | 2006-02-14 15:51:09 -0600 (Tue, 14 Feb 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/basics.pod
+
+Commited changes to the loading scheme.
+
+------------------------------------------------------------------------
+r3368 | medwards | 2006-02-14 13:38:24 -0600 (Tue, 14 Feb 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+
+remove my hardcoded test path
+
+------------------------------------------------------------------------
+r3367 | medwards | 2006-02-14 13:27:20 -0600 (Tue, 14 Feb 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/basics.pod
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/Changes
+   M /Voodoo/core/utils/MANIFEST
+
+Debugged installer
+
+------------------------------------------------------------------------
+r3314 | medwards | 2006-02-06 17:59:03 -0600 (Mon, 06 Feb 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+
+Fixed compilation errors.
+
+------------------------------------------------------------------------
+r3313 | medwards | 2006-02-06 17:54:13 -0600 (Mon, 06 Feb 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Distribution.pm
+   A /Voodoo/core/Voodoo/Install/Post.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/t/check_compilation.t
+
+
+------------------------------------------------------------------------
+r3312 | medwards | 2006-02-06 15:22:52 -0600 (Mon, 06 Feb 2006) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Constants.pm
+   A /Voodoo/core/Voodoo/Install/Distribution.pm
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/t/check_compilation.t
+
+
+------------------------------------------------------------------------
+r3283 | medwards | 2006-01-26 17:17:18 -0600 (Thu, 26 Jan 2006) | 2 lines
+Changed paths:
+   A /Voodoo/core/Voodoo/Constants.pm
+   A /Voodoo/core/Voodoo/Install/Pid.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/MANIFEST
+
+refactor, refactor, refactor.
+
+------------------------------------------------------------------------
+r3259 | medwards | 2006-01-23 16:37:06 -0600 (Mon, 23 Jan 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install/Updater.pm
+   M /Voodoo/core/Voodoo/Install.pm
+
+woooo! you can now run the xml update commands independantly of any other step.
+
+------------------------------------------------------------------------
+r3253 | medwards | 2006-01-20 11:09:31 -0600 (Fri, 20 Jan 2006) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Install (from /Voodoo/core/Voodoo/Installer:2943)
+   A /Voodoo/core/Voodoo/Install/Updater.pm (from /Voodoo/core/Voodoo/Installer/Updater.pm:3252)
+   A /Voodoo/core/Voodoo/Install.pm (from /Voodoo/core/Voodoo/Installer.pm:3252)
+   D /Voodoo/core/Voodoo/Installer
+   D /Voodoo/core/Voodoo/Installer.pm
+
+
+------------------------------------------------------------------------
+r3252 | medwards | 2006-01-20 11:07:22 -0600 (Fri, 20 Jan 2006) | 2 lines
+Changed paths:
+   A /Voodoo/core/Voodoo/Installer/Updater.pm
+   M /Voodoo/core/Voodoo/Installer.pm
+
+File location shuffling and object hierachy cleanups.
+
+------------------------------------------------------------------------
+r3153 | medwards | 2006-01-10 14:12:06 -0600 (Tue, 10 Jan 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+Altered set_configuration to make a deep copy of the incomming config structure so that it's operation is now non-destructive.
+
+------------------------------------------------------------------------
+r3148 | medwards | 2006-01-10 11:06:32 -0600 (Tue, 10 Jan 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Table.pm
+
+Added some more helpful output messages.
+
+------------------------------------------------------------------------
+r3121 | medwards | 2006-01-08 18:35:12 -0600 (Sun, 08 Jan 2006) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+Made the list method use the default number of items per page as defined by it's instance of pager (rather than haveing a hard coded copy)
+
+------------------------------------------------------------------------
+r3063 | medwards | 2005-12-22 16:27:03 -0600 (Thu, 22 Dec 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Installer.pm
+   M /Voodoo/core/bin/voodoo-control
+
+refactoring in progress
+
+------------------------------------------------------------------------
+r2956 | medwards | 2005-11-29 10:10:11 -0600 (Tue, 29 Nov 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+Fixed glitch in tardis.
+
+------------------------------------------------------------------------
+r2943 | medwards | 2005-11-25 10:00:36 -0600 (Fri, 25 Nov 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Installer.pm
+   M /Voodoo/core/bin/voodoo-control
+
+Made apxs path detection bypass-able.
+
+------------------------------------------------------------------------
+r2942 | medwards | 2005-11-25 09:45:37 -0600 (Fri, 25 Nov 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Installer.pm
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/Makefile.PL
+
+Moved apxs path detection from Makefile to Instller.pm
+
+------------------------------------------------------------------------
+r2938 | medwards | 2005-11-22 16:16:48 -0600 (Tue, 22 Nov 2005) | 2 lines
+Changed paths:
+   D /Voodoo/core/Voodoo/Install.pm
+   A /Voodoo/core/Voodoo/Installer
+   A /Voodoo/core/Voodoo/Installer.pm (from /Voodoo/core/Voodoo/Install.pm:2917)
+   M /Voodoo/core/bin/voodoo-control
+
+more installer work.
+
+------------------------------------------------------------------------
+r2917 | medwards | 2005-11-21 10:53:08 -0600 (Mon, 21 Nov 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install.pm
+
+made methods for nearly all of the operations that were in voodoo-control.  Committing before renaming and continuing refactoring.
+
+
+------------------------------------------------------------------------
+r2867 | medwards | 2005-11-08 15:37:08 -0600 (Tue, 08 Nov 2005) | 6 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+Made history capture only operation on GET requests.  Capturing POSTs can lead to bad things
+happening if you happen to redirect back to a posted history event...same thing applies
+for puts.  The side effect is that we now need to be more careful with our method attributes
+of forms, but we should be doing that anyway.
+
+
+------------------------------------------------------------------------
+r2840 | medwards | 2005-11-03 12:32:34 -0600 (Thu, 03 Nov 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Table.pm
+
+
+------------------------------------------------------------------------
+r2791 | medwards | 2005-10-25 15:32:27 -0500 (Tue, 25 Oct 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/utils/Changes
+
+Added support for apache style includes in the site conf file.
+
+------------------------------------------------------------------------
+r2775 | kdsmith | 2005-10-21 12:30:27 -0500 (Fri, 21 Oct 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+
+Adjustments to clean up the unknown error display
+
+------------------------------------------------------------------------
+r2714 | medwards | 2005-10-12 16:58:55 -0500 (Wed, 12 Oct 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/bin/voodoo-control
+
+Now honors the 'onhosts' setting in the xml files.
+
+------------------------------------------------------------------------
+r2698 | medwards | 2005-10-10 23:14:19 -0500 (Mon, 10 Oct 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/bin/voodoo-control
+
+Since you can't use 'source this.sql' inside of DBI, I had to emulate the behaviour manually.  Here marks the first successful test.
+------------------------------------------------------------------------
+r2697 | medwards | 2005-10-10 14:57:11 -0500 (Mon, 10 Oct 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/voodoo.dtd
+   M /Voodoo/core/bin/voodoo-control
+
+Added CPAN install option.  I think I'm at the stage where I can start testing on Vulcan.
+
+
+------------------------------------------------------------------------
+r2695 | medwards | 2005-10-07 22:08:43 -0500 (Fri, 07 Oct 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+
+bumped $VERSION to 1.14
+
+------------------------------------------------------------------------
+r2694 | medwards | 2005-10-07 22:08:10 -0500 (Fri, 07 Oct 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/Voodoo/voodoo.dtd
+   M /Voodoo/core/bin/voodoo-control
+
+Update, pre & post xml files now work
+
+------------------------------------------------------------------------
+r2686 | medwards | 2005-10-05 17:47:43 -0500 (Wed, 05 Oct 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/Makefile.PL
+
+Basic installation tasks completed.  Now I'm working on the setup / update commands via xml.
+
+------------------------------------------------------------------------
+r2685 | medwards | 2005-10-05 17:46:30 -0500 (Wed, 05 Oct 2005) | 2 lines
+Changed paths:
+   A /Voodoo/core/Voodoo/voodoo.dtd
+
+Copy of the data import DTD from cpetracking...just an example to work from.
+
+------------------------------------------------------------------------
+r2675 | medwards | 2005-10-03 17:12:02 -0500 (Mon, 03 Oct 2005) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/Install.pm
+   M /Voodoo/core/bin/voodoo-control
+   M /Voodoo/core/utils/Changes
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/Makefile.PL
+   M /Voodoo/core/utils/README
+   M /Voodoo/core/utils/prepare_dist.sh
+
+More work on the automated installer
+------------------------------------------------------------------------
+r2674 | medwards | 2005-10-03 15:15:33 -0500 (Mon, 03 Oct 2005) | 2 lines
+Changed paths:
+   A /Voodoo/core/bin
+   A /Voodoo/core/bin/voodoo-control
+
+Initial import of automated installer.
+
+------------------------------------------------------------------------
+r2597 | medwards | 2005-09-15 11:33:41 -0500 (Thu, 15 Sep 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Template/debug.tmpl
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/ValidURL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+
+Updated version number, ready for 1.13 release.
+
+------------------------------------------------------------------------
+r2587 | medwards | 2005-09-14 16:56:17 -0500 (Wed, 14 Sep 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+
+list options config block passes the 'persist' parameter down to underline Voodoo::Pager
+
+------------------------------------------------------------------------
+r2303 | medwards | 2005-07-20 15:51:26 -0500 (Wed, 20 Jul 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Table.pm
+
+Now plays nice with DSOs.  frigging inconsistent restart handler....
+
+------------------------------------------------------------------------
+r2227 | medwards | 2005-06-21 10:43:38 -0500 (Tue, 21 Jun 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+Removed needless space at end of timestamp creation
+------------------------------------------------------------------------
+r1905 | medwards | 2005-04-26 21:39:59 -0500 (Tue, 26 Apr 2005) | 4 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+
+$self->access_denied (no params) now checks to see if the file /access_denied.tmpl exists and redirects 
+there if it does.
+
+
+------------------------------------------------------------------------
+r1903 | medwards | 2005-04-26 21:25:16 -0500 (Tue, 26 Apr 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Template/debug.tmpl
+
+More making things play nice with IE
+------------------------------------------------------------------------
+r1885 | medwards | 2005-04-25 12:57:46 -0500 (Mon, 25 Apr 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Template/debug.tmpl
+
+Added IE select box / floating layer bug workaround
+------------------------------------------------------------------------
+r1861 | medwards | 2005-04-20 20:02:05 -0500 (Wed, 20 Apr 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Template/debug.tmpl
+
+
+------------------------------------------------------------------------
+r1823 | medwards | 2005-04-14 16:07:58 -0500 (Thu, 14 Apr 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/utils/MANIFEST
+
+
+------------------------------------------------------------------------
+r1822 | medwards | 2005-04-14 16:07:13 -0500 (Thu, 14 Apr 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   A /Voodoo/core/Voodoo/ValidURL.pm (from /Voodoo/core/Voodoo/Valid_URL.pm:1492)
+   D /Voodoo/core/Voodoo/Valid_URL.pm
+   M /Voodoo/core/Voodoo/basics.pod
+   M /Voodoo/core/Voodoo/license.pod
+
+Fixed a bug, realized there was a bunch of stuff I hadn't commited.  Bad me.
+
+------------------------------------------------------------------------
+r1783 | medwards | 2005-04-10 22:50:42 -0500 (Sun, 10 Apr 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+Prevented a run time error in Voodoo->mark when used outside apache
+
+------------------------------------------------------------------------
+r1560 | medwards | 2005-03-07 20:45:22 -0600 (Mon, 07 Mar 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/utils/Makefile.PL
+
+Added Apache::Request requirement to the Makefile and updated the version numbers for the other
+required modules.
+
+------------------------------------------------------------------------
+r1557 | dgruber | 2005-03-07 17:27:35 -0600 (Mon, 07 Mar 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+
+Changed they way parse_params works so that Voodoo can handle file uploads.
+
+------------------------------------------------------------------------
+r1488 | medwards | 2005-02-13 18:06:27 -0600 (Sun, 13 Feb 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Table.pod
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/Valid_URL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo/api.pod
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/Voodoo.pod
+   M /Voodoo/core/utils/Changes
+   M /Voodoo/core/utils/MANIFEST
+
+Hopefully, this will make the cpan indexer play nice.
+
+
+------------------------------------------------------------------------
+r1486 | medwards | 2005-02-11 20:41:17 -0600 (Fri, 11 Feb 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Table.pod
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/Valid_URL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo/api.pod
+   M /Voodoo/core/Voodoo/basics.pod
+   M /Voodoo/core/Voodoo/license.pod
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/Voodoo.pod
+   M /Voodoo/core/utils/Changes
+
+Updated docs.  search.cpan.org didn't want to play nice...hopefully this will fix it.
+
+
+------------------------------------------------------------------------
+r1482 | medwards | 2005-02-11 15:37:25 -0600 (Fri, 11 Feb 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/Valid_URL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo.pm
+
+Added $VERSION numbers to all pm's.
+
+
+------------------------------------------------------------------------
+r1481 | medwards | 2005-02-11 13:26:40 -0600 (Fri, 11 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/api.pod
+
+
+------------------------------------------------------------------------
+r1479 | medwards | 2005-02-11 13:23:15 -0600 (Fri, 11 Feb 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/api.pod
+   M /Voodoo/core/Voodoo.pod
+   M /Voodoo/core/utils/Changes
+
+------------------------------------------------------------------------
+r1477 | medwards | 2005-02-11 13:02:35 -0600 (Fri, 11 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/api.pod
+   A /Voodoo/core/Voodoo/basics.pod (from /Voodoo/core/Voodoo/setup.pod:1468)
+   D /Voodoo/core/Voodoo/setup.pod
+   M /Voodoo/core/Voodoo.pod
+   M /Voodoo/core/utils/MANIFEST
+
+
+------------------------------------------------------------------------
+r1472 | medwards | 2005-02-10 11:00:02 -0600 (Thu, 10 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/license.pod
+   M /Voodoo/core/utils/LICENSE
+
+
+------------------------------------------------------------------------
+r1471 | medwards | 2005-02-10 10:03:59 -0600 (Thu, 10 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pod
+
+
+------------------------------------------------------------------------
+r1470 | medwards | 2005-02-10 10:01:47 -0600 (Thu, 10 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/utils/README
+
+
+------------------------------------------------------------------------
+r1469 | medwards | 2005-02-10 09:56:13 -0600 (Thu, 10 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pod
+
+
+------------------------------------------------------------------------
+r1468 | medwards | 2005-02-10 09:51:43 -0600 (Thu, 10 Feb 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/DisplayError.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table/Probe/templates/template.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Table.pod
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo/api.pod
+   A /Voodoo/core/Voodoo/license.pod
+   M /Voodoo/core/Voodoo/setup.pod
+   M /Voodoo/core/Voodoo.pm
+   M /Voodoo/core/Voodoo.pod
+   M /Voodoo/core/utils/Changes
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/Makefile.PL
+
+Added proper copyright notice to all files
+
+
+------------------------------------------------------------------------
+r1466 | medwards | 2005-02-09 17:50:43 -0600 (Wed, 09 Feb 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/api.pod
+   M /Voodoo/core/Voodoo.pod
+
+Fixed docs.  Fixed glitch in Debug.pm it was displaying the stack trace including the existance of the debug object.
+
+
+------------------------------------------------------------------------
+r1463 | medwards | 2005-02-08 16:58:00 -0600 (Tue, 08 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pod
+   A /Voodoo/core/utils/LICENSE
+   M /Voodoo/core/utils/MANIFEST
+
+updated manifest, docs.  added license file
+------------------------------------------------------------------------
+r1460 | medwards | 2005-02-08 09:55:42 -0600 (Tue, 08 Feb 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/utils/MANIFEST
+   M /Voodoo/core/utils/Makefile.PL
+   M /Voodoo/core/utils/prepare_dist.sh
+   D /Voodoo/core/utils/t/all.t
+   A /Voodoo/core/utils/t/check_compilation.t (from /Voodoo/core/utils/t/all.t:1458)
+   A /Voodoo/core/utils/t/check_mod_perl_hooks.t
+
+More tests
+Improved prepare_dist.sh script
+
+------------------------------------------------------------------------
+r1459 | medwards | 2005-02-08 08:57:04 -0600 (Tue, 08 Feb 2005) | 2 lines
+Changed paths:
+   D /Voodoo/core/utils/lib
+
+Not needed
+
+------------------------------------------------------------------------
+r1458 | medwards | 2005-02-07 23:35:27 -0600 (Mon, 07 Feb 2005) | 5 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   D /Voodoo/core/Voodoo/Table/Probe/templates/cvs
+   M /Voodoo/core/Voodoo/Table.pod
+   M /Voodoo/core/Voodoo/api.pod
+   M /Voodoo/core/Voodoo/setup.pod
+   D /Voodoo/core/Voodoo/util
+   M /Voodoo/core/Voodoo.pod
+   A /Voodoo/core/utils (from /Voodoo/core/Voodoo/util:1457)
+   A /Voodoo/core/utils/Changes
+   A /Voodoo/core/utils/MANIFEST
+   A /Voodoo/core/utils/MANIFEST.SKIP
+   A /Voodoo/core/utils/Makefile.PL
+   A /Voodoo/core/utils/README
+   D /Voodoo/core/utils/change_v1_names_2_v1_1_names.sh
+   A /Voodoo/core/utils/lib
+   A /Voodoo/core/utils/lib/Apache
+   A /Voodoo/core/utils/lib/Apache/Voodoo
+   A /Voodoo/core/utils/lib/Apache/Voodoo.pm
+   A /Voodoo/core/utils/lib/Apache/Voodoo.pod
+   A /Voodoo/core/utils/prepare_dist.sh
+   A /Voodoo/core/utils/t
+   A /Voodoo/core/utils/t/all.t
+
+Added Makefile.PL and other necessary files for CPAN.
+
+Various documentation and spreling confections.
+
+
+------------------------------------------------------------------------
+r1455 | medwards | 2005-02-07 17:47:24 -0600 (Mon, 07 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+made mkurlparams overwrite parameters correctly.
+------------------------------------------------------------------------
+r1454 | medwards | 2005-02-07 14:30:25 -0600 (Mon, 07 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+   A /Voodoo/core/Voodoo/Table.pod
+
+
+------------------------------------------------------------------------
+r1451 | medwards | 2005-02-07 13:02:05 -0600 (Mon, 07 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo.pod
+
+Doc cleanups
+------------------------------------------------------------------------
+r1450 | medwards | 2005-02-06 15:05:23 -0600 (Sun, 06 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   A /Voodoo/core/Voodoo/api.pod
+   A /Voodoo/core/Voodoo/setup.pod
+   M /Voodoo/core/Voodoo.pm
+   A /Voodoo/core/Voodoo.pod
+
+Loads of documentation updates
+------------------------------------------------------------------------
+r1449 | medwards | 2005-02-05 09:53:10 -0600 (Sat, 05 Feb 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+Synced home and work copies.  Apparently I'd altered the debug method in both places and generated a conflict
+------------------------------------------------------------------------
+r1411 | dgruber | 2005-02-01 11:27:56 -0600 (Tue, 01 Feb 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Pager.pm
+
+Fixed rounding error in page numbers.
+
+------------------------------------------------------------------------
+r1406 | medwards | 2005-02-01 09:57:09 -0600 (Tue, 01 Feb 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+Made debug method not blow up if called from outside apache...like from a cron job
+
+
+------------------------------------------------------------------------
+r1399 | medwards | 2005-01-31 15:07:24 -0600 (Mon, 31 Jan 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo.pm
+
+Documentation updates
+
+------------------------------------------------------------------------
+r1341 | medwards | 2005-01-22 10:15:12 -0600 (Sat, 22 Jan 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo.pm
+
+minor debug interface cleanups
+------------------------------------------------------------------------
+r1309 | medwards | 2005-01-17 19:21:28 -0600 (Mon, 17 Jan 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo.pm
+
+Removed debug print
+------------------------------------------------------------------------
+r1307 | medwards | 2005-01-15 17:14:01 -0600 (Sat, 15 Jan 2005) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/util
+   A /Voodoo/core/Voodoo/util/change_v1_names_2_v1_1_names.sh
+
+added a little util to aid with updating old code to the new version of Voodoo
+------------------------------------------------------------------------
+r1305 | medwards | 2005-01-15 14:40:42 -0600 (Sat, 15 Jan 2005) | 1 line
+Changed paths:
+   A /Voodoo/core/Voodoo/DisplayError.pm (from /Voodoo/core/Voodoo/display_error.pm:1301)
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   D /Voodoo/core/Voodoo/display_error.pm
+   M /Voodoo/core/Voodoo.pm
+
+For some bizarre reason display_error wouldn't work until I changed the name to DisplayError
+------------------------------------------------------------------------
+r1303 | medwards | 2005-01-15 13:23:43 -0600 (Sat, 15 Jan 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+
+fixed glitch in locating the debug template
+------------------------------------------------------------------------
+r1301 | medwards | 2005-01-15 13:09:28 -0600 (Sat, 15 Jan 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Voodoo/Debug.pm
+   M /Voodoo/core/Voodoo/Handler.pm
+   M /Voodoo/core/Voodoo/Loader/Dynamic.pm
+   M /Voodoo/core/Voodoo/Loader/Static.pm
+   M /Voodoo/core/Voodoo/Loader.pm
+   M /Voodoo/core/Voodoo/Pager.pm
+   M /Voodoo/core/Voodoo/ServerConfig.pm
+   M /Voodoo/core/Voodoo/Table/Probe/mysql.pm
+   M /Voodoo/core/Voodoo/Table.pm
+   M /Voodoo/core/Voodoo/Theme.pm
+   M /Voodoo/core/Voodoo/Valid_URL.pm
+   M /Voodoo/core/Voodoo/Zombie.pm
+   M /Voodoo/core/Voodoo/display_error.pm
+   M /Voodoo/core/Voodoo.pm
+
+Updated package names.  I should be setup now to get this thing on CPAN
+------------------------------------------------------------------------
+r1300 | medwards | 2005-01-15 12:24:40 -0600 (Sat, 15 Jan 2005) | 1 line
+Changed paths:
+   D /Voodoo/core/Base.pm
+   D /Voodoo/core/Debug.pm
+   D /Voodoo/core/Handler.pm
+   D /Voodoo/core/Loader
+   D /Voodoo/core/Loader.pm
+   D /Voodoo/core/Pager.pm
+   D /Voodoo/core/ServerConfig.pm
+   D /Voodoo/core/Table
+   D /Voodoo/core/Table.pm
+   D /Voodoo/core/Template
+   D /Voodoo/core/Theme.pm
+   D /Voodoo/core/Valid_URL.pm
+   A /Voodoo/core/Voodoo
+   A /Voodoo/core/Voodoo/Debug.pm (from /Voodoo/core/Debug.pm:1294)
+   A /Voodoo/core/Voodoo/Handler.pm (from /Voodoo/core/Handler.pm:1294)
+   A /Voodoo/core/Voodoo/Loader (from /Voodoo/core/Loader:1294)
+   A /Voodoo/core/Voodoo/Loader.pm (from /Voodoo/core/Loader.pm:1294)
+   A /Voodoo/core/Voodoo/Pager.pm (from /Voodoo/core/Pager.pm:1294)
+   A /Voodoo/core/Voodoo/ServerConfig.pm (from /Voodoo/core/ServerConfig.pm:1294)
+   A /Voodoo/core/Voodoo/Table (from /Voodoo/core/Table:1294)
+   D /Voodoo/core/Voodoo/Table/Beta.pm
+   A /Voodoo/core/Voodoo/Table.pm (from /Voodoo/core/Table.pm:1299)
+   A /Voodoo/core/Voodoo/Template (from /Voodoo/core/Template:1294)
+   A /Voodoo/core/Voodoo/Theme.pm (from /Voodoo/core/Theme.pm:1294)
+   A /Voodoo/core/Voodoo/Valid_URL.pm (from /Voodoo/core/Valid_URL.pm:1294)
+   A /Voodoo/core/Voodoo/Zombie.pm (from /Voodoo/core/Zombie.pm:1294)
+   A /Voodoo/core/Voodoo/display_error.pm (from /Voodoo/core/display_error.pm:1294)
+   A /Voodoo/core/Voodoo.pm (from /Voodoo/core/Base.pm:1294)
+   D /Voodoo/core/Zombie.pm
+   D /Voodoo/core/display_error.pm
+
+files moved around
+------------------------------------------------------------------------
+r1299 | medwards | 2005-01-15 11:49:35 -0600 (Sat, 15 Jan 2005) | 1 line
+Changed paths:
+   A /Voodoo/core/Table.pm (from /Voodoo/core/Table/Beta.pm:1294)
+
+Table::Beta is no longer beta :)
+------------------------------------------------------------------------
+r1298 | medwards | 2005-01-15 11:48:53 -0600 (Sat, 15 Jan 2005) | 1 line
+Changed paths:
+   D /Voodoo/core/Table.pm
+
+no longer needed
+------------------------------------------------------------------------
+r1293 | medwards | 2005-01-14 17:44:26 -0600 (Fri, 14 Jan 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Table/Beta.pm
+
+Removed duplicated prep_select.  It's in Base
+
+------------------------------------------------------------------------
+r1290 | medwards | 2005-01-14 09:38:16 -0600 (Fri, 14 Jan 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Base.pm
+
+Removed old select list preparation method
+
+
+------------------------------------------------------------------------
+r1287 | medwards | 2005-01-13 15:53:32 -0600 (Thu, 13 Jan 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Debug.pm
+   M /Voodoo/core/Theme.pm
+
+removed a warning or two
+------------------------------------------------------------------------
+r1277 | medwards | 2005-01-11 16:45:04 -0600 (Tue, 11 Jan 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Handler.pm
+   M /Voodoo/core/Pager.pm
+
+doc updates
+
+------------------------------------------------------------------------
+r1276 | medwards | 2005-01-11 15:16:12 -0600 (Tue, 11 Jan 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Base.pm
+
+Removed uncessary select_multi_prep method
+------------------------------------------------------------------------
+r1275 | medwards | 2005-01-11 13:46:48 -0600 (Tue, 11 Jan 2005) | 3 lines
+Changed paths:
+   M /Voodoo/core/Base.pm
+   M /Voodoo/core/Debug.pm
+   M /Voodoo/core/Handler.pm
+   M /Voodoo/core/Loader/Dynamic.pm
+   M /Voodoo/core/Loader/Static.pm
+   M /Voodoo/core/Loader.pm
+   M /Voodoo/core/Pager.pm
+   M /Voodoo/core/ServerConfig.pm
+   M /Voodoo/core/Table/Beta.pm
+   M /Voodoo/core/Table.pm
+   M /Voodoo/core/Theme.pm
+   M /Voodoo/core/Zombie.pm
+   M /Voodoo/core/display_error.pm
+
+Documentation clean ups
+
+
+------------------------------------------------------------------------
+r1272 | medwards | 2005-01-10 11:16:23 -0600 (Mon, 10 Jan 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Base.pm
+   M /Voodoo/core/Debug.pm
+   M /Voodoo/core/Handler.pm
+   M /Voodoo/core/Pager.pm
+   M /Voodoo/core/Zombie.pm
+   M /Voodoo/core/display_error.pm
+
+Documentation updates
+------------------------------------------------------------------------
+r1271 | medwards | 2005-01-10 11:15:49 -0600 (Mon, 10 Jan 2005) | 1 line
+Changed paths:
+   D /Voodoo/core/ProfileTimer.pm
+
+This module is no longer needed, it's functions have been absorbed by Debug
+------------------------------------------------------------------------
+r1268 | medwards | 2005-01-09 11:13:41 -0600 (Sun, 09 Jan 2005) | 2 lines
+Changed paths:
+   M /Voodoo/core/Handler.pm
+
+Updated the docs
+
+------------------------------------------------------------------------
+r1267 | medwards | 2005-01-07 17:25:35 -0600 (Fri, 07 Jan 2005) | 1 line
+Changed paths:
+   M /Voodoo/core/Pager.pm
+   M /Voodoo/core/Table/Beta.pm
+   M /Voodoo/core/Table.pm
+
+
+------------------------------------------------------------------------
+r1070 | medwards | 2004-12-21 17:24:31 -0600 (Tue, 21 Dec 2004) | 1 line
+Changed paths:
+   M /Voodoo/core/Handler.pm
+
+Added passing of user-agent to $p.  This can be used to detect stooopid browsers (micro$haft intire-web exploiter)
+------------------------------------------------------------------------
+r1050 | medwards | 2004-12-20 18:14:32 -0600 (Mon, 20 Dec 2004) | 2 lines
+Changed paths:
+   M /Voodoo/core/Template/debug.tmpl
+
+Debug block now works in horrid, nasty, POS browsers (IE)
+
+------------------------------------------------------------------------
+r1029 | medwards | 2004-12-16 16:42:30 -0600 (Thu, 16 Dec 2004) | 1 line
+Changed paths:
+   D /Voodoo/core/Loader/cvs
+   D /Voodoo/core/Table/Probe/cvs
+   D /Voodoo/core/Table/cvs
+   D /Voodoo/core/cvs
+
+removed uneeded CVS directories
+------------------------------------------------------------------------
+r1028 | medwards | 2004-12-16 16:19:34 -0600 (Thu, 16 Dec 2004) | 1 line
+Changed paths:
+   M /Voodoo/core/Base.pm
+   M /Voodoo/core/Debug.pm
+   M /Voodoo/core/Handler.pm
+   M /Voodoo/core/Loader/Dynamic.pm
+   M /Voodoo/core/Loader/Static.pm
+   M /Voodoo/core/Loader.pm
+   M /Voodoo/core/Pager.pm
+   M /Voodoo/core/ProfileTimer.pm
+   M /Voodoo/core/ServerConfig.pm
+   M /Voodoo/core/Table/Beta.pm
+   M /Voodoo/core/Table.pm
+   M /Voodoo/core/Template/debug.tmpl
+   M /Voodoo/core/Theme.pm
+   M /Voodoo/core/Valid_URL.pm
+   M /Voodoo/core/Zombie.pm
+   M /Voodoo/core/display_error.pm
+
+Added Id tag support
+------------------------------------------------------------------------
+r1027 | medwards | 2004-12-16 16:13:25 -0600 (Thu, 16 Dec 2004) | 1 line
+Changed paths:
+   A /Voodoo/core/Base.pm
+   A /Voodoo/core/Debug.pm
+   A /Voodoo/core/Handler.pm
+   A /Voodoo/core/Loader
+   A /Voodoo/core/Loader/Dynamic.pm
+   A /Voodoo/core/Loader/Static.pm
+   A /Voodoo/core/Loader/cvs
+   A /Voodoo/core/Loader/cvs/Entries
+   A /Voodoo/core/Loader/cvs/Repository
+   A /Voodoo/core/Loader/cvs/Root
+   A /Voodoo/core/Loader.pm
+   A /Voodoo/core/Pager.pm
+   A /Voodoo/core/ProfileTimer.pm
+   A /Voodoo/core/ServerConfig.pm
+   A /Voodoo/core/Table
+   A /Voodoo/core/Table/Beta.pm
+   A /Voodoo/core/Table/Probe
+   A /Voodoo/core/Table/Probe/cvs
+   A /Voodoo/core/Table/Probe/cvs/Entries
+   A /Voodoo/core/Table/Probe/cvs/Repository
+   A /Voodoo/core/Table/Probe/cvs/Root
+   A /Voodoo/core/Table/Probe/mysql.pm
+   A /Voodoo/core/Table/Probe/templates
+   A /Voodoo/core/Table/Probe/templates/cvs
+   A /Voodoo/core/Table/Probe/templates/cvs/Entries
+   A /Voodoo/core/Table/Probe/templates/cvs/Repository
+   A /Voodoo/core/Table/Probe/templates/cvs/Root
+   A /Voodoo/core/Table/Probe/templates/template.pm
+   A /Voodoo/core/Table/cvs
+   A /Voodoo/core/Table/cvs/Entries
+   A /Voodoo/core/Table/cvs/Repository
+   A /Voodoo/core/Table/cvs/Root
+   A /Voodoo/core/Table.pm
+   A /Voodoo/core/Template
+   A /Voodoo/core/Template/debug.tmpl
+   A /Voodoo/core/Theme.pm
+   A /Voodoo/core/Valid_URL.pm
+   A /Voodoo/core/Zombie.pm
+   A /Voodoo/core/cvs
+   A /Voodoo/core/cvs/Entries
+   A /Voodoo/core/cvs/Repository
+   A /Voodoo/core/cvs/Root
+   A /Voodoo/core/display_error.pm
+
+Initial checkin since I can't find my damn cvs archive.
+------------------------------------------------------------------------
+r1025 | medwards | 2004-12-16 16:10:06 -0600 (Thu, 16 Dec 2004) | 1 line
+Changed paths:
+   A /Voodoo/core
+
+
+------------------------------------------------------------------------

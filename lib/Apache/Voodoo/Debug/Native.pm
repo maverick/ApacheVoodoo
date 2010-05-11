@@ -10,7 +10,7 @@
 ################################################################################
 package Apache::Voodoo::Debug::Native;
 
-$VERSION = "3.0002";
+$VERSION = "3.0100";
 
 use strict;
 use warnings;
@@ -19,6 +19,7 @@ use base("Apache::Voodoo::Debug::Common");
 
 use Apache::Voodoo::Constants;
 
+use DBI;
 use HTML::Template;
 use JSON::DWIW;
 
@@ -259,9 +260,9 @@ sub _write {
 
 	my $handler = 'handle_'.$data->{'type'};
 
-#	if ($self->{db}->can($handler)) {
+	if ($self->{db}->can($handler)) {
 		$self->{db}->$handler($data);
-#	}
+	}
 }
 
 sub finalize {

@@ -1,6 +1,10 @@
 package Apache::Voodoo::MP::Common;
 
+<<<<<<< HEAD
 $VERSION = "3.0002";
+=======
+$VERSION = "3.0100";
+>>>>>>> 9f26469cd61f8fdbea019a118b0709dd9adeba67
 
 use strict;
 use warnings;

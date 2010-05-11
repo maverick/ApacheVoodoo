@@ -1,0 +1,8 @@
+Makefile
+lib/Apache/Voodoo/MyConfig.pm
+blib
+pm_to_blib
+cover_db
+t/app_newstyle/C/a/controller.pm
+t/app_newstyle/M/a/model.pm
+t/app_newstyle/V/a/view.pm

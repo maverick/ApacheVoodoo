@@ -1,6 +1,6 @@
 package Apache::Voodoo::Application::ConfigParser;
 
-$VERSION = "3.0002";
+$VERSION = "3.0100";
 
 use strict;
 use warnings;
@@ -36,7 +36,7 @@ sub new {
 		);
 	}
 	else {
-		die "ID is a requried parameter.";
+		die "ID is a required parameter.";
 	}
 
 	return $self;
@@ -73,10 +73,10 @@ sub parse {
 
 	$conf{'base_package'} ||= $self->{'id'};
 
-	# PCI says that sessions should expire after 15 minutes, this should be a sesable default
-	$conf{'session_timeout'} ||= 900;
+	# PCI says that sessions should expire after 15 minutes, this should be a sane default
+	$conf{'session_timeout'} = (defined($conf{'session_timeout'}) && $conf{'session_timeout'} =~ /^\d+$/)?$conf{'session_timeout'}:900;
 
-	$conf{'upload_size_max'} ||= 5242880;
+	$conf{'upload_size_max'} = (defined($conf{'upload_size_max'}) && $conf{'upload_size_max'} =~ /^\d+$/)?$conf{'upload_size_max'}:5242880;
 
 	$conf{'cookie_name'} ||= uc($self->{'id'}). "_SID";
 
@@ -150,9 +150,9 @@ sub parse {
 	$self->{'views'}    = $conf{'views'}    || {};
 	$self->{'includes'} = $conf{'includes'} || {};
 
+	$self->{'old_ns'} = 0;
 	if ($conf{'controllers'}) {
 		$self->{'controllers'} = $conf{'controllers'};
-		$self->{'old_ns'} = 0;
 	}
 	elsif ($conf{'modules'}) {
 		$self->{'controllers'} = $conf{'modules'};

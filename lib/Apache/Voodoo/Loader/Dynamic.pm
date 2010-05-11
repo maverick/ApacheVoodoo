@@ -1,6 +1,6 @@
 package Apache::Voodoo::Loader::Dynamic;
 
-$VERSION = "3.0002";
+$VERSION = "3.0100";
 
 use strict;
 use warnings;
@@ -83,7 +83,7 @@ sub can {
 	if (defined $self->{'provides'}->{$method}) {
 		return 1;
 	}
-	elsif (1||$self->{'object'}->isa("Apache::Voodoo::Zombie") || $self->{'object'}->can($method)) {
+	elsif ($self->{'object'}->isa("Apache::Voodoo::Zombie") || $self->{'object'}->can($method)) {
 		# Either we have a dead module and we map whatever was requested or
 		# we have a live one and has the requested method.
 

@@ -7,10 +7,9 @@
 # application.  It's not intended to be use directly by end users.
 #
 ###############################################################################
-
 package Apache::Voodoo::Install::Updater;
 
-$VERSION = "3.0002";
+$VERSION = "3.0100";
 
 use strict;
 use warnings;
@@ -19,7 +18,6 @@ use base("Apache::Voodoo::Install");
 
 use Apache::Voodoo::Constants;
 
-use CPAN::Config;
 use CPAN;
 use DBI;
 use Digest::MD5;

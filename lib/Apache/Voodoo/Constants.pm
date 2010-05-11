@@ -8,7 +8,7 @@
 ################################################################################
 package Apache::Voodoo::Constants;
 
-$VERSION = "3.0002";
+$VERSION = "3.0100";
 
 use strict;
 use warnings;
@@ -16,32 +16,54 @@ use warnings;
 my $self;
 
 sub new {
-	my $class = shift;
+	my $class       = shift;
+	my $config_file = shift;
 
 	if (ref($self)) {
+		if ($config_file) {
+			$self->{_conf_package} = $config_file;
+			$self->_init();
+		}
 		return $self;
 	}
 
-	eval "
-		use Apache::Voodoo::MyConfig;
-	";
-
-	# copy the config.
-	$self = { %{$Apache::Voodoo::MyConfig::CONFIG} };
-
-	if ($@) {
-		die "$@\n".
-		    "Can't find Apache::Voodoo::MyConfig.  This probably means that Apache Voodoo hasn't been configured yet.\n".
-		    "Please do so by running \"voodoo-control setconfig\"\n";
-	}
-
-	unless (ref($self) eq "HASH") {
-		die "There was an error loading Apache::Voodoo::MyConfig.  Please run \"voodoo-control setconfig\"\n";
-	}
+	$self = {
+		_conf_package => $config_file || 'Apache::Voodoo::MyConfig'
+	};
 
 	bless($self,$class);
 
+	$self->_init();
+
 	return $self;
+}
+
+sub _init {
+	my $self = shift;
+
+	my $p = $self->{_conf_package};
+	my $f = $self->{_conf_package};
+	$f =~ s/::/\//g;
+	$f .= '.pm';
+
+	eval {
+		require $f;
+	};
+	if ($@) {
+		die "$@\n".
+		    "Can't find $p.  This probably means that Apache Voodoo hasn't been configured yet.\n".
+		    "Please do so by running \"voodoo-control setconfig\"\n";
+	}
+
+	unless (ref(eval '$'.$p."::CONFIG") eq "HASH") {
+		die "There was an error loading $p.  Please run \"voodoo-control setconfig\"\n";
+	}
+
+	# copy the config.
+	my %h = eval '%{$'.$p."::CONFIG}";
+	foreach (keys %h) {
+		$self->{$_} = $h{$_};
+	}
 }
 
 sub apache_gid    { return $_[0]->{APACHE_GID};    }
@@ -54,8 +76,6 @@ sub prefix        { return $_[0]->{PREFIX};        }
 sub session_path  { return $_[0]->{SESSION_PATH};  }
 sub tmpl_path     { return $_[0]->{TMPL_PATH};     }
 sub updates_path  { return $_[0]->{UPDATES_PATH};  }
-sub socket_file   { return $_[0]->{SOCKET_FILE};   }
-sub pid_file      { return $_[0]->{PID_FILE};      }
 sub debug_dbd     { return $_[0]->{DEBUG_DBD};     }
 sub debug_path    { return $_[0]->{DEBUG_PATH};    }
 sub use_log4perl  { return $_[0]->{USE_LOG4PERL};  }

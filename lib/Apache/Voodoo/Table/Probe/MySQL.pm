@@ -9,12 +9,13 @@
 ################################################################################
 package Apache::Voodoo::Table::Probe::MySQL;
 
-$VERSION = "3.0002";
-
-use DBI;
-use Data::Dumper;
+$VERSION = "3.0100";
 
 use strict;
+use warnings;
+
+use DBI;
+use Tie::Hash::Indexed;
 
 our $DEBUG = 0;
 
@@ -23,7 +24,6 @@ sub new {
 	my $self = {};
 
 	$self->{'dbh'} = shift;
-	print Dumper $self->{dbh}->get_info(17);
 
 	bless $self, $class;
 	return $self;
@@ -44,43 +44,31 @@ sub probe_table {
 
 	my $dbh = $self->{'dbh'};
 
-	my $data = {};
-	$data->{table} = $table;
+	tie my %data, 'Tie::Hash::Indexed';
 
-	my @fields;
+	$data{table} = $table;
+	$data{primary_key} = '';
 
-	my $table_info = $dbh->selectall_arrayref("explain $table") || return { 'ERRORS' => [ "explain of table $_ failed. $DBI::errstr" ] };
+	tie my %columns, 'Tie::Hash::Indexed';
+	$data{columns} = \%columns;
 
-	foreach (@{$table_info}) {
-		my $row = $_;
+	# get foreign key infomation about the given table
+	my $db_name = $dbh->{'Name'};
+	$db_name =~ s/:.*//;
+	my $sth = $dbh->foreign_key_info(undef,undef,undef,undef,$db_name,$table) || die DBI->errstr;
+	my %foreign_keys;
+	foreach (@{$sth->fetchall_arrayref()}) {
+		next unless $_->[2];	# not a foreign key
+		$foreign_keys{$_->[7]} = [ $_->[2], $_->[3] ];
+	}
+
+	# Sadly the column_info method doesn't tell us if the column is auto increment or not.
+	# So we're going after the column info using ye olde explain.
+	my $table_info = $dbh->selectall_arrayref("explain $table") || return { 'ERRORS' => [ "explain of table $table failed. $DBI::errstr" ] };
+	foreach my $row (@{$table_info}) {
 		my $name = $row->[0];
-		my $column = {};
 
-		debug("================================================================================");
-		debug($row);
-		debug("================================================================================");
-
-		# is this param required for add / edit (does the column allow nulls)
-		$column->{'required'} = 1 unless $row->[2] eq "YES";
-
-		if ($row->[3] eq "PRI") {
-			# primary key.  NOTE THAT CLUSTERED PRIMARY KEYS ARE NOT SUPPORTED
-			$data->{'primary_key'} = $name;
-
-			# is the primary key user supplied
-			unless ($row->[5] eq "auto_increment") {
-				$data->{'pkey_user_supplied'} = 1;
-				push(@fields,$name);
-			}
-		}
-		elsif ($row->[3] eq "UNI") {
-			# unique index.
-			$column->{'unique'} = 1;
-			push(@fields,$name);
-		}
-		else {
-			push(@fields,$name);
-		}
+		tie my %column, 'Tie::Hash::Indexed';
 
 		#
 		# figure out the column type
@@ -91,62 +79,84 @@ sub probe_table {
 		$type =~ s/[,\d\(\) ]+/_/g;
 		$type =~ s/_$//g;
 
-		eval {
-			debug("Examining data type: $type($size)...");
-			$self->$type($column,$size);
-			debug("OK");
-		};
-		if ($@) {
-			debug("UNKNOWN");
-			push(@{$data->{'ERRORS'}},"unsupported type $row->[1]");
+		if ($self->can($type)) {
+			$self->$type(\%column,$size);
 		}
+		else {
+			push(@{$data{'ERRORS'}},"unsupported type $row->[1]");
+		}
+
+		# is this param required for add / edit (does the column allow nulls)
+		$column{'required'} = 1 unless $row->[2] eq "YES";
+
+		if ($row->[3] eq "PRI") {
+			# primary key.  NOTE THAT CLUSTERED PRIMARY KEYS ARE NOT SUPPORTED
+			$data{'primary_key'} = $name;
+
+			# is the primary key user supplied
+			unless ($row->[5] eq "auto_increment") {
+				$data{'pkey_user_supplied'} = 1;
+			}
+		}
+		elsif ($row->[3] eq "UNI") {
+			# unique index.
+			$column{'unique'} = 1;
+		}
+
 		#
 		# figure out foreign keys
 		#
-		if ($name =~ /^(\w+)_id$/) {
-			my $ref_table = $1;
-			debug("referenced table is: $ref_table");
+		my $ref_table = '';
+		my $ref_id    = '';
+		if (scalar(%foreign_keys)) {
+			# there are foreign keys defined for this table
+			if (defined($foreign_keys{$name})) {
+				# this column is a foreign key
+				($ref_table,$ref_id) = @{$foreign_keys{$name}};
+			}
+		}
+		elsif ($name =~ /^(\w+)_id$/) {
+			# this column follows the standard naming convention
+			# let's assume that it's supposed to be a foreign key.
+			$ref_table = $1;
+		}
 
+		if ($ref_table) {
 			my $ref_table_info = $dbh->selectall_arrayref("explain $ref_table");
 			if (ref($ref_table_info)) {
 				# figure out table structure
 
-				my $ref_data;
-				my $ref_fields;
-				{ 
-					local($DEBUG);
-					$DEBUG = 0;
-					($ref_data,$ref_fields) = $self->probe_table($ref_table);
-				}
+				my $ref_data = $self->probe_table($ref_table);
 
-				my $ref_info = { 
+				tie my %ref_info, 'Tie::Hash::Indexed';
+				%ref_info = (
 					'table'          => $ref_table,
-					'primary_key'    => $ref_data->{'primary_key'},
+					'primary_key'    => $ref_id || $ref_data->{'primary_key'},
 					'select_label'   => $ref_table,
-					'select_default' => $row->[4]
-				};
+					'select_default' => $row->[4],
+					'columns'        => [
+						grep { $ref_data->{'columns'}->{$_}->{'type'} eq "varchar" }
+						keys %{$ref_data->{'columns'}}
+					]
+				);
 
-				$ref_info->{columns} = [ grep {$ref_data->{columns}->{$_}->{type} eq "varchar"} keys %{$ref_data->{columns}} ];
-
-				debug($ref_info);
-				$column->{references} = $ref_info;
+				$column{'references'} = \%ref_info;
 			}
 			else {
-				debug("No such table $ref_table: $DBI::errstr");
+				warn("No such table $ref_table: $DBI::errstr");
 			}
 		}
 
-		$data->{columns}->{$name} = $column;
+		$data{'columns'}->{$name} = \%column;
 	}
 
-	if (defined($data->{'ERRORS'})) {
-		print STDERR "URK!\n";
-		print STDERR join("\n",@{$data->{'ERRORS'}});
+	if (defined($data{'ERRORS'})) {
+		print STDERR join("\n",@{$data{'ERRORS'}});
 		print "\n";
 		exit;
 	}
 
-	return $data,\@fields;
+	return \%data;
 }
 
 sub tinyint_unsigned   { shift()->int_handler_unsigned(@_,1); }
@@ -159,8 +169,8 @@ sub bigint_unsigned    { shift()->int_handler_unsigned(@_,8); }
 sub int_handler_unsigned {
 	my ($self,$column,$size,$bytes) = @_;
 
-	$column->{'type'} = 'unsigned_int';
-	$column->{'max'}  = 2 ** ($bytes * 8) - 1;
+	$column->{'type'}  = 'unsigned_int';
+	$column->{'bytes'} = $bytes;
 }
 
 sub tinyint   { shift()->int_handler(@_,1); }
@@ -173,14 +183,13 @@ sub bigint    { shift()->int_handler(@_,8); }
 sub int_handler {
 	my ($self,$column,$size,$bytes) = @_;
 
-	$column->{'type'} = 'signed_int';
-	$column->{'max'}  = (2 ** ($bytes * 8))/2;
-	$column->{'min'}  = (0 - (2 ** ($bytes * 8))/2 - 1);
+	$column->{'type'}  = 'signed_int';
+	$column->{'bytes'} = $bytes;
 }
 
 sub text {
 	my ($self,$column,$size) = @_;
-	$self->varchar($column,-1);
+	$column->{'type'} = 'text';
 }
 
 sub char {
@@ -220,30 +229,23 @@ sub decimal {
 sub date {
 	my ($self,$column,$size) = @_;
 
-	$column->{'type'}   = 'date';
-	$column->{'length'} = '10';
+	$column->{'type'} = 'date';
 }
 
 sub time {
 	my ($self,$column,$size) = @_;
 
-	$column->{'type'}   = 'time';
-	$column->{'length'} = '10';
+	$column->{'type'} = 'time';
+}
+
+sub datetime {
+	my ($self,$column,$size) = @_;
+
+	$column->{'type'} = 'datetime';
 }
 
 sub timestamp {
 	# timestamp is a 'magically' updated column that we don't touch
-}
-
-sub debug {
-	return unless $DEBUG;
-
-	if (ref($_[0])) {
-		print STDERR Dumper(@_);
-	}
-	else {
-		print STDERR @_,"\n";
-	}
 }
 
 1;
