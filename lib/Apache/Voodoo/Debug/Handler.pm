@@ -40,18 +40,18 @@ sub new {
 	};
 
 	$self->{static_files} = { 
-		"debug.css"        => "text/css",
-		"debug.js"         => "application/x-javascript",
-		"i/debug.png"      => "image/png",
-		"i/error.png"      => "image/png",
-		"i/exception.png"  => "image/png",
-		"i/info.png"       => "image/png",
-		"i/minus.png"      => "image/png",
-		"i/plus.png"       => "image/png",
-		"i/spinner.gif"    => "image/gif",
-		"i/table.png"      => "image/png",
-		"i/trace.png"      => "image/png",
-		"i/warn.png"       => "image/png",
+		"debug.css"     => "text/css",
+		"debug.js"      => "application/x-javascript",
+		"debug.png"     => "image/png",
+		"error.png"     => "image/png",
+		"exception.png" => "image/png",
+		"info.png"      => "image/png",
+		"minus.png"     => "image/png",
+		"plus.png"      => "image/png",
+		"spinner.gif"   => "image/gif",
+		"table.png"     => "image/png",
+		"trace.png"     => "image/png",
+		"warn.png"      => "image/png"
 	};
 
 	$self->{json} = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});;
