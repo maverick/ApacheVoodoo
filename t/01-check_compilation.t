@@ -11,15 +11,6 @@ BEGIN {
 		Apache::Voodoo::Debug::Native
 		Apache::Voodoo::Debug::Native::SQLite
 		Apache::Voodoo::Debug::Native::common
-		Apache::Voodoo::Debug::base
-		Apache::Voodoo::Debug::debug
-		Apache::Voodoo::Debug::index
-		Apache::Voodoo::Debug::parameters
-		Apache::Voodoo::Debug::profile
-		Apache::Voodoo::Debug::request
-		Apache::Voodoo::Debug::return_data
-		Apache::Voodoo::Debug::session
-		Apache::Voodoo::Debug::template_conf
 		Apache::Voodoo::Engine
 		Apache::Voodoo::Exception
 		Apache::Voodoo::Handler
