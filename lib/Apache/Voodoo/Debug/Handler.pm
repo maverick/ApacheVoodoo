@@ -14,6 +14,7 @@ use warnings;
 
 use DBI;
 use Time::HiRes;
+use JSON::DWIW;
 
 use Apache::Voodoo::MP;
 use Apache::Voodoo::Constants;
@@ -33,37 +34,10 @@ sub new {
 	$self->{template_dir} = $INC{"Apache/Voodoo/Debug/Handler.pm"};
 	$self->{template_dir} =~ s/Handler.pm$/html/;
 
-	$self->setup_static_files();
-	$self->setup_handlers();
-
-	return $self;
-}
-
-sub setup_handlers {
-	my $self = shift;
-
-	foreach (
-		'profile',
-		'debug',
-		'return_data',
-		'session',
-		'template_conf',
-		'parameters',
-		'request') {
-
-		my $m = 'Apache::Voodoo::Debug::'.$_;
-		my $f = 'Apache/Voodoo/Debug/'.$_.'.pm';
-
-		require $f;
-
-		my $p = $m->new();
-
-		$self->{handlers}->{$_} = [$p,'handle'];
-	}
-}
-
-sub setup_static_files {
-	my $self = shift;
+	$self->{handlers} = {
+		map { $_ => 'handle_'.$_ }
+		('profile','debug','return_data','session','template_conf','parameters','request')
+	};
 
 	$self->{static_files} = { 
 		"debug.css"        => "text/css",
@@ -79,6 +53,10 @@ sub setup_static_files {
 		"i/trace.png"      => "image/png",
 		"i/warn.png"       => "image/png",
 	};
+
+	$self->{json} = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});;
+
+	return $self;
 }
 
 sub handler {
@@ -88,16 +66,14 @@ sub handler {
 	$self->{mp}->set_request($r);
 
 	# holds all vars associated with this page processing request
-	my $run = {};
+	my $uri = $self->{mp}->uri();
+	$uri =~ s/^$self->{debug_root}//;
+	$uri =~ s/^\///;
 
-	$run->{uri} = $self->{mp}->uri();
-	$run->{uri} =~ s/^$self->{debug_root}//;
-	$run->{uri} =~ s/^\///;
-
-	if (defined($self->{static_files}->{$run->{'uri'}})) {
+	if (defined($self->{static_files}->{$uri})) {
 		# request for one of the static files.
 
-		my $file = File::Spec->catfile($self->{template_dir},$run->{'uri'});
+		my $file = File::Spec->catfile($self->{template_dir},$uri);
 		my $mtime = (stat($file))[9];
 
 		# Handle "if not modified since" requests.
@@ -108,21 +84,23 @@ sub handler {
 		return $rc unless $rc == $self->{mp}->ok;
 
 		# set the content type
-		$self->{mp}->content_type($self->{static_files}->{$run->{'uri'}});
+		$self->{mp}->content_type($self->{static_files}->{$uri});
 
 		# tell apache to send the underlying file
 		$r->sendfile($file);
 
 		return $self->{mp}->ok;
 	}
-	elsif (defined($self->{handlers}->{$run->{'uri'}})) {
+	elsif (defined($self->{handlers}->{$uri})) {
 		# request for an operation
 
+		my $method = $self->{handlers}->{$uri};
+
 		# parse the params
-		$run->{'input_params'} = $self->{mp}->parse_params(1);
-		unless (ref($run->{'input_params'})) {
+		my $params = $self->{mp}->parse_params(1);
+		unless (ref($params)) {
 			# something went boom
-			return $self->display_host_error($run->{'input_params'});
+			return $self->display_host_error($params);
 		}
 
 		# connect to the debugging database
@@ -131,131 +109,32 @@ sub handler {
 			return $self->display_host_error("Can't connect to debugging database: ".DBI->errstr);
 		}
 
-		$run->{dbh} = $dbh;
+		my $return;
+		eval {
+			$return = $self->$method($dbh,$params);
+		};
+		use Data::Dumper;
+		warn Dumper $@;
+		if ($@) {
+			return $self->display_host_error("$@");
+		}
 
-		return $self->generate_content($run);
+		if (ref($return) eq "HASH") {
+			$self->{mp}->content_type("application/json");
+			$self->{mp}->print($self->{json}->to_json($return));
+		}
+		else {
+			$self->{mp}->content_type("text/plain");
+			$self->{mp}->print($return);
+		}
+
+		$self->{mp}->flush();
+
+		return $self->{mp}->ok;
 	}
 
 	# not a request we handle
 	return $self->{mp}->declined;
-}
-
-sub generate_content {
-	my $self = shift;
-	my $run  = shift;
-
-	use Data::Dumper;
-	my $return;
-	eval {
-		my ($obj,$method) = @{$self->{handlers}->{$run->{uri}}};
-		warn "$method\n";
-
-		$return = $obj->$method(
-			{
-				"dbh"    => $run->{'dbh'},
-				"params" => $run->{'input_params'},
-				"mp"     => $self->{'mp'},
-			}
-		);
-	};
-
-	warn Dumper $@;
-	if ($@) {
-		return $self->display_host_error("Module: $run->{uri}\n$@");
-	}
-
-	if (ref($return) eq "ARRAY") {
-		if    ($return->[0] eq "REDIRECTED") {
-			if ($self->{'debug_root'} ne "/" && $return->[1] =~ /^\//o) {
-				$return->[1] =~ s/^\//$self->{'debug_root'}/;
-			}
-			return $self->{mp}->redirect($return->[1]);
-		}
-		elsif ($return->[0] eq "DISPLAY_ERROR") {     
-			my $ts = Time::HiRes::time;
-			$run->{'session'}->{"er_$ts"}->{'error'}  = $return->[1];
-			$run->{'session'}->{"er_$ts"}->{'return'} = $return->[2];
-
-			# internal redirects have always been touchy, removing for now until I can
-			# figure out why it's being a pain now.
-			#$run->{'session_handler'}->disconnect();
-			#return $self->{mp}->redirect($app->{'debug_root'}."display_error?error=$ts",1);
-
-			return $self->{mp}->redirect($self->{'debug_root'}."display_error?error=$ts");
-		}
-		elsif ($return->[0] eq "ACCESS_DENIED") {
-			if (defined($return->[2])) {
-				# using the user supplied destination page
-				if ($return->[2] =~ /^\//o) {
-					$return->[2] =~ s/^/$self->{'debug_root'}/;
-				}
-
-				if (defined($return->[1])) {
-					$return->[2] .= "?error=".$return->[1];
-				}
-				return $self->{mp}->redirect($return->[2]);
-			}
-			elsif (-e $self->{'template_dir'}."/access_denied.tmpl") {
-				# using the default destination page
-				if (defined($return->[1])) {
-					return $self->{mp}->redirect($self->{'debug_root'}."access_denied?error=".$return->[1]);
-				}
-				else {
-					return $self->{mp}->redirect($self->{'debug_root'}."access_denied");
-				}
-			}
-			else {
-				# fall back on ye olde apache forbidden
-				return $self->{mp}->forbidden;
-			}
-		}
-		elsif ($return->[0] eq "RAW_MODE") {
-			$self->{mp}->header_out(each %{$return->[3]}) if $return->[3];
-			$self->{mp}->content_type($return->[1] || "text/html");
-			$self->{mp}->print($return->[2]);
-			$self->{mp}->flush();
-			return $self->{mp}->ok;
-		}
-		else {
-			return $self->display_host_error("Module: $self->{uri}\n$return->[0] is not a supported command");
-		}
-	}
-	elsif (ref($return) ne "HASH") {
-		return $self->display_host_error("Module: $self->{uri} didn't return a hash ref");
-	}
-
-	eval {
-		# load the template
-		$self->{'template_engine'}->template($run->{'uri'});
-
-		$return->{'debug_root'} = $self->{'debug_root'};
-
-		# pack up the params
-		$self->{'template_engine'}->params($return);
-
-		# generate the main body contents
-		$return->{'_MAIN_BODY_'} = $self->{'template_engine'}->output();
-		
-		# load the skeleton template
-		$self->{'template_engine'}->template("skeleton");
-
-		# pack everything into the skeleton
-		$self->{'template_engine'}->params($return);
-	};
-	if ($@) {
-		# caught a runtime error from perl
-		return $self->display_host_error($@);
-	}
-
-	$self->{mp}->content_type("text/html");
-
-	$self->{mp}->print($self->{'template_engine'}->output());
-
-	$self->{'template_engine'}->finish();
-
-	$self->{mp}->flush();
-
-	return $self->{mp}->ok;
 }
 
 sub display_host_error {
@@ -270,8 +149,325 @@ sub display_host_error {
 	return $self->{mp}->ok;
 }
 
-1;
+sub json_data {
+	my $self = shift;
+	my $type = shift;
+	my $data = shift;
 
+	if (ref($data)) {
+		$data = $self->{json}->to_json($data);
+	}
+	elsif ($data !~ /^\s*[\[\{\"]/) {
+		$data = '"'.$data.'"';
+	}
+
+    return '{"key":"'.$type.'","value":'.$data.'}';
+}
+
+sub json_error {
+	my $self   = shift;
+	my $errors = shift;
+
+	my $return = {
+		'success' => 'false',
+		'errors'  => []
+	};
+
+	if (ref($errors) eq "HASH") {
+		foreach my $key (keys %{$errors}) {
+			push(@{$return->{errors}},{id => $key, msg => $errors->{$key}});
+		}
+	}
+	else {
+		push(@{$return->{errors}},{id => 'error', msg => $errors});
+	}
+
+	return $return;
+}
+
+sub json_true  { return $JSON::DWIW->true; }
+sub json_false { return $JSON::DWIW->false; }
+
+sub get_request_id {
+    my $self = shift;
+    my $dbh  = shift;
+    my $id   = shift;
+
+	unless ($id->{request_id} =~ /^\d+(\.\d*)?$/) {
+		return "invalid request id";
+	}
+
+	unless ($id->{app_id} =~ /^[a-z]\w*$/i) {
+		return "invalid application id";
+	}
+
+	unless ($id->{session_id} =~ /^[0-9a-z]+$/i) {
+		return "invalid session id";
+	}
+
+
+    my $res = $dbh->selectcol_arrayref("
+        SELECT
+            id
+        FROM
+            request
+        WHERE
+            request_timestamp = ? AND
+            application       = ? AND
+			session_id        = ?",undef,
+        $id->{request_id},
+        $id->{app_id},
+		$id->{session_id});
+
+	unless ($res->[0] > 0) {
+		return "no such id";
+	}
+
+    return $res->[0];
+}
+
+sub select_data_by_id {
+	my $self  = shift;
+	my $dbh   = shift;
+	my $table = shift;
+	my $id    = shift;
+
+	my $res = $dbh->selectall_arrayref("
+		SELECT
+			data
+		FROM
+			$table
+		WHERE
+			request_id = ?",undef,
+		$id);
+
+	return $res->[0]->[0];
+}
+
+sub simple_data {
+	my $self   = shift;
+	my $dbh    = shift;
+	my $params = shift;
+	my $key    = shift;
+	my $table  = shift;
+
+	my $id = $self->get_request_id($dbh,$params);
+	unless ($id =~ /^\d+$/) {
+		return $self->json_error($id);
+	}
+
+    return $self->json_data(
+		$key,
+		$self->select_data_by_id($dbh,$table,$id)
+	);
+}
+
+sub handle_template_conf {
+	my $self   = shift;
+	my $dbh    = shift;
+	my $params = shift;
+
+	return $self->simple_data($dbh,$params,'vd_template_conf','template_conf');
+}
+
+sub handle_parameters {
+	my $self   = shift;
+	my $dbh    = shift;
+	my $params = shift;
+
+	return $self->simple_data($dbh,$params,'vd_parameters','params');
+}
+
+sub handle_session {
+	my $self   = shift;
+	my $dbh    = shift;
+	my $params = shift;
+
+	return $self->simple_data($dbh,$params,'vd_session','session');
+}
+
+sub handle_request {
+	my $self   = shift;
+	my $dbh    = shift;
+	my $params = shift;
+
+	my $app_id     = $params->{'app_id'};
+	my $session_id = $params->{'session_id'};
+	my $request_id = $params->{'request_id'};
+
+	my $return = [];
+	if ($app_id     =~ /^[a-z]\w+/i   && 
+		$session_id =~ /^[a-f0-9]+$/i &&
+		$request_id =~ /^\d+\.\d+$/) {
+
+		$return = $dbh->selectall_arrayref("
+			SELECT
+				request_timestamp AS request_id,
+				url
+			FROM
+				request
+			WHERE
+				application = ? AND
+				session_id  = ? AND
+				request_timestamp >= ?
+			ORDER BY
+				id",{Slice => {}},
+				$app_id,
+				$session_id,
+				$request_id);
+	}
+
+    return $self->json_data('vd_request',$return);
+}
+
+sub handle_return_data {
+	my $self   = shift;
+	my $dbh    = shift;
+	my $params = shift;
+
+	my $id = $self->get_request_id($dbh,$params);
+	unless ($id =~ /^\d+$/) {
+		return $self->json_error($id);
+	}
+
+	my $res = $dbh->selectall_arrayref("
+		SELECT
+			handler,
+			method,
+			data
+		FROM
+			return_data
+		WHERE
+			request_id = ?
+		ORDER BY
+			seq",undef,
+		$id);
+
+	my $d = '[';
+	foreach (@{$res}) {
+		$d .= '["'.$_->[0].'-&gt;'.$_->[1].'",'.$_->[2].'],';
+	}
+	$d =~ s/,$//;
+	$d .= ']';
+
+    return $self->json_data('vd_return_data',$d);
+}
+
+sub handle_debug {
+	my $self   = shift;
+	my $dbh    = shift;
+	my $params = shift;
+
+	my $id = $self->get_request_id($dbh,$params);
+	unless ($id =~ /^\d+$/) {
+		return $self->json_error($id);
+	}
+
+	my @levels;
+	foreach (qw(debug info warn error exception table trace)) {
+		if ($params->{$_} eq "1") {
+			push(@levels,$_);
+		}
+	}
+
+	my $query = "
+		SELECT
+			level,
+			stack,
+			data
+		FROM
+			debug
+		WHERE
+			request_id = ?";
+
+	if (scalar(@levels)) {
+		$query .= ' AND level IN (' . join(',',map { '?'} @levels) . ') ';
+	}
+
+	$query .= "
+		ORDER BY
+			seq";
+
+	my $res = $dbh->selectall_arrayref($query,undef,$id,@levels);
+
+    return $self->json_data('vd_debug',$self->_process_debug($params->{app_id},$res));
+}
+
+sub _process_debug {
+	my $self   = shift;
+	my $app_id = shift;
+	my $data   = shift;
+
+	my $debug = '[';
+	foreach my $row (@{$data}) {
+		$debug .= '{"level":"'.$row->[0].'"';
+		$debug .= ',"stack":' .$row->[1];
+		$debug .= ',"data":';
+		if ($row->[2] =~ /^[\[\{\"]/) {
+			$debug .= $row->[2];
+		}
+		else {
+			$debug .= '"'.$row->[2].'"';
+		}
+			
+		$debug .= '},';
+	}
+	$debug =~ s/,$//;
+	$debug .= ']';
+
+	return $debug;
+}
+
+sub handle_profile {
+	my $self   = shift;
+	my $dbh    = shift;
+	my $params = shift;
+
+	my $id = $self->get_request_id($dbh,$params);
+	unless ($id =~ /^\d+$/) {
+		return $self->json_error($id);
+	}
+
+	my $res = $dbh->selectall_arrayref("
+		SELECT
+			timestamp,
+			data
+		FROM
+			profile
+		WHERE
+			request_id = ?
+		ORDER BY
+			timestamp",undef,
+		$id);
+
+	my $return;
+	$return->{'key'} = 'vd_profile';
+
+	my $last = $#{$res};
+	if ($last > 0) {
+		my $total_time = $res->[$last]->[0] - $res->[0]->[0];
+
+		$return->{'value'} = [
+			map {
+				[
+					sprintf("%.5f",    $res->[$_]->[0] - $res->[$_-1]->[0]),
+					sprintf("%5.2f%%",($res->[$_]->[0] - $res->[$_-1]->[0])/$total_time*100),
+					$res->[$_]->[1]
+				]
+			} (1 .. $last)
+		];
+
+		unshift(@{$return->{value}}, [
+			sprintf("%.5f",$total_time),
+			'percent', 
+			'message'
+		]);
+	}
+
+	return $return;
+}
+
+1;
 ################################################################################
 # Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
 # All rights reserved.
