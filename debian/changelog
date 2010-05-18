@@ -1,3 +1,9 @@
+libapache-voodoo-perl (3.0100-1) lucid; urgency=low
+
+  * New upstream release version.
+
+ -- Maverick Edwards <maverick@smurfbane.org>  Tue, 18 May 2010 17:17:44 -0500
+
 libapache-voodoo-perl (3.0002-1) stable; urgency=low
 
   * Explicitly list dependence on DBI.
