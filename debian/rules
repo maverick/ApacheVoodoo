@@ -23,4 +23,7 @@ binary-indep: install
 
 binary: binary-arch binary-indep
 
+override_dh_clean:
+	dh_clean -X t/app_newstyle/C/a/controller.pm.orig -X t/app_newstyle/V/a/view.pm.orig -X t/app_newstyle/M/a/model.pm.orig
+
 .PHONY: binary binary-arch binary-indep install clean build
