@@ -18,4 +18,6 @@ Voodoo/experimental
 ^utils
 ^debian
 ^cover_db
+^cover.sh
 ^experimental
+
