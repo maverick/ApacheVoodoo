@@ -53,7 +53,7 @@ sub new {
 	return $self;
 }
 
-sub handler { 
+sub handler {
 	my $self = shift;
 	my $r    = shift;
 
@@ -79,7 +79,7 @@ sub handler {
 		unless ($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}) {
 			return $self->{mp}->not_found();
 		}
-		
+
 		my $m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri});
 		if ($m eq "Apache::Voodoo::Loader::Dynamic") {
 			$m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}->{'object'});
@@ -149,7 +149,7 @@ sub handle_request {
 		$uri      =~ s/([\w_]+)$/$self->{'run'}->{'method'}_$1/i;
 	}
 
-	unless (-e "$filename.tmpl" && 
+	unless (-e "$filename.tmpl" &&
 	        -r "$filename.tmpl") {
 		$self->{status} = $self->{mp}->not_found();
 		$self->_client_fault($self->{mp}->not_found(),'No such service:'.$filename);
@@ -170,7 +170,7 @@ sub handle_request {
 			# apparently OK doesn't return 200 anymore, it returns 0.  When used in conjunction
 			# with a SOAP fault that lets the server default it to 500, which isn't what we want.
 			# The server didn't have an internal error, we just didn't like what the client sent.
-			$self->{status} = 200;	
+			$self->{status} = 200;
 			$self->_client_fault($e->code, $e->error, $e->detail);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::AccessDenied")) {
@@ -255,10 +255,10 @@ sub _make_fault {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

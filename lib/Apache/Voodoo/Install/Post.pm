@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Apache::Voodoo::Install::Post 
+# Apache::Voodoo::Install::Post
 #
 # Handles common post site setup tasks. This object is used by Voodoo internally.
 #
@@ -60,10 +60,10 @@ sub do_setup_checks {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

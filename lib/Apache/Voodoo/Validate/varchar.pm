@@ -49,14 +49,14 @@ sub valid {
 		$e = 'BIG';
 	}
 	elsif (defined($self->{'valid'}) && $self->{'valid'} eq 'email') {
-		# Net::DNS pollutes the value of $_ with the IP of the DNS server that responsed to the lookup 
+		# Net::DNS pollutes the value of $_ with the IP of the DNS server that responsed to the lookup
 		# request.  It's localized to keep Net::DNS out of my pool.
 		local $_;
 
 		my $addr;
 		eval {
 			$addr = Email::Valid->address('-address' => $v,
-			                              '-mxcheck' => 1, 
+			                              '-mxcheck' => 1,
 			                              '-fqdn'    => 1 );
 		};
 		if ($@) {
@@ -143,10 +143,10 @@ sub _valid_url {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

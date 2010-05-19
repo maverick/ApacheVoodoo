@@ -93,7 +93,7 @@ SKIP: {
 	skip "DBD::SQLite not found, skipping these tests",4 if $@;
 
 	my ($fh,$filename) = File::Temp::tmpnam();
-	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: $DBI::errstr");
+	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: ".DBI->errstr);
 
 	setup_db(   'SQLite',$dbh);
 	table_tests('SQLite',$dbh);

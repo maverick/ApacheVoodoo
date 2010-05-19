@@ -42,11 +42,11 @@ sub attach {
 	}
 
 	eval {
-		$obj = tie(%session,'Apache::Session::File',$id, \%opts) || die "Tieing to session failed: $!";	
+		$obj = tie(%session,'Apache::Session::File',$id, \%opts) || die "Tieing to session failed: $!";
 	};
 	if ($@) {
 		undef $id;
-		$obj = tie(%session,'Apache::Session::File',$id, \%opts) || die "Tieing to session failed: $!";	
+		$obj = tie(%session,'Apache::Session::File',$id, \%opts) || die "Tieing to session failed: $!";
 	}
 
 	return Apache::Voodoo::Session::Instance->new($obj,\%session);
@@ -55,10 +55,10 @@ sub attach {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

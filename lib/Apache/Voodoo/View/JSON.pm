@@ -27,14 +27,14 @@ sub params {
 	if (defined($_[0])) {
 		$self->{data} = shift;
 	}
-} 
+}
 
 sub exception {
 	my $self = shift;
 	my $e    = shift;
 
 	my $d;
-		
+
 	if ($e->isa("Exception::Class::DBI")) {
 		$d = {
 			"description" => "Database Error",
@@ -86,10 +86,10 @@ sub _stack_trace {
 
 	my @trace;
 	my $i = 1;
-    while (my $frame = $trace->frame($i++)) {
+	while (my $frame = $trace->frame($i++)) {
 		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
-        next if ($frame->package =~ /^Apache::Voodoo/);
-        next if ($frame->package =~ /(eval)/);
+		next if ($frame->package =~ /^Apache::Voodoo/);
+		next if ($frame->package =~ /(eval)/);
 
 		my $f = {
 			'class'    => $frame->package,
@@ -112,7 +112,7 @@ sub _stack_trace {
 
 		push(@trace,$f);
 
-    }
+	}
 	return \@trace;
 }
 
@@ -121,7 +121,7 @@ sub _format_query {
 	my $query = shift;
 
 	my $leading = undef;
-	my @lines; 
+	my @lines;
 	foreach my $line (split(/\n/,$query)) {
 		$line =~ s/[\r\n]//g;
 		$line =~ s/(?<![ \S])\t/    /g;    # negative look-behind assertion.  replaces only leading tabs
@@ -156,10 +156,10 @@ sub _format_query {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

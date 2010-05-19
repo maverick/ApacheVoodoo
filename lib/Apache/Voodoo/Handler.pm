@@ -1,9 +1,9 @@
 ################################################################################
 #
 # Apache::Voodoo::Handler - Main interface between mod_perl and Voodoo
-# 
-# This is the main generic presentation module that interfaces with apache, 
-# handles session control, database connections, and interfaces with the 
+#
+# This is the main generic presentation module that interfaces with apache,
+# handles session control, database connections, and interfaces with the
 # application's page handling modules.
 #
 ################################################################################
@@ -50,12 +50,12 @@ sub handler {
 
 	my $filename = $self->{'mp'}->filename();
 
-   	# remove the optional trailing .tmpl
-   	$filename =~ s/\.tmpl$//o;
-   	$uri      =~ s/\.tmpl$//o;
+	# remove the optional trailing .tmpl
+	$filename =~ s/\.tmpl$//o;
+	$uri      =~ s/\.tmpl$//o;
 
 	unless (-e "$filename.tmpl") { return $self->{mp}->declined;  }
-	unless (-r "$filename.tmpl") { return $self->{mp}->forbidden; } 
+	unless (-r "$filename.tmpl") { return $self->{mp}->forbidden; }
 
 	########################################
 	# We now know we have a valid request that we need to handle,
@@ -74,7 +74,7 @@ sub handler {
 	}
 
 	####################
-	# Get paramaters 
+	# Get paramaters
 	####################
 	my $params;
 	eval {
@@ -85,9 +85,9 @@ sub handler {
 	}
 
 	####################
-	# History capture 
+	# History capture
 	####################
-	if ($self->{mp}->is_get && 
+	if ($self->{mp}->is_get   &&
 		!$params->{ajax_mode} &&
 		!$params->{return}
 		) {
@@ -164,10 +164,10 @@ sub display_host_error {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

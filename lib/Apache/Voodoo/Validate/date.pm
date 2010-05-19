@@ -53,11 +53,11 @@ sub valid {
 	my $e;
 	my ($y,$m,$d) = $self->{parser}->($v);
 
-	if (defined($y)   && 
-		defined($m)   && 
+	if (defined($y)   &&
+		defined($m)   &&
 		defined($d)   &&
-		$y =~ /^\d+$/ && 
-		$m =~ /^\d+$/ && 
+		$y =~ /^\d+$/ &&
+		$m =~ /^\d+$/ &&
 		$d =~ /^\d+$/) {
 
 		$v = sprintf("%04d-%02d-%02d",$y,$m,$d);
@@ -102,7 +102,7 @@ sub _default_parser {
 
 	# Split the date up into month day year
 	my ($m,$d,$y);
-	
+
 	if ($date =~ /^\d?\d\/\d?\d\/\d{4}$/) {
 		($m,$d,$y) = split("/",$date, 3);
 	}
@@ -113,7 +113,7 @@ sub _default_parser {
 		return undef;
 	}
 
-	#Strip off any leading 0s 
+	#Strip off any leading 0s
 	$m *= 1;
 	$d *= 1;
 	$y *= 1;
@@ -124,7 +124,7 @@ sub _default_parser {
 	}
 
 	# Check to see if the day is valid on leap years
- 	if ($m == 2 && $d == 29) {
+	if ($m == 2 && $d == 29) {
 		unless (($y%4 == 0 && $y%100 != 0) || $y%400 == 0){
 			return undef;
 		}
@@ -146,10 +146,10 @@ sub _default_parser {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

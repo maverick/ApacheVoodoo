@@ -90,8 +90,8 @@ sub params        { my $self = shift; $self->_get_logger('Params'      )->debug(
 sub template_conf { my $self = shift; $self->_get_logger('TemplateConf')->debug($self->_dumper(@_)); }
 sub session       { my $self = shift; $self->_get_logger('Session'     )->debug($self->_dumper(@_)); }
 
-sub mark { 
-	my $self = shift; 
+sub mark {
+	my $self = shift;
 
 	push(@{$self->{profile}},[@_]);
 }
@@ -114,7 +114,7 @@ sub shutdown {
 
 		unshift(@return, [
 			sprintf("%.5f",$total_time),
-			'percent', 
+			'percent',
 			'message'
 		]);
 
@@ -233,10 +233,10 @@ sub _mk_table {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

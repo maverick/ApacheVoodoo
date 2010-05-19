@@ -43,7 +43,7 @@ sub new {
 
 	# Setup signal handler for die so that all deaths become exception objects
 	# This way we can get a stack trace from where the death occurred, not where it was caught.
-	$SIG{__DIE__} = sub { 
+	$SIG{__DIE__} = sub {
 		if (blessed($_[0]) && $_[0]->can("rethrow")) {
 			# Already died using an exception class, just pass it up the chain
 			$_[0]->rethrow;
@@ -153,7 +153,7 @@ sub attach_db {
 			$db = DBI->connect_cached(@{$_});
 		};
 		last if $db;
-	
+
 		Apache::Voodoo::Exception::DBIConnect->throw($DBI::errstr);
 	}
 
@@ -319,7 +319,7 @@ sub execute_controllers {
 
 	eval {
 		# call each of the pre_include modules followed by our page specific module followed by our post_includes
-		foreach my $c ( 
+		foreach my $c (
 			( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}  ||"") ),
 			$app->map_uri($uri),
 			( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'} ||"") )
@@ -383,19 +383,19 @@ sub execute_view {
 	my $content = shift;
 
 	my $view;
-	if (defined($self->{'run'}->{'p'}->{'_view_'}) && 
+	if (defined($self->{'run'}->{'p'}->{'_view_'}) &&
 		defined($self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'p'}->{'_view_'}})) {
 
 		$view = $self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'p'}->{'_view_'}};
 	}
-	elsif (defined($self->{'run'}->{'template_conf'}->{'default_view'}) && 
+	elsif (defined($self->{'run'}->{'template_conf'}->{'default_view'}) &&
 	       defined($self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'template_conf'}->{'default_view'}})) {
 
 		$view = $self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'template_conf'}->{'default_view'}};
-	}	
+	}
 	else {
 		$view = $self->{'run'}->{'app'}->{'views'}->{'HTML'};
-	}	
+	}
 
 	$view->begin($self->{'run'}->{'p'});
 
@@ -414,7 +414,7 @@ sub execute_view {
 	return $view;
 }
 
-sub restart { 
+sub restart {
 	my $self = shift;
 	my $app  = shift;
 
@@ -452,7 +452,7 @@ sub restart {
 				$dbh = DBI->connect(@{$_});
 			};
 			last if $dbh;
-			
+
 			warn "========================================================\n";
 			warn "DB CONNECT FAILED FOR $id\n";
 			warn $DBI::errstr."\n";
@@ -464,7 +464,7 @@ sub restart {
 		}
 
 		$self->{'apps'}->{$id} = $app;
-		
+
 		# notifiy of start errors
 		$self->{'apps'}->{$id}->{"DEAD"} = 0;
 
@@ -505,10 +505,10 @@ sub _adjust_url {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

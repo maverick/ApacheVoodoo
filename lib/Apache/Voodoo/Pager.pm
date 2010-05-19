@@ -2,23 +2,27 @@
 
 =head1 NAME
 
-Apache::Voodoo::Pager - Provides generic pagination controls 
+Apache::Voodoo::Pager - Provides generic pagination controls
 
 =head1 SYNOPSIS
 
 This module generates all the necessary 'next', 'previous' and page number links
-typically found on any search engine results page.  This module can be used in 
+typically found on any search engine results page.  This module can be used in
 any scenario where data must be paginated.
 
-    my $pager = Apache::Voodoo::Pager->new('count'   => 25,
-                                           'window'  => 10,
-                                           'limit'   => 500,
-                                           'persist' => [ 'url_param', ... ]);
+    my $pager = Apache::Voodoo::Pager->new(
+        'count'   => 25,
+        'window'  => 10,
+        'limit'   => 500,
+        'persist' => [ 'url_param', ... ]
+    );
 
-    $pager->set_configuration('count'   => 40,
-                              'window'  => 10,
-                              'limit'   => 500,
-                              'persist' => [ 'url_param', ... ]);
+    $pager->set_configuration(
+        'count'   => 40,
+        'window'  => 10,
+        'limit'   => 500,
+        'persist' => [ 'url_param', ... ]
+    );
 
     my $template_params = $pager->paginate($all_url_params,$number_of_rows_in_results);
 
@@ -156,7 +160,7 @@ sub paginate {
 
 =pod ################################################################################
 
-=head1 PARAMETERS 
+=head1 PARAMETERS
 
 =over 4
 
@@ -164,7 +168,7 @@ sub paginate {
 
 Number of items per page
 
-=item window 
+=item window
 
 Number of page numbers to appear at once.  window => 10 would yield links for page numbers 1 -> 10
 
@@ -181,7 +185,7 @@ search parameters, sort options, etc, etc.
 
 =back
 
-=head1 METHODS 
+=head1 METHODS
 
 =over 4
 
@@ -198,7 +202,7 @@ be used by the caller to determine how to properly cut the result set.
 
 =back
 
-=head1 VOODOO EXAMPLE 
+=head1 VOODOO EXAMPLE
 
     use Apache::Voodoo::Pager;
 
@@ -231,7 +235,7 @@ be used by the caller to determine how to properly cut the result set.
         unless ($showall) {
             $stmt .= " LIMIT $count OFFSET ". $count * ($page-1);
         }
-           
+
         my $results = $dbh->selectall_arrayref($stmt,undef,$value);
         my $matches = $dbh->selectall_arrayref("SELECT FOUND_ROWS()");
 
@@ -279,10 +283,10 @@ be used by the caller to determine how to properly cut the result set.
 =cut ###########################################################################
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

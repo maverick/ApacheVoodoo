@@ -72,7 +72,7 @@ sub _get_request_id {
 			id
 		FROM
 			request
-		WHERE 
+		WHERE
 			request_timestamp = ? AND
 			application       = ?",undef,
 		$id->{request_id},
@@ -104,7 +104,7 @@ sub handle_url {
 
 	$self->{dbh}->do("
 		UPDATE request
-		SET	
+		SET
 			url = ?
 		WHERE
 			request_timestamp = ? AND
@@ -121,7 +121,7 @@ sub handle_session_id {
 
 	$self->{dbh}->do("
 		UPDATE request
-		SET	
+		SET
 			session_id = ?
 		WHERE
 			request_timestamp = ? AND
@@ -138,7 +138,7 @@ sub handle_status {
 
 	$self->{dbh}->do("
 		UPDATE request
-		SET	
+		SET
 			status = ?
 		WHERE
 			request_timestamp = ? AND
@@ -409,10 +409,10 @@ sub handle_return_data {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

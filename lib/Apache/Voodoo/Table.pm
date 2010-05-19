@@ -138,7 +138,7 @@ sub set_configuration {
 			push(@errors,"no table in reference for $name")                 unless $v{'table'}  =~ /\w+/;
 			push(@errors,"no primary key in reference for $name")           unless $v{'pkey'}   =~ /\w+/;
 			push(@errors,"no label for select list in reference for $name") unless $v{'slabel'} =~ /\w+/;
-			
+
 			if (defined($v{'columns'})) {
 				if (ref($v{'columns'})) {
 					if (ref($v{'columns'}) ne "ARRAY") {
@@ -179,7 +179,7 @@ sub set_configuration {
 	if (ref($conf->{'joins'}) eq "ARRAY") {
 		foreach my $j (@{$conf->{'joins'}}) {
 			$j->{'columns'} ||= [];
-			
+
 			foreach (@{$j->{'columns'}}) {
 				$self->{'column_names'}->{$j->{'table'}.'.'.$_} = 1;
 			}
@@ -209,7 +209,7 @@ sub set_configuration {
 		$self->{'pager'}->set_configuration(
 			'count'   => 40,
 			'window'  => 10,
-			'persist' => [ 
+			'persist' => [
 				'pattern',
 				'limit',
 				'sort',
@@ -305,12 +305,9 @@ sub validate_add {
 	if ($self->{'pkey_user_supplied'}) {
 		if ($params->{$self->{'pkey'}} =~ /$self->{'pkey_regexp'}/) {
 			my $res = $dbh->selectall_arrayref("
-				SELECT 
-					1 
-				FROM 
-					$self->{'table'} 
-				WHERE 
-					$self->{'pkey'} = ?",
+				SELECT 1
+				FROM   $self->{'table'}
+				WHERE  $self->{'pkey'} = ?",
 				undef,
 				$params->{$self->{'pkey'}} );
 
@@ -326,12 +323,9 @@ sub validate_add {
 	# check each unique column constraint
 	foreach (@{$self->{'unique'}}) {
 		my $res = $dbh->selectall_arrayref("
-			SELECT 
-				1 
-			FROM 
-				$self->{'table'}
-			WHERE 
-				$_ = ?",
+			SELECT 1
+			FROM   $self->{'table'}
+			WHERE  $_ = ?",
 			undef,
 			$values->{$_});
 		if ($res->[0]->[0] == 1) {
@@ -370,13 +364,9 @@ sub validate_edit {
 	# check all the unique columns
 	foreach (@{$self->{'unique'}}) {
 		my $res = $dbh->selectall_arrayref("
-			SELECT 
-				1
-			FROM 
-				$self->{'table'}
-			WHERE 
-				$_ = ? AND 
-				$self->{'pkey'} != ?",
+			SELECT 1
+			FROM   $self->{'table'}
+			WHERE  $_ = ? AND $self->{'pkey'} != ?",
 			undef,
 			$values->{$_},
 		$params->{$self->{'pkey'}});
@@ -407,7 +397,7 @@ sub add {
 			$errors->{'HAS_ERRORS'} = 1;
 
 			# copy values back into form
-			foreach (keys(%{$values})) { 
+			foreach (keys(%{$values})) {
 				$errors->{$_} = $values->{$_};
 			}
 		}
@@ -421,7 +411,7 @@ sub add {
 			my $q = join(",",map {"?"} @{$self->{'columns'}});		# the ? mark placeholders
 
 			my @v = map { $values->{$_} } @{$self->{'columns'}};	# and the values
-			
+
 			# store the values as they went into the db here incase the caller wants to
 			# use them for something.
 			foreach (@{$self->{'columns'}}) {
@@ -450,7 +440,7 @@ sub add {
 		my $query = "SELECT
 		                 $_->{'pkey'},
 		                 $_->{'slabel'}
-		             FROM 
+		             FROM
 		                $_->{'table'}
 		                $_->{'sextra'}";
 
@@ -459,7 +449,7 @@ sub add {
 		$errors->{$_->{'fkey'}} = $self->prep_select($res,$errors->{$_->{'fkey'}} || $_->{'sdefault'});
 	}
 
-	# If we get here the user is just loading the page 
+	# If we get here the user is just loading the page
 	# for the first time or had errors.
 	return $errors;
 }
@@ -489,10 +479,10 @@ sub edit {
 	my $res = $dbh->selectall_arrayref("
 		SELECT ".
 			join(",",@{$self->{'columns'}}). "
-		FROM 
-			$self->{'table'} 
-		WHERE 
-			$self->{'pkey'} = ? 
+		FROM
+			$self->{'table'}
+		WHERE
+			$self->{'pkey'} = ?
 			$additional_constraint",
 		undef,
 		$params->{$self->{'pkey'}});
@@ -515,7 +505,7 @@ sub edit {
 
 			# copy values into template
 			$errors->{$self->{'pkey'}} = $params->{$self->{'pkey'}};
-			foreach (keys(%{$values})) { 
+			foreach (keys(%{$values})) {
 				$errors->{$_} = $values->{$_};
 			}
 		}
@@ -532,11 +522,11 @@ sub edit {
 				}
 			}
 			my $update_statement = "
-				UPDATE 
-					$self->{'table'} 
+				UPDATE
+					$self->{'table'}
 				SET ".
 					join("=?,",@{$self->{'columns'}})."=?
-				WHERE 
+				WHERE
 					$self->{'pkey'} = ?
 				$additional_constraint";
 
@@ -558,7 +548,7 @@ sub edit {
 		}
 
 		$errors->{$self->{'pkey'}} = $params->{$self->{'pkey'}};
-			
+
 		# pretty up dates
 		foreach (@{$self->{'dates'}}) {
 			$errors->{$_->{'name'}} = $self->sql_to_date($errors->{$_->{'name'}});
@@ -575,7 +565,7 @@ sub edit {
 		my $query = "SELECT
 						$_->{'pkey'},
 						$_->{'slabel'}
-		             FROM 
+		             FROM
 						$_->{'table'}
 						$_->{'sextra'}";
 
@@ -584,7 +574,7 @@ sub edit {
 		$errors->{$_->{'fkey'}} = $self->prep_select($res,$errors->{$_->{'fkey'}} || $_->{'sdefault'});
 	}
 
-	# If we get here the user is just loading the page 
+	# If we get here the user is just loading the page
 	# for the first time or had errors.
 	return $errors;
 }
@@ -613,12 +603,9 @@ sub delete {
 
 	# record exists?
 	my $res = $dbh->selectall_arrayref("
-		SELECT
-			1 
-		FROM
-			$self->{'table'}
-		WHERE
-			$self->{'pkey'} = ?
+		SELECT 1
+		FROM   $self->{'table'}
+		WHERE  $self->{'pkey'} = ?
 		$additional_constraint",
 		undef,
 		$params->{$self->{'pkey'}});
@@ -626,13 +613,13 @@ sub delete {
 	unless ($res->[0]->[0] == 1) {
 		return $self->display_error("No Record found with that ID");
 	}
-		
+
 	if ($params->{'confirm'} eq "Yes") {
 		# fry it
 		$dbh->do("
-			DELETE FROM 
+			DELETE FROM
 				$self->{'table'}
-			WHERE 
+			WHERE
 				$self->{'pkey'} = ?
 			$additional_constraint",
 			undef,
@@ -756,7 +743,7 @@ sub list {
 				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'table'} .".". $join->{'pkey'})
 			);
 		}
-		
+
 		if($join->{'extra'}){
 			push(@join_clauses, $join->{'extra'}) unless ref $join->{'extra'};
 			push(@join_clauses, @{$join->{'extra'}}) if ref($join->{'extra'}) eq 'ARRAY';
@@ -850,7 +837,7 @@ sub list {
 	# From the DBI docs. This will give us the database server name.
 	my $is_mysql = ($dbh->get_info(17) eq "MySQL")?1:0;
 
-	my $select_stmt = 
+	my $select_stmt =
 		"SELECT". (($is_mysql)?" SQL_CALC_FOUND_ROWS ": " ").
 		join(",\n",@columns)."\n".
 		"FROM $self->{'table'}\n".
@@ -863,7 +850,7 @@ sub list {
 		my $q = $self->{'list_sort'}->{$sort};
 
 		# if we're sorting on the same key as before, then we have the chance to go descending
-		if ($sort eq $last_sort) { 
+		if ($sort eq $last_sort) {
 			if ($desc eq '1') {
 				$q =~ s/,/ DESC, /g;
 				$q .= " DESC";
@@ -1003,7 +990,7 @@ sub view {
 				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'table'} .".". $join->{'pkey'})
 			);
 		}
-		
+
 		if($join->{'extra'}){
 			push(@join_clauses, $join->{'extra'}) unless ref $join->{'extra'};
 			push(@join_clauses, @{$join->{'extra'}}) if ref($join->{'extra'}) eq 'ARRAY';
@@ -1025,10 +1012,10 @@ sub view {
 	my $select_statement = "
 		SELECT " .
 			join(",\n",@list). "
-		FROM 
+		FROM
 			$self->{'table'} ".
 		join("\n",@joins). "
-		WHERE 
+		WHERE
 			$self->{'table'}.$self->{'pkey'} = ?
 			$additional_constraint";
 
@@ -1039,7 +1026,7 @@ sub view {
 	if (defined($res) && defined($res->[0])) {
 		# copy values into template
 		$v{$self->{'pkey'}} = $params->{$self->{'pkey'}};
-		
+
 		for (my $i=0; $i <= $#list; $i++) {
 			my $key = $list[$i];
 
@@ -1087,9 +1074,9 @@ sub toggle {
 	$dbh->do("
 		UPDATE
 			$self->{'table'}
-		SET 
+		SET
 			$column = ($column+1)%2
-		WHERE 
+		WHERE
 			$self->{'pkey'} = ?",
 		undef,
 		$params->{$self->{'pkey'}});
@@ -1103,17 +1090,17 @@ sub get_insert_id {
 	my $p    = shift;
 
 	my $dbh = $p->{'dbh'};
-	
+
 	return $p->{dbh}->last_insert_id(undef,undef,$self->{'table'},$self->{'pkey'});
 }
 
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

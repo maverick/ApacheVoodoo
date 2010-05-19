@@ -39,7 +39,7 @@ sub new {
 # Autoload is used to catch whatever method was supposed to be invoked
 # in the dead module.
 #
-sub AUTOLOAD { 
+sub AUTOLOAD {
 	next unless ref($_[0]);
 
 	my $self = shift;

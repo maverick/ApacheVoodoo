@@ -37,7 +37,7 @@ sub handle {
 
 	# URL relative
 	$return->{'THEME_DIR'} = $self->{'themes'}->{$chosen_theme};
-	
+
 	# FILE system relative
 	my $theme_dir = $p->{'document_root'}."/".$self->{'themes'}->{$chosen_theme};
 
@@ -101,7 +101,7 @@ sub choose_theme {
 			my $t = <T>;
 			chomp($t);
 			close(T);
-			
+
 			if ($t ne "default" && defined($self->{'themes'}->{$t})) {
 				$chosen_theme = $t;
 				$self->{'sys_theme'}->{'name'} = $t;
@@ -146,7 +146,7 @@ sub load_cache {
 			$record->{'pages'}->{$page}->{'__style__'} = $style;
 		}
 	}
-		
+
 	return $record;
 }
 
@@ -164,10 +164,10 @@ sub get_skeleton {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

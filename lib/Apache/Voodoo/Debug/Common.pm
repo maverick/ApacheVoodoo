@@ -55,10 +55,10 @@ sub stack_trace {
 	my $i = 1;
 
 	my $st = Devel::StackTrace->new();
-    while (my $frame = $st->frame($i++)) {
+	while (my $frame = $st->frame($i++)) {
 		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
-        next if ($frame->package =~ /^Apache::Voodoo/);
-        next if ($frame->package =~ /(eval)/);
+		next if ($frame->package =~ /^Apache::Voodoo/);
+		next if ($frame->package =~ /(eval)/);
 
 		my $f = {
 			'class'    => $frame->package,
@@ -85,17 +85,17 @@ sub stack_trace {
 		if ($full) {
 			$f->{'args'} = \@a;
 		}
-    }
+	}
 	return @trace;
 }
 
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

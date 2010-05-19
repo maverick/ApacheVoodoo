@@ -1,7 +1,7 @@
 ################################################################################
 #
 # Apache::Voodoo::View::HTML
-# 
+#
 # This modules is used internally by Voodoo for interfacing to HTML::Template.
 #
 ################################################################################
@@ -185,7 +185,7 @@ sub output {
 	my $self = shift;
 
 	if ($self->{internal_error}) {
-		return 
+		return
 			"<html><body>".
 			"<h2>The following error was encountered while processing this request:</h2>".
 			"<pre>".$self->{error_msg}."</pre>".
@@ -220,7 +220,7 @@ sub _format_query {
 	my $query = shift;
 
 	my $leading = undef;
-	my @lines; 
+	my @lines;
 	foreach my $line (split(/\n/,$query)) {
 		$line =~ s/[\r\n]//g;
 		$line =~ s/(?<![ \S])\t/    /g;    # negative look-behind assertion.  replaces only leading tabs
@@ -255,10 +255,10 @@ sub _format_query {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

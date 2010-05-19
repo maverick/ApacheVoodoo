@@ -12,7 +12,7 @@ use warnings;
 
 use Exception::Class (
 	'Apache::Voodoo::Exception',
-	
+
 	'Apache::Voodoo::Exception::Compilation' => {
 		isa => 'Apache::Voodoo::Exception',
 		description => 'Module compilation failed',
@@ -95,10 +95,10 @@ sub parse_stack_trace {
 
 	my @trace;
 	my $i = 1;
-    while (my $frame = $trace->frame($i++)) {
+	while (my $frame = $trace->frame($i++)) {
 		last if ($frame->package =~ /^Apache::Voodoo::Engine/);
-        next if ($frame->package =~ /^Apache::Voodoo/);
-        next if ($frame->package =~ /(eval)/);
+		next if ($frame->package =~ /^Apache::Voodoo/);
+		next if ($frame->package =~ /(eval)/);
 
 		my $nf = $trace->frame($i);
 		my $subroutine;
@@ -128,17 +128,17 @@ sub parse_stack_trace {
 
 		push(@trace,$f);
 
-    }
+	}
 	return \@trace;
 }
 
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

@@ -37,10 +37,10 @@ sub config {
 sub valid {
 	my ($self,$v) = @_;
 
-    $v = _valid_time($v);
+	$v = _valid_time($v);
 	unless ($v) {
 		return undef,'BAD';
-    }
+	}
 
 	if (defined($self->{min}) && $v lt $self->{min}) {
 		return undef,'MIN';
@@ -57,18 +57,18 @@ sub valid {
 sub _valid_time {
 	my $time = shift;
 
-    $time =~ s/\s*//go;
-    $time =~ s/\.//go;
+	$time =~ s/\s*//go;
+	$time =~ s/\.//go;
 
 	unless ($time =~ /^\d?\d:[0-5]?\d(:[0-5]?\d)?(am|pm)?$/i) {
-        return undef;
-    }
+		return undef;
+	}
 
 	my ($h,$m,$s);
-    if ($time =~ s/([ap])m$//igo) {
-        my $pm = (lc($1) eq "p")?1:0;
+	if ($time =~ s/([ap])m$//igo) {
+		my $pm = (lc($1) eq "p")?1:0;
 
-    	($h,$m,$s) = split(/:/,$time);
+		($h,$m,$s) = split(/:/,$time);
 
 		# 12 am is midnight and 12 pm is noon...I've always hated that.
 		if ($pm eq '1') {
@@ -82,26 +82,26 @@ sub _valid_time {
 		elsif ($pm eq '0' && $h == 12) {
 			$h = 0;
 		}
-    }
+	}
 	else {
-    	($h,$m,$s) = split(/:/,$time);
+		($h,$m,$s) = split(/:/,$time);
 	}
 
 	# our regexp above validated the minutes and seconds, so
 	# all we need to check that the hours are valid.
-    if ($h < 0 || $h > 23) { return undef; }
+	if ($h < 0 || $h > 23) { return undef; }
 
 	$s = 0 unless (defined($s));
-   	return sprintf("%02d:%02d:%02d",$h,$m,$s);
+	return sprintf("%02d:%02d:%02d",$h,$m,$s);
 }
 
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

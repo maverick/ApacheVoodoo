@@ -1,8 +1,8 @@
 ################################################################################
 #
-# Apache::Voodoo::Constants 
+# Apache::Voodoo::Constants
 #
-# This package provide an OO interface to retrive the various paths and config 
+# This package provide an OO interface to retrive the various paths and config
 # settings used by Apache Voodoo.
 #
 ################################################################################
@@ -84,10 +84,10 @@ sub log4perl_conf { return $_[0]->{LOG4PERL_CONF}; }
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

@@ -80,7 +80,7 @@ sub make_symlink {
 		}
 	}
 	else {
-		# not there, or not a link.	
+		# not there, or not a link.
 		# make sure the path is valid
 		my $p;
 		my @p = split('/',$target);
@@ -148,16 +148,16 @@ sub make_writeable_files {
 	}
 }
 
-# In a pine box somewhere De Morgan is either spinning violently, or applauding.  We're not 
+# In a pine box somewhere De Morgan is either spinning violently, or applauding.  We're not
 # sure which.
 
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

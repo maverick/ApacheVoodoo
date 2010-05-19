@@ -124,7 +124,7 @@ sub install_path {
 
 sub session_path {
 	my $self = shift;
-	
+
 	unless ($self->{SESSION_PATH}) {
 		$self->{SESSION_PATH} = $self->{PREFIX} . "/session";
 	}
@@ -135,7 +135,7 @@ sub session_path {
 
 sub conf_path {
 	my $self = shift;
-	
+
 	unless ($self->{CONF_PATH}) {
 		$self->{CONF_PATH} = "etc";
 	}
@@ -146,7 +146,7 @@ sub conf_path {
 
 sub conf_file {
 	my $self = shift;
-	
+
 	unless ($self->{CONF_FILE}) {
 		$self->{CONF_FILE} = "etc/voodoo.conf";
 	}
@@ -157,7 +157,7 @@ sub conf_file {
 
 sub updates_path {
 	my $self = shift;
-	
+
 	unless ($self->{UPDATES_PATH}) {
 		$self->{UPDATES_PATH} = "etc/updates";
 	}
@@ -168,7 +168,7 @@ sub updates_path {
 
 sub tmpl_path {
 	my $self = shift;
-	
+
 	unless ($self->{TMPL_PATH}) {
 		$self->{TMPL_PATH} = "html";
 	}
@@ -179,7 +179,7 @@ sub tmpl_path {
 
 sub code_path {
 	my $self = shift;
-	
+
 	unless ($self->{CODE_PATH}) {
 		$self->{CODE_PATH} = "code";
 	}
@@ -253,10 +253,10 @@ sub debug_path {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

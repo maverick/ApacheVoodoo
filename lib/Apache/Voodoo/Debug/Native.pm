@@ -3,7 +3,7 @@
 # Apache::Voodoo::Debug - handles operations associated with debugging output.
 #
 # This object is used by Voodoo internally to handling various types of debugging
-# information and to produce end user display of that information.  End users 
+# information and to produce end user display of that information.  End users
 # never interact with this module directly, instead they use the methods from
 # the Apache::Voodoo base class.
 #
@@ -104,7 +104,7 @@ sub new {
 	$self->{enable}->{url}        = 1;
 	$self->{enable}->{status}     = 1;
 	$self->{enable}->{session_id} = 1;
-	
+
 	return $self;
 }
 
@@ -207,8 +207,8 @@ sub params        { my $self = shift; $self->_log('params',        @_); }
 sub template_conf { my $self = shift; $self->_log('template_conf', @_); }
 sub session       { my $self = shift; $self->_log('session',       @_); }
 
-sub session_id { 
-	my $self = shift; 
+sub session_id {
+	my $self = shift;
 	my $id   = shift;
 
 	$self->{template}->param(session_id => $id);
@@ -218,7 +218,7 @@ sub session_id {
 sub _log {
 	my $self = shift;
 	my $type = shift;
-	
+
 	return unless $self->{'enable'}->{$type};
 
 	my $data;
@@ -241,7 +241,7 @@ sub _log {
 
 sub _encode {
 	my $self = shift;
-	
+
 	my $j;
 	if (scalar(@_) > 1) {
 		$j = $self->{json}->to_json(\@_);
@@ -280,10 +280,10 @@ sub finalize {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

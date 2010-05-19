@@ -1,8 +1,8 @@
 #####################################################################################
 #
-# Apache::Voodoo::Validate::Plugin 
+# Apache::Voodoo::Validate::Plugin
 #
-# Base class which all the data type plugins must inherit from in order to work 
+# Base class which all the data type plugins must inherit from in order to work
 # correctly with A::V::Validate.
 #
 ####################################################################################
@@ -67,10 +67,10 @@ sub valid {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

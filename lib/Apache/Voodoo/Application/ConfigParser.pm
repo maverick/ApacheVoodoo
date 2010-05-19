@@ -12,7 +12,7 @@ use Exception::Class::DBI;
 
 sub new {
 	my $class = shift;
-   	my $self = {};
+	my $self = {};
 
 	bless $self, $class;
 
@@ -121,10 +121,10 @@ sub parse {
 		}
 		else {
 			$db = [ $conf{'database'} ];
-		} 
+		}
 
 		# make the connect string a perl array ref
-		$self->{'dbs'} = [ 
+		$self->{'dbs'} = [
 			map {
 				unless (ref ($_->{'extra'}) eq "HASH") {
 					$_->{'extra'} = {};
@@ -133,13 +133,13 @@ sub parse {
 				$_->{'extra'}->{RaiseError}  = 0;
 				$_->{'extra'}->{HandleError} = Exception::Class::DBI->handler;
 
-				[ 
+				[
 					$_->{'connect'},
 					$_->{'username'},
 					$_->{'password'},
 					$_->{'extra'}
 				]
-			} @{$db} 
+			} @{$db}
 		];
 	}
 	else {
@@ -180,7 +180,7 @@ sub parse {
 	# merge in the default block to each of the others now so that we don't have to
 	# do it at page request time.
 	foreach my $key (grep {$_ ne 'default'} keys %{$self->{'template_conf'}}) {
-		$self->{'template_conf'}->{$key} = { 
+		$self->{'template_conf'}->{$key} = {
 			%{$self->{'template_conf'}->{'default'}},
 			%{$self->{'template_conf'}->{$key}}
 		};
@@ -203,10 +203,10 @@ sub parse {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

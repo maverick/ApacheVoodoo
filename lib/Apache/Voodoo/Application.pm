@@ -15,7 +15,7 @@ use Data::Dumper;
 
 sub new {
 	my $class = shift;
-   	my $self = {};
+	my $self = {};
 
 	bless $self, $class;
 
@@ -61,7 +61,7 @@ sub refresh {
 	my %old_v = %{$config->views()};
 	my %old_c = %{$config->controllers()};
 	my %old_i = %{$config->includes()};
-	
+
 	my $old_ns = $config->old_ns();
 
 	$config->parse();
@@ -289,7 +289,7 @@ sub _load_module {
 	return $obj;
 }
 
-sub _debug { 
+sub _debug {
 	my $self = shift;
 
 	return unless $self->{'debug'};
@@ -305,10 +305,10 @@ sub _debug {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

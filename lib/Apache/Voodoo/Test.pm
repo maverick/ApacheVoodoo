@@ -99,12 +99,12 @@ sub make_request {
 	# remove the optional trailing .tmpl
 	$filename =~ s/\.tmpl$//o;
 	$uri      =~ s/\.tmpl$//o;
-	
+
 	unless (-e "$filename.tmpl") { return $self->declined;  }
-	unless (-r "$filename.tmpl") { return $self->forbidden; } 
+	unless (-r "$filename.tmpl") { return $self->forbidden; }
 
 	####################
-	# Get paramaters 
+	# Get paramaters
 	####################
 	my $params;
 	eval {
@@ -116,9 +116,9 @@ sub make_request {
 	}
 
 	####################
-	# History capture 
+	# History capture
 	####################
-	if ($self->is_get && 
+	if ($self->is_get         &&
 		!$params->{ajax_mode} &&
 		!$params->{return}
 		) {
@@ -203,7 +203,7 @@ sub get_wsdl {
 		$m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}->{'object'});
 	}
 	# FIXME here ends the hackery
-	
+
 	my $wsdl;
 	eval {
 		# FIXME the other part of the Pod::WSDL version hack
@@ -245,12 +245,12 @@ sub get_model {
 }
 
 sub set_request {
-    my $self = shift;
+	my $self = shift;
 
-    $self->{'request_id'} = Time::HiRes::time;
+	$self->{'request_id'} = Time::HiRes::time;
 
 	foreach (qw(uri cookiejar content_type is_get redirected_to controller_output)) {
-    	delete $self->{$_};
+		delete $self->{$_};
 	}
 
 	foreach (qw(err_header_out header_out header_in)) {
@@ -281,7 +281,7 @@ sub uri {
 	return $self->{'uri'};
 }
 
-sub filename { 
+sub filename {
 	my $self = shift;
 	return File::Spec->catfile(
 		$self->{'constants'}->install_path(),
@@ -291,7 +291,7 @@ sub filename {
 	);
 }
 
-sub method { 
+sub method {
 	my $self = shift;
 
 	if ($_[0] =~ /^(get|post)$/) {
@@ -308,12 +308,12 @@ sub print {
 	$self->{'output'} .= $_[0];
 }
 
-sub controller_output { 
+sub controller_output {
 	my $self = shift;
 	return $self->{'controller_output'};
 }
 
-sub output { 
+sub output {
 	my $self = shift;
 	return $self->{'output'};
 }
@@ -350,21 +350,21 @@ sub ok           { my $self = shift; $self->{'status'} = "OK";            return
 sub server_error { my $self = shift; $self->{'status'} = "SERVER_ERROR";  return $self->{'status'}; }
 sub not_found    { my $self = shift; $self->{'status'} = "NOT_FOUND";     return $self->{'status'}; }
 
-sub content_type { 
+sub content_type {
 	my $self = shift;
 
 	$self->{'content_type'} = [ @_ ] if scalar(@_);
 	return $self->{'content_type'};
 }
 
-sub err_header_out { 
+sub err_header_out {
 	my $self = shift;
 
 	push(@{$self->{'err_header_out'}},@_) if scalar(@_);
 	return $self->{'err_header_out'};
 }
 
-sub header_out { 
+sub header_out {
 	my $self = shift;
 
 	push(@{$self->{'header_out'}},@_) if scalar(@_);
@@ -376,7 +376,7 @@ sub header_in {
 
 	push(@{$self->{'header_in'}},@_) if scalar(@_);
 	return $self->{'header_in'};
-}   
+}
 
 sub redirected_to { return $_[0]->{'redirected_to'}; }
 sub redirect {
@@ -386,8 +386,8 @@ sub redirect {
 	$self->{'redirected_to'} = $loc;
 	$self->{'status'} = "REDIRECT";
 
-	return "REDIRECT";                         
-}                                                                
+	return "REDIRECT";
+}
 
 sub parameters {
 	my $self = shift;
@@ -425,7 +425,7 @@ sub parse_params {
 		}
 		return $params;
 	}
-}                       
+}
 
 sub set_cookie {
 	my $self = shift;
@@ -445,17 +445,17 @@ sub set_cookie {
 sub get_cookie {
 	my $self = shift;
 	my $name = shift;
-	
+
 	return $self->{'cookie'}->{$name}->{'value'};
 }
 
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

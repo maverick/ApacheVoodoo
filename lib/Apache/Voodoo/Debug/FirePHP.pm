@@ -1,5 +1,5 @@
 package Apache::Voodoo::Debug::FirePHP;
-  
+
 $VERSION = "3.0100";
 
 use strict;
@@ -31,13 +31,13 @@ use constant WF_STRUCTURE1 => 'http://meta.firephp.org/Wildfire/Structure/FirePH
 use constant WF_STRUCTURE2 => 'http://meta.firephp.org/Wildfire/Structure/FirePHP/Dump/0.1';
 
 use constant BLOCK_LENGTH => 5000;
-  
+
 sub new {
 	my $class = shift;
 	my $id    = shift;
 	my $conf  = shift;
 
-  	my $self = {};
+	my $self = {};
 	bless $self,$class;
 
 	$self->{json} = JSON::DWIW->new({bad_char_policy => 'convert'});
@@ -79,7 +79,7 @@ sub new {
 		}
 	}
 
-  	return $self;
+	return $self;
 }
 
 sub init {
@@ -110,20 +110,20 @@ sub setRendererUrl {
 
 	$self->setHeader('X-FirePHP-RendererURL' => $URL);
 }
-  
-sub debug     { return $_[0]->_fb($_[1], $_[2], DEBUG);     } 
-sub info      { return $_[0]->_fb($_[1], $_[2], INFO);      } 
-sub warn      { return $_[0]->_fb($_[1], $_[2], WARN);      } 
-sub error     { return $_[0]->_fb($_[1], $_[2], ERROR);     } 
-sub exception { return $_[0]->_fb($_[1], $_[2], EXCEPTION); } 
-sub trace     { return $_[0]->_fb($_[1], undef, TRACE);     } 
-sub table     { return $_[0]->_fb($_[1], $_[2], TABLE);     } 
-  
+
+sub debug     { return $_[0]->_fb($_[1], $_[2], DEBUG);     }
+sub info      { return $_[0]->_fb($_[1], $_[2], INFO);      }
+sub warn      { return $_[0]->_fb($_[1], $_[2], WARN);      }
+sub error     { return $_[0]->_fb($_[1], $_[2], ERROR);     }
+sub exception { return $_[0]->_fb($_[1], $_[2], EXCEPTION); }
+sub trace     { return $_[0]->_fb($_[1], undef, TRACE);     }
+sub table     { return $_[0]->_fb($_[1], $_[2], TABLE);     }
+
 sub _group    { return $_[0]->_fb($_[1], undef, GROUP_START); }
 sub _groupEnd { return $_[0]->_fb(undef, undef, GROUP_END);   }
-  
+
 #
-# At some point in the future we might push this info out 
+# At some point in the future we might push this info out
 # through FirePHP, but not right now.
 #
 sub mark          { return; }
@@ -153,7 +153,7 @@ sub _detectClientExtension {
 	else {
 		return 0;
 	}
-}  
+}
 
 sub _compareVersion {
 	my $self   = shift;
@@ -173,14 +173,14 @@ sub _compareVersion {
 	}
 	return 1;
 }
- 
+
 sub _fb {
 	my $self = shift;
 
 	my $Label  = shift;
 	my $Object = shift;
 	my $Type   = shift;
-  
+
 	return unless $self->{enable}->{$Type};
 
 	unless (defined($Object) || $Type eq GROUP_START) {
@@ -189,8 +189,8 @@ sub _fb {
 	}
 
 	my %meta = ();
-  
-    if ($Type eq EXCEPTION || $Type eq TRACE) {
+
+	if ($Type eq EXCEPTION || $Type eq TRACE) {
 		my @trace = $self->stack_trace(1);
 
 		my $t = shift @trace;
@@ -208,10 +208,10 @@ sub _fb {
 			'Args'    => $t->{args},
 			'Trace'   => \@trace
 		};
-    }
+	}
 	else {
 		my @trace = $self->stack_trace(1);
-		
+
 		$meta{'File'} = $trace[0]->{class}.$trace[0]->{type}.$trace[0]->{function};
 		$meta{'Line'} = $trace[0]->{line};
 	}
@@ -220,7 +220,7 @@ sub _fb {
 	if ($self->{messageIndex} == 1) {
 		$self->setHeader('X-Wf-Protocol-1',WF_PROTOCOL);
 		$self->setHeader('X-Wf-1-Plugin-1',WF_PLUGIN);
- 
+
 		if ($Type eq DUMP) {
 			$structure_index = 2;
 			$self->setHeader('X-Wf-1-Structure-2',WF_STRUCTURE2);
@@ -229,7 +229,7 @@ sub _fb {
 			$self->setHeader('X-Wf-1-Structure-1',WF_STRUCTURE1);
 		}
 	}
-  
+
 	my $msg;
 	if ($Type eq DUMP) {
 		$msg = '{"'.$Label.'":'.$self->jsonEncode($Object).'}';
@@ -240,7 +240,7 @@ sub _fb {
 
 		$msg = '['.$self->jsonEncode(\%meta).','.$self->jsonEncode($Object).']';
 	}
-    
+
 	# FirePHP wants the number of bytes, not characters.  So we can't use length() here, a 2 or 3 byte
 	# character counts as 1 as far as length is concerned.
 	my $l = length(unpack('b*',$msg))/8;
@@ -274,18 +274,18 @@ sub _fb {
 			$self->setHeader('X-Wf-1-'.$structure_index.'-1-'.$self->{'messageIndex'}, $v);
 
 			$self->{'messageIndex'}++;
-			
+
 			if ($self->{'messageIndex'} > 99999) {
-				#throw new Exception('Maximum number (99,999) of messages reached!');             
+				#throw new Exception('Maximum number (99,999) of messages reached!');
 			}
 		}
 	}
 
-  	#$self->setHeader('X-Wf-1-Index',$self->{'messageIndex'}-1);
+	#$self->setHeader('X-Wf-1-Index',$self->{'messageIndex'}-1);
 
 	return 1;
 }
-  
+
 sub setHeader() {
 	my $self  = shift;
 	my $name  = shift;
@@ -300,14 +300,14 @@ sub jsonEncode {
 
 	return $self->{'json'}->to_json($Object);
 }
-  
+
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

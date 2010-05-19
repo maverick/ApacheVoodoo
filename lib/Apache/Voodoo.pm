@@ -24,7 +24,7 @@ sub init { }
 # Debugging
 ################################################################################
 
-sub debug { 
+sub debug {
 	my $self = shift;
 
 	if (ref($Apache::Voodoo::Engine::debug)) {
@@ -65,7 +65,7 @@ sub exception {
 	Apache::Voodoo::Exception::RunTime::Thrown->throw(join("\n",@_));
 }
 
-sub trace { 
+sub trace {
 	my $self = shift;
 
 	if (ref($Apache::Voodoo::Engine::debug)) {
@@ -73,7 +73,7 @@ sub trace {
 	}
 }
 
-sub table { 
+sub table {
 	my $self = shift;
 
 	if (ref($Apache::Voodoo::Engine::debug)) {
@@ -252,10 +252,10 @@ sub prep_select {
 
 	unless (ref($select)) {
 		$select = [ $select ];
-	} 
+	}
 	my %selected = map { $_ => 1 } @{$select};
 
-	return [ 
+	return [
 		map {
 			{
 				"ID"              => $_->[0],
@@ -315,7 +315,7 @@ sub db_error {
 	$errstr .= "$query\n";
 	$errstr .= "==================================================\n";
 
-	# don't really care for this, but there doesn't seem to be any way to 
+	# don't really care for this, but there doesn't seem to be any way to
 	# terminate this request.
 	die $errstr;
 }
@@ -327,8 +327,8 @@ sub date_to_sql {
 	# Get rid of all spaces in the date
 	$date =~ s/\s//go;
 
-        # date missing. return null;
-        return undef unless (length($date));
+	# date missing. return null;
+	return undef unless (length($date));
 
 	# Split the date up into month day year
 	my ($m,$d,$y) = split(/[\/-]/,$date,3);
@@ -344,7 +344,7 @@ sub last_insert_id {
 	my $dbh  = shift;
 
 	my $res = $dbh->selectall_arrayref("SELECT LAST_INSERT_ID()") || $self->db_error();
-	
+
 	return $res->[0]->[0];
 }
 
@@ -405,13 +405,13 @@ sub pretty_mysql_timestamp {
 	return $self->sql_to_date("$p[0]$p[1]-$p[2]-$p[3]")." ".$self->sql_to_time("$p[4]:$p[5]:$p[6]");
 }
 
-sub mysql_timestamp { 
-	my $self = shift; 
-	my $time = shift; 
- 
-	my @p = localtime($time || time); 
- 
-	$time =~ /^\d+\.(\d+)$/; 
+sub mysql_timestamp {
+	my $self = shift;
+	my $time = shift;
+
+	my @p = localtime($time || time);
+
+	$time =~ /^\d+\.(\d+)$/;
 	return sprintf("%04d%02d%02d%02d%02d%02d",$p[5]+1900,$p[4]+1,$p[3],$p[2],$p[1],$p[0]);
 }
 
@@ -549,7 +549,7 @@ sub validate_date {
 	#Split the date up into month day year
 	my ($m,$d,$y) = split("/",$date, 3);
 
-	#Strip off any leading 0s 
+	#Strip off any leading 0s
 	$m *= 1;
 	$d *= 1;
 	$y *= 1;
@@ -560,7 +560,7 @@ sub validate_date {
 	}
 
 	#Check to see if the day is valid on leap years
- 	if ($m == 2 && $d == 29) {
+	if ($m == 2 && $d == 29) {
 		unless (($y%4 == 0 && $y%100 != 0) || $y%400 == 0){
 			return 0;
 		}
@@ -621,10 +621,10 @@ sub pretty_time {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

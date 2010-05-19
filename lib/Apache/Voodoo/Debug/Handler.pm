@@ -39,7 +39,7 @@ sub new {
 		('profile','debug','return_data','session','template_conf','parameters','request')
 	};
 
-	$self->{static_files} = { 
+	$self->{static_files} = {
 		"debug.css"     => "text/css",
 		"debug.js"      => "application/x-javascript",
 		"debug.png"     => "image/png",
@@ -80,7 +80,7 @@ sub handler {
 		$r->update_mtime($mtime);
 		$r->set_last_modified;
 		$r->meets_conditions;
-		my $rc = $self->{mp}->if_modified_since($mtime); 
+		my $rc = $self->{mp}->if_modified_since($mtime);
 		return $rc unless $rc == $self->{mp}->ok;
 
 		# set the content type
@@ -161,7 +161,7 @@ sub json_data {
 		$data = '"'.$data.'"';
 	}
 
-    return '{"key":"'.$type.'","value":'.$data.'}';
+	return '{"key":"'.$type.'","value":'.$data.'}';
 }
 
 sub json_error {
@@ -189,9 +189,9 @@ sub json_true  { return $JSON::DWIW->true; }
 sub json_false { return $JSON::DWIW->false; }
 
 sub get_request_id {
-    my $self = shift;
-    my $dbh  = shift;
-    my $id   = shift;
+	my $self = shift;
+	my $dbh  = shift;
+	my $id   = shift;
 
 	unless ($id->{request_id} =~ /^\d+(\.\d*)?$/) {
 		return "invalid request id";
@@ -206,24 +206,22 @@ sub get_request_id {
 	}
 
 
-    my $res = $dbh->selectcol_arrayref("
-        SELECT
-            id
-        FROM
-            request
-        WHERE
-            request_timestamp = ? AND
-            application       = ? AND
+	my $res = $dbh->selectcol_arrayref("
+		SELECT id
+		FROM   request
+		WHERE
+			request_timestamp = ? AND
+			application       = ? AND
 			session_id        = ?",undef,
-        $id->{request_id},
-        $id->{app_id},
+		$id->{request_id},
+		$id->{app_id},
 		$id->{session_id});
 
 	unless ($res->[0] > 0) {
 		return "no such id";
 	}
 
-    return $res->[0];
+	return $res->[0];
 }
 
 sub select_data_by_id {
@@ -256,7 +254,7 @@ sub simple_data {
 		return $self->json_error($id);
 	}
 
-    return $self->json_data(
+	return $self->json_data(
 		$key,
 		$self->select_data_by_id($dbh,$table,$id)
 	);
@@ -296,7 +294,7 @@ sub handle_request {
 	my $request_id = $params->{'request_id'};
 
 	my $return = [];
-	if ($app_id     =~ /^[a-z]\w+/i   && 
+	if ($app_id     =~ /^[a-z]\w+/i   &&
 		$session_id =~ /^[a-f0-9]+$/i &&
 		$request_id =~ /^\d+\.\d+$/) {
 
@@ -317,7 +315,7 @@ sub handle_request {
 				$request_id);
 	}
 
-    return $self->json_data('vd_request',$return);
+	return $self->json_data('vd_request',$return);
 }
 
 sub handle_return_data {
@@ -350,7 +348,7 @@ sub handle_return_data {
 	$d =~ s/,$//;
 	$d .= ']';
 
-    return $self->json_data('vd_return_data',$d);
+	return $self->json_data('vd_return_data',$d);
 }
 
 sub handle_debug {
@@ -390,7 +388,7 @@ sub handle_debug {
 
 	my $res = $dbh->selectall_arrayref($query,undef,$id,@levels);
 
-    return $self->json_data('vd_debug',$self->_process_debug($params->{app_id},$res));
+	return $self->json_data('vd_debug',$self->_process_debug($params->{app_id},$res));
 }
 
 sub _process_debug {
@@ -409,7 +407,7 @@ sub _process_debug {
 		else {
 			$debug .= '"'.$row->[2].'"';
 		}
-			
+
 		$debug .= '},';
 	}
 	$debug =~ s/,$//;
@@ -459,7 +457,7 @@ sub handle_profile {
 
 		unshift(@{$return->{value}}, [
 			sprintf("%.5f",$total_time),
-			'percent', 
+			'percent',
 			'message'
 		]);
 	}
@@ -469,10 +467,10 @@ sub handle_profile {
 
 1;
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #

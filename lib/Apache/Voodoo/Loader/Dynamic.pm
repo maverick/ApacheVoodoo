@@ -64,7 +64,7 @@ sub refresh {
 	$self->{'provides'} = {};
 }
 
-# 
+#
 # Override the built in 'can' to allow:
 #   a) trigger dynamically reloading the module as needed
 #   b) dynamically create closures to link Apache::Voodoo::Handler with the controllers
@@ -106,11 +106,11 @@ sub can {
 
 #
 # In scnearios where the caller doesn't know that can has been overloaded, we'll use
-# autoload to catch it and call our overloaded can.  We unfortunately end up with two 
+# autoload to catch it and call our overloaded can.  We unfortunately end up with two
 # different ways to do a very similar task because the constraints are slightly different.
 # We want the calls from the A::V::Handler to the controllers to be aware of what methods
 # actually exist so it can either call them or not.  The controllers talking to the models
-# shouldn't have to do anything special or even be aware that they're talking to this 
+# shouldn't have to do anything special or even be aware that they're talking to this
 # proxy object, thus the need for a autoload variation.
 #
 sub AUTOLOAD {
@@ -158,17 +158,17 @@ sub _handle {
 				my $error= "There was an error loading one of the base classes for this page ($_):\n\n$@\n";
 
 				my $link = $self->{'module'};
-				
+
 				$link =~ s/::/\//g;
 				unless ($method eq "handle") {
 					$link =~ s/([^\/]+)$/$method."_".$1/e;
 				}
 
-				#FIXME replace with a instance of Apache::Voodoo::Zombie
+				# FIXME replace with a instance of Apache::Voodoo::Zombie
 				$self->debug("ZOMBIE: $self->{'module'} $method");
 				return $self->display_error($error,"/$link");
 			}
-		}	
+		}
 	}
 
 	return $self->{'object'}->$method(@params);
@@ -177,10 +177,10 @@ sub _handle {
 1;
 
 ################################################################################
-# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).  
+# Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
 # All rights reserved.
 #
-# You may use and distribute Apache::Voodoo under the terms described in the 
+# You may use and distribute Apache::Voodoo under the terms described in the
 # LICENSE file include in this package. The summary is it's a legalese version
 # of the Artistic License :)
 #
