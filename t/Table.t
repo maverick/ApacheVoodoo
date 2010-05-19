@@ -69,9 +69,14 @@ isa_ok($e,"Apache::Voodoo::Exception::RunTime::BadConfig");
 my $dbh;
 
 SKIP: {
+	my $dbh;
 	eval { require DBD::mysql; };
 	skip "DBD::mysql not found, skipping these tests",6 if $@;
-	$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1}) || BAIL_OUT("Couldn't connect to test db: $DBI::errstr");
+
+	eval {
+		$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1});
+	};
+	skip "Can't connect to mysql test database on localhost, skipping these tests",6 if $@;
 
 	setup_db(   'MySQL',$dbh);
 	table_tests('MySQL',$dbh);
