@@ -24,6 +24,8 @@ binary-indep: install
 binary: binary-arch binary-indep
 
 override_dh_clean:
-	dh_clean -X t/app_newstyle/C/a/controller.pm.orig -X t/app_newstyle/V/a/view.pm.orig -X t/app_newstyle/M/a/model.pm.orig
+	dh_clean -d
+	rm -f debian/files debian/*substvars debian/*.debhelper debian/*debhelper.log
+	find .  \( \( -type f -a \( -name '#*#' -o -name '.*~' -o -name '*~' -o -name DEADJOE -o -name '*.orig' -o -name '*.rej' -o -name '*.bak' -o -name '.*.orig' -o -name .*.rej -o -name '.SUMS' -o -name TAGS -o \( -path '*/.deps/*' -a -name '*.P' \) \)  \) -o \( -type d -a -name autom4te.cache -prune \) \) -printf '%P\n' | xargs -I{} sh -c "test \`grep -ah '^{}$$' MANIFEST | wc -l\` -eq 0 && rm -rf '{}'"; exit 0
 
 .PHONY: binary binary-arch binary-indep install clean build
