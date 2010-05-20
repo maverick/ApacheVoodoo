@@ -5,7 +5,7 @@ use lib("t");
 
 use File::Copy;
 
-use Test::More 'no_plan';
+use Test::More tests => 27;
 use Data::Dumper;
 
 BEGIN {

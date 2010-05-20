@@ -96,8 +96,10 @@ t/app_oldstyle/etc/voodoo.conf
 t/Application-ConfigParser.t
 t/Application.t
 t/Constants.t
+t/Loader-Static.t
 t/Table.t
 t/test_data/BrokenConfig.pm
 t/test_data/MyConfig.pm
 t/test_data/test_db.sql
 t/Validate.t
+t/Zombie.t
