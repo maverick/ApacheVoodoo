@@ -1,6 +1,6 @@
 package Apache::Voodoo::Engine;
 
-$VERSION = "3.0100";
+$VERSION = "3.0101";
 
 use strict;
 use warnings;

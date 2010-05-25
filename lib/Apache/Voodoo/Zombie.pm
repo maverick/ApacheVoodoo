@@ -14,7 +14,7 @@ This is a development tool...you shouldn't have any Zombies in your production e
 =cut ################################################################################
 package Apache::Voodoo::Zombie;
 
-$VERSION = "3.0100";
+$VERSION = "3.0101";
 
 use strict;
 use warnings;
