@@ -317,61 +317,63 @@ sub execute_controllers {
 
 	my $template_params;
 
-	eval {
-		# call each of the pre_include modules followed by our page specific module followed by our post_includes
-		foreach my $c (
-			( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}  ||"") ),
-			$app->map_uri($uri),
-			( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'} ||"") )
-			) {
+	# call each of the pre_include modules followed by our page specific module followed by our post_includes
+	foreach my $c (
+		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'pre_include'}  ||"") ),
+		$app->map_uri($uri),
+		( map { [ $_, "handle"] } split(/\s*,\s*/o, $template_conf->{'post_include'} ||"") )
+		) {
 
-			if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
-				my $obj    = $app->{'controllers'}->{$c->[0]};
-				my $method = $c->[1];
+		if (defined($app->{'controllers'}->{$c->[0]}) && $app->{'controllers'}->{$c->[0]}->can($c->[1])) {
+			my $obj    = $app->{'controllers'}->{$c->[0]};
+			my $method = $c->[1];
 
-				my $return = $obj->$method($self->{'run'}->{'p'});
+			my $return;
+			eval {
+				$return = $obj->$method($self->{'run'}->{'p'});
+			};
 
-				$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
-				$debug->return_data($c->[0],$c->[1],$return);
+			$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
+			$debug->return_data($c->[0],$c->[1],$return);
 
-				if (!defined($template_params) || !ref($return)) {
-					# first overwrites empty, or scalar overwrites previous
-					$template_params = $return;
+			if (my $e = Exception::Class->caught()) {
+				if (ref($e) =~ /(AccessDenied|Redirect|DisplayError)$/) {
+					$e->{'target'} = $self->_adjust_url($e->target);
+					$e->rethrow();
 				}
-				elsif (ref($return) eq "HASH" && ref($template_params) eq "HASH") {
-					# merge two hashes
-					foreach my $k ( keys %{$return}) {
-						$template_params->{$k} = $return->{$k};
-					}
-					$debug->mark(Time::HiRes::time,"result packing");
-				}
-				elsif (ref($return) eq "ARRAY" && ref($template_params) eq "ARRAY") {
-					# merge two arrays
-					push(@{$template_params},@{$return});
+				elsif (ref($e)) {
+					$e->rethrow();
 				}
 				else {
-					# eep.  can't merge.
-					Apache::Voodoo::Exception::RunTime::BadReturn->throw(
-						module  => $c->[0],
-						method  => $c->[1],
-						data    => $return
-					);
+					Apache::Voodoo::Exception::RunTime->throw("$@");
 				}
-
-				last if $self->{'run'}->{'p'}->{'_stop_chain_'};
 			}
-		}
-	};
-	if (my $e = Exception::Class->caught()) {
-		if (ref($e) =~ /(AccessDenied|Redirect|DisplayError)$/) {
-			$e->{'target'} = $self->_adjust_url($e->target);
-			$e->rethrow();
-		}
-		elsif (ref($e)) {
-			$e->rethrow();
-		}
-		else {
-			Apache::Voodoo::Exception::RunTime->throw("$@");
+
+			if (!defined($template_params) || !ref($return)) {
+				# first overwrites empty, or scalar overwrites previous
+				$template_params = $return;
+			}
+			elsif (ref($return) eq "HASH" && ref($template_params) eq "HASH") {
+				# merge two hashes
+				foreach my $k ( keys %{$return}) {
+					$template_params->{$k} = $return->{$k};
+				}
+				$debug->mark(Time::HiRes::time,"result packing");
+			}
+			elsif (ref($return) eq "ARRAY" && ref($template_params) eq "ARRAY") {
+				# merge two arrays
+				push(@{$template_params},@{$return});
+			}
+			else {
+				# eep.  can't merge.
+				Apache::Voodoo::Exception::RunTime::BadReturn->throw(
+					module  => $c->[0],
+					method  => $c->[1],
+					data    => $return
+				);
+			}
+
+			last if $self->{'run'}->{'p'}->{'_stop_chain_'};
 		}
 	}
 
