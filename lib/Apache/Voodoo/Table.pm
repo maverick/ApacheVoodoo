@@ -296,10 +296,8 @@ sub validate_add {
 	# do all the normal parameter checking
 	my ($values,$e) = $self->{valid}->validate($params);
 
-	if (defined($e)) {
-		# copy the errors from the process_params
-		$errors = { %{$errors}, %{$e} };
-	}
+	# copy the errors from the process_params
+	$errors = { %{$errors}, %{$e} } if ref($e) eq "HASH";
 
 	# check to see if the user supplied primary key (optional) is unique
 	if ($self->{'pkey_user_supplied'}) {
@@ -359,7 +357,7 @@ sub validate_edit {
 	my ($values,$e) = $self->{valid}->validate($params);
 
 	# copy the errors from the process_params
-	$errors = { %{$errors}, %{$e} };
+	$errors = { %{$errors}, %{$e} } if ref($e) eq "HASH";
 
 	# check all the unique columns
 	foreach (@{$self->{'unique'}}) {
