@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Config::General;
-use IPC::SharedCache;
+# use IPC::SharedCache;
 use HTML::Template;
 
 sub new {
@@ -41,10 +41,12 @@ sub handle {
 	# FILE system relative
 	my $theme_dir = $p->{'document_root'}."/".$self->{'themes'}->{$chosen_theme};
 
-	my %cache;
-	tie(%cache, 'IPC::SharedCache', ipc_key => 'VTHM', load_callback => \&load_cache, validate_callback => \&validate_cache);
+	my $tc = "$theme_dir/theme.conf";
+	if ($self->_is_stale($tc)) {
+		$self->{cache}->{$tc} = $self->_load($tc);
+	}
 
-	my $conf = $cache{"$theme_dir/theme.conf"};
+	my $conf = $self->{cache}->{$tc};
 
 	# find which style section this page is under
 	my $style = $conf->{'pages'}->{$p->{'uri'}}->{'__style__'};
@@ -129,7 +131,8 @@ sub choose_theme {
 	return $chosen_theme;
 }
 
-sub load_cache {
+sub _load {
+	my $self = shift;
 	my $file = shift;
 
 	my $record;
@@ -150,11 +153,12 @@ sub load_cache {
 	return $record;
 }
 
-sub validate_cache {
-	my $file   = shift;
-	my $record = shift;
+sub _is_stale {
+	my $self = shift;
+	my $file = shift;
 
-	return ($record->{'mtime'} == (stat($file))[9]);
+	return 1 unless defined($self->{'cache'}->{$file};
+	return ($self->{'cache'}->{$file}->{'mtime'} != (stat($file))[9]);
 }
 
 sub get_skeleton {

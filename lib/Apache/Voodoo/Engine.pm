@@ -253,11 +253,11 @@ sub history_capture {
 		$session->{'history'}->[0]->{'uri'} ne $uri) {
 
 		# queue is empty or this is a new page
-		unshift(@{$session->{'history'}}, {'uri' => $uri, 'params' => $params});
+		unshift(@{$session->{'history'}}, {'uri' => $uri, 'params' => join("&",map { $_."=".$params->{$_} } keys %{$params})});
 	}
 	else {
 		# re-entrant call to page, update the params
-		$session->{'history'}->[0]->{'params'} = $params;
+		$session->{'history'}->[0]->{'params'} = join("&",map { $_."=".$params->{$_} } keys %{$params});
 	}
 
 	if (scalar(@{$session->{'history'}}) > 30) {
