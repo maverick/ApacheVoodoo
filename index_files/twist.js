@@ -1,0 +1,21 @@
+var twiki;if(!twiki)twiki={};twiki.TwistyPlugin=new function(){var self=this;this._getName=function(inId){var re=new RegExp("(.*)(hide|show|toggle)","g");var m=re.exec(inId);var name=(m&&m[1])?m[1]:"";return name;}
+this._getType=function(inId){var re=new RegExp("(.*)(hide|show|toggle)","g");var m=re.exec(inId);var type=(m&&m[2])?m[2]:"";return type;}
+this._toggleTwisty=function(ref){if(!ref)return;ref.state=(ref.state==twiki.TwistyPlugin.CONTENT_HIDDEN)?twiki.TwistyPlugin.CONTENT_SHOWN:twiki.TwistyPlugin.CONTENT_HIDDEN;self._update(ref,true);}
+this._update=function(ref,inMaySave){var showControl=ref.show;var hideControl=ref.hide;var contentElem=ref.toggle;if(ref.state==twiki.TwistyPlugin.CONTENT_SHOWN){twiki.CSS.addClass(showControl,'twistyHidden');twiki.CSS.removeClass(hideControl,'twistyHidden');twiki.CSS.removeClass(contentElem,'twistyHidden');}else{twiki.CSS.removeClass(showControl,'twistyHidden');twiki.CSS.addClass(hideControl,'twistyHidden');twiki.CSS.addClass(contentElem,'twistyHidden');}
+if(inMaySave&&ref.saveSetting){twiki.Pref.setPref(twiki.TwistyPlugin.COOKIE_PREFIX+ref.name,ref.state);}
+if(ref.clearSetting){twiki.Pref.setPref(twiki.TwistyPlugin.COOKIE_PREFIX+ref.name,"");}}
+this._register=function(e){if(!e)return;var name=self._getName(e.id);var ref=self._storage[name];if(!ref){ref=new twiki.TwistyPlugin.Storage();}
+if(twiki.CSS.hasClass(e,"twistyRememberSetting"))ref.saveSetting=true;if(twiki.CSS.hasClass(e,"twistyForgetSetting"))ref.clearSetting=true;if(twiki.CSS.hasClass(e,"twistyStartShow"))ref.startShown=true;if(twiki.CSS.hasClass(e,"twistyStartHide"))ref.startHidden=true;if(twiki.CSS.hasClass(e,"twistyFirstStartShow"))ref.firstStartShown=true;if(twiki.CSS.hasClass(e,"twistyFirstStartHide"))ref.firstStartHidden=true;ref.name=name;var type=self._getType(e.id);ref[type]=e;self._storage[name]=ref;switch(type){case'show':case'hide':e.onclick=function(){self._toggleTwisty(ref);return false;}
+break;}
+return ref;}
+this._storage={};this._UIbehaviour={'.twistyTrigger':function(e){twiki.TwistyPlugin.init(e.id);e=null;},'.twistyContent':function(e){twiki.TwistyPlugin.init(e.id);e=null;},'.twistyExpandAll':function(e){e.onclick=function(){twiki.TwistyPlugin.toggleAll(twiki.TwistyPlugin.CONTENT_SHOWN);}
+e=null;},'.twistyCollapseAll':function(e){e.onclick=function(){twiki.TwistyPlugin.toggleAll(twiki.TwistyPlugin.CONTENT_HIDDEN);}
+e=null;}};Behaviour.register(this._UIbehaviour);};twiki.TwistyPlugin.CONTENT_HIDDEN=0;twiki.TwistyPlugin.CONTENT_SHOWN=1;twiki.TwistyPlugin.COOKIE_PREFIX="TwistyContrib_";twiki.TwistyPlugin.prefList;twiki.TwistyPlugin.init=function(inId){var e=document.getElementById(inId);if(!e)return;var name=this._getName(inId);var ref=this._storage[name];if(ref&&ref.show&&ref.hide&&ref.toggle)return ref;ref=this._register(e);twiki.CSS.replaceClass(e,"twistyMakeHidden","twistyHidden");twiki.CSS.removeClass(e,"twikiMakeVisible");twiki.CSS.removeClass(e,"twikiMakeVisibleBlock");twiki.CSS.removeClass(e,"twikiMakeVisibleInline");twiki.CSS.removeClass(e,"twikiMakeHidden");if(ref.show&&ref.hide&&ref.toggle){if(twiki.CSS.hasClass(e,"twistyInited1")){ref.state=twiki.TwistyPlugin.CONTENT_SHOWN
+this._update(ref,false);return ref;}
+if(twiki.CSS.hasClass(e,"twistyInited0")){ref.state=twiki.TwistyPlugin.CONTENT_HIDDEN
+this._update(ref,false);return ref;}
+if(twiki.TwistyPlugin.prefList==null){twiki.TwistyPlugin.prefList=twiki.Pref.getPrefList();}
+var cookie=twiki.Pref.getPrefValueFromPrefList(twiki.TwistyPlugin.COOKIE_PREFIX+ref.name,twiki.TwistyPlugin.prefList);if(ref.firstStartHidden)ref.state=twiki.TwistyPlugin.CONTENT_HIDDEN;if(ref.firstStartShown)ref.state=twiki.TwistyPlugin.CONTENT_SHOWN;if(cookie&&cookie=="0")ref.state=twiki.TwistyPlugin.CONTENT_HIDDEN;if(cookie&&cookie=="1")ref.state=twiki.TwistyPlugin.CONTENT_SHOWN;if(ref.startHidden)ref.state=twiki.TwistyPlugin.CONTENT_HIDDEN;if(ref.startShown)ref.state=twiki.TwistyPlugin.CONTENT_SHOWN;this._update(ref,false);}
+return ref;}
+twiki.TwistyPlugin.toggleAll=function(inState){var i;for(var i in this._storage){var e=this._storage[i];e.state=inState;this._update(e,true);}}
+twiki.TwistyPlugin.Storage=function(){this.name;this.state=twiki.TwistyPlugin.CONTENT_HIDDEN;this.hide;this.show;this.toggle;this.saveSetting=false;this.clearSetting=false;this.startShown;this.startHidden;this.firstStartShown;this.firstStartHidden;}
