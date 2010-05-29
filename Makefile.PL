@@ -16,7 +16,6 @@ my %required_modules = (
 	'Exception::Class::DBI' => 1.00,
 	'File::Pid'             => 1.01,
 	'HTML::Template'        => 2.7,
-	'IPC::SharedCache'      => 1.3,
 	'JSON::DWIW'            => 0.32,
 	'Tie::Hash::Indexed'    => 0.05,    # Used by Table/Probe/MySQL.pm
 	'Time::HiRes'           => 1.65,
@@ -33,7 +32,7 @@ my %optionals = (
 
 	'Pod::WSDL2'       => 0.06,	# prefer my forked version,
 	'Pod::WSDL'        => 0.05,	# fallback to the main one if it's not installed
-	
+
 	'Log::Log4Perl'    => 1.24
 );
 

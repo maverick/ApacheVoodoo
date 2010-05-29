@@ -6,7 +6,6 @@ use strict;
 use warnings;
 
 use Config::General;
-# use IPC::SharedCache;
 use HTML::Template;
 
 sub new {
