@@ -7,7 +7,7 @@
 ################################################################################
 package Apache::Voodoo::Install::Post;
 
-$VERSION = "3.0101";
+$VERSION = "3.0102";
 
 use strict;
 use warnings;

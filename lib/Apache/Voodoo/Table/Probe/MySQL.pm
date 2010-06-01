@@ -9,7 +9,7 @@
 ################################################################################
 package Apache::Voodoo::Table::Probe::MySQL;
 
-$VERSION = "3.0101";
+$VERSION = "3.0102";
 
 use strict;
 use warnings;

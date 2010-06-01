@@ -5,7 +5,7 @@
 ################################################################################
 package Apache::Voodoo::Session;
 
-$VERSION = "3.0101";
+$VERSION = "3.0102";
 
 use strict;
 use warnings;

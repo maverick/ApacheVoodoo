@@ -1,6 +1,6 @@
 package Apache::Voodoo::Validate::unsigned_decimal;
 
-$VERSION = "3.0101";
+$VERSION = "3.0102";
 
 use strict;
 use warnings;
