@@ -82,7 +82,15 @@ sub new {
 		$self->{json} = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});
 
 		$self->{db_info} = $ac->debug_dbd();
-		my $dbh = DBI->connect(@{$self->{db_info}});
+		my $dbh;
+		eval {
+			$dbh = DBI->connect(@{$self->{db_info}});
+		};
+		if ($@) {
+			warn "Debugging infomation will be lost: $@";
+			$self->{enabled} = 0;
+			return;
+		}
 
 		# From the DBI docs.  This will give use the database server name
 		my $db_type = $dbh->get_info(17);
