@@ -21,19 +21,18 @@ use_ok('Apache::Voodoo::Application') || BAIL_OUT($@);
 my $path = $INC{'Apache/Voodoo/Constants.pm'};
 $path =~ s:(blib/)?lib/Apache/Voodoo/Constants.pm:t:;
 
+my $constants = Apache::Voodoo::Constants->new('test_data::MyConfig');
+$constants->{INSTALL_PATH} = $path;
+
 my $app;
 eval {
 	$app = Apache::Voodoo::Application->new();
 };
-ok($@ =~ /ID is a required parameter/, "ID is a required param");
-
-my $constants = Apache::Voodoo::Constants->new();
-$constants->{INSTALL_PATH} = $path;
+ok($@ =~ /ID is a required parameter/, "ID is a required param") || diag $@;
 
 eval {
 	$app = Apache::Voodoo::Application->new('app_blank');
 };
-print STDERR $@;
 ok(!$@,'ID alone works') || diag($@);
 
 eval {
