@@ -50,7 +50,6 @@ BEGIN {
 		Apache::Voodoo::Install::Pid
 		Apache::Voodoo::Install::Config
 		Apache::Voodoo::Install::Distribution
-		Apache::Voodoo::MyConfig
 		Apache::Voodoo
 	);
 
