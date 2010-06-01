@@ -156,7 +156,7 @@ sub _is_stale {
 	my $self = shift;
 	my $file = shift;
 
-	return 1 unless defined($self->{'cache'}->{$file};
+	return 1 unless defined($self->{'cache'}->{$file});
 	return ($self->{'cache'}->{$file}->{'mtime'} != (stat($file))[9]);
 }
 
