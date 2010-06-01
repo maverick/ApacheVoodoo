@@ -1,3 +1,12 @@
+libapache-voodoo-perl (3.0102-1) lucid; urgency=low
+
+  * Removed dependance on IPC::SharedCache
+  * Fixed the tardis()
+  * Minor refactor of try/catch block for calling a controller so that
+    it could retain profiling information.
+
+ -- Maverick Edwards <maverick@smurfbane.org>  Tue, 1 June 2010 15:17:44 -0500
+
 libapache-voodoo-perl (3.0100-1) lucid; urgency=low
 
   * New upstream release version.
