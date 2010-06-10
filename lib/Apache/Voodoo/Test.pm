@@ -23,22 +23,6 @@ use File::Spec;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Engine;
 
-# FIXME: Hack to prefer my extended version of Pod::WSDL over the
-# one on CPAN.  This will need to stay in place until either the
-# author of Pod::WSDL replys or I release my own version.
-my $PWSDL;
-BEGIN {
-	eval {
-		require Pod::WSDL2;
-		$PWSDL = 'Pod::WSDL2';
-	};
-	if ($@) {
-		eval {
-			require Pod::WSDL;
-			$PWSDL = 'Pod::WSDL';
-		};
-	}
-}
 
 
 sub new {
@@ -66,6 +50,21 @@ sub new {
 
 	$self->{'engine'}->init_app();
 	$self->{'engine'}->begin_run();
+
+	# FIXME: Hack to prefer my extended version of Pod::WSDL over the
+	# one on CPAN.  This will need to stay in place until either the
+	# author of Pod::WSDL replys or I release my own version.
+	$self->{'pwsdl'} = undef;
+	eval {
+		require Pod::WSDL2;
+		$self->{'pwsdl'} = 'Pod::WSDL2';
+	};
+	if ($@) {
+		eval {
+			require Pod::WSDL;
+			$self->{'pwsdl'} = 'Pod::WSDL';
+		};
+	}
 
 	return $self;
 }
@@ -184,9 +183,9 @@ sub get_wsdl {
 	my $self = shift;
 	my $uri = $self->uri(shift);
 
-	unless (ref($PWSDL)) {
+	unless ($self->{pwsdl}) {
 		$self->content_type('text/plain');
-		$self->print("No WSDL generator installed.  Either install POD::WSDL or POD::WSDL2");
+		$self->print("No WSDL generator installed.  Either install Pod::WSDL or Pod::WSDL2");
 		return $self->ok;
 	}
 
@@ -207,7 +206,7 @@ sub get_wsdl {
 	my $wsdl;
 	eval {
 		# FIXME the other part of the Pod::WSDL version hack
-		$wsdl = $PWSDL->new(
+		$wsdl = $self->{'pwsdl'}->new(
 			source   => $m,
 			location => $self->server_url().$uri,
 			pretty   => 1,
@@ -353,7 +352,7 @@ sub not_found    { my $self = shift; $self->{'status'} = "NOT_FOUND";     return
 sub content_type {
 	my $self = shift;
 
-	$self->{'content_type'} = [ @_ ] if scalar(@_);
+	$self->{'content_type'} = shift if scalar(@_);
 	return $self->{'content_type'};
 }
 

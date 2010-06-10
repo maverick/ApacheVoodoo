@@ -113,7 +113,7 @@ sub init_app {
 	}
 
 	$run->{'config'}    = $run->{'app'}->config();
-	$run->{'site_root'} = $self->{mp}->site_root();
+	$run->{'site_root'} = $self->{'mp'}->site_root();
 
 	$self->{'run'} = $run;
 
@@ -309,9 +309,9 @@ sub execute_controllers {
 
 		# these are deprecated.  In the future get them from $p->{mp} or $p->{config}
 		"document_root" => $self->{'run'}->{'config'}->{'template_dir'},
-		"dir_config"    => $self->{mp}->dir_config,
-		"user-agent"    => $self->{mp}->header_in('User-Agent'),
-		"r"             => $self->{mp}->{r},
+		"dir_config"    => $self->{'mp'}->dir_config,
+		"user-agent"    => $self->{'mp'}->header_in('User-Agent'),
+		"r"             => $self->{'mp'}->{'r'},
 		"themes"        => $self->{'run'}->{'config'}->{'themes'}
 	};
 
