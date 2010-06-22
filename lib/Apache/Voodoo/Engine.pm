@@ -191,7 +191,7 @@ sub finish {
 
 	if (defined($self->{'run'}) && defined($self->{'run'}->{'session_handler'})) {
 		if ($self->{'run'}->{'p'}->{'uri'} =~ /\/?logout(_[^\/]+)?$/) {
-			$self->{'mp'}->err_header_out("Set-Cookie" => $self->{'run'}->{'config'}->{'cookie_name'} . "='!'; path=/");
+			$self->{'mp'}->set_cookie($self->{'run'}->{'config'}->{'cookie_name'},'!','now');
 			$self->{'run'}->{'session_handler'}->destroy();
 		}
 		else {
