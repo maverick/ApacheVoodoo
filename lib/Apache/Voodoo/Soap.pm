@@ -6,6 +6,8 @@ use strict;
 use warnings;
 
 use SOAP::Transport::HTTP;
+use Data::Structure::Util qw(unbless);
+
 
 # FIXME: Hack to prefer my extended version of Pod::WSDL over the
 # one on CPAN.  This will need to stay in place until either the
@@ -69,20 +71,20 @@ sub handler {
 	}
 
 	my $return;
-	if ($self->{mp}->is_get() && $r->unparsed_uri =~ /\?wsdl$/) {
+	if ($self->{'mp'}->is_get() && $r->unparsed_uri =~ /\?wsdl$/) {
 		my $uri = $self->{'mp'}->uri();
 
 		$uri =~ s/^\///;
 		$uri =~ s/\/$//;
 
 		# FIXME hack.  Shouldn't be looking in there to get this
-		unless ($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}) {
-			return $self->{mp}->not_found();
+		unless ($self->{'engine'}->_app->{'controllers'}->{$uri}) {
+			return $self->{'mp'}->not_found();
 		}
 
-		my $m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri});
+		my $m = ref($self->{'engine'}->_app->{'controllers'}->{$uri});
 		if ($m eq "Apache::Voodoo::Loader::Dynamic") {
-			$m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}->{'object'});
+			$m = ref($self->{'engine'}->_app->{'controllers'}->{$uri}->{'object'});
 		}
 		# FIXME here ends the hackery
 
@@ -91,16 +93,16 @@ sub handler {
 			# FIXME the other part of the Pod::WSDL version hack
 			$wsdl = $PWSDL->new(
 				source   => $m,
-				location => $self->{mp}->server_url().$uri,
+				location => $self->{'mp'}->server_url().$uri,
 				pretty   => 1,
 				withDocumentation => 1
 			);
-			$wsdl->targetNS($self->{mp}->server_url());
+			$wsdl->targetNS($self->{'mp'}->server_url());
 		};
 		if ($@) {
 			$self->{'mp'}->content_type('text/plain');
 			my $s = "Error generating WSDL:\n\n$@";
-			$s =~ s/\^J/\n/g;
+			$s =~ s/\cJ/\n/g;
 			$self->{'mp'}->print($s);
 		}
 		else {
@@ -109,23 +111,25 @@ sub handler {
 		}
 
 		$self->{'mp'}->flush();
-		$return = $self->{mp}->ok;
+		$return = $self->{'mp'}->ok;
 	}
 	else {
 		$return = $self->{'soap'}->handle($r);
 	}
 
-	$self->{'engine'}->finish($self->{status});
+	$self->{'engine'}->finish($self->{'status'});
 
-	return $self->{status};
+	return $self->{'status'};
 }
 
 sub handle_request {
-	my $self = shift;
+	my $self   = shift;
+	my @params = @_;
 
 	my $params = {};
 	my $c=0;
-	foreach (@_) {
+	foreach (@params) {
+		$_ = unbless($_) if $self->{'engine'}->{'config'}->{'soap_unbless'};
 		if (ref($_) eq "HASH") {
 			while (my ($k,$v) = each %{$_}) {
 				$params->{$k} = $v;
@@ -151,8 +155,8 @@ sub handle_request {
 
 	unless (-e "$filename.tmpl" &&
 	        -r "$filename.tmpl") {
-		$self->{status} = $self->{mp}->not_found();
-		$self->_client_fault($self->{mp}->not_found(),'No such service:'.$filename);
+		$self->{'status'} = $self->{'mp'}->not_found();
+		$self->_client_fault($self->{'mp'}->not_found(),'No such service:'.$filename);
 	};
 
 	my $content;
@@ -163,22 +167,22 @@ sub handle_request {
 	};
 	if (my $e = Exception::Class->caught()) {
 		if ($e->isa("Apache::Voodoo::Exception::Application::Redirect")) {
-			$self->{status} = $self->{mp}->redirect;
-			$self->_client_fault($self->{mp}->redirect,"Redirected",$e->target);
+			$self->{'status'} = $self->{'mp'}->redirect;
+			$self->_client_fault($self->{'mp'}->redirect,"Redirected",$e->target);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::DisplayError")) {
 			# apparently OK doesn't return 200 anymore, it returns 0.  When used in conjunction
 			# with a SOAP fault that lets the server default it to 500, which isn't what we want.
 			# The server didn't have an internal error, we just didn't like what the client sent.
-			$self->{status} = 200;
+			$self->{'status'} = 200;
 			$self->_client_fault($e->code, $e->error, $e->detail);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::AccessDenied")) {
-			$self->{status} = $self->{mp}->forbidden;
-			$self->_client_fault($self->{mp}->forbidden, $e->error, $e->detail);
+			$self->{'status'} = $self->{'mp'}->forbidden;
+			$self->_client_fault($self->{'mp'}->forbidden, $e->error, $e->detail);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::RawData")) {
-			$self->{status} = $self->{mp}->ok;
+			$self->{'status'} = $self->{'mp'}->ok;
 			return {
 				'error'        => 0,
 				'success'      => 1,
@@ -189,19 +193,19 @@ sub handle_request {
 			};
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::SessionTimeout")) {
-			$self->{status} = $self->{mp}->ok;
+			$self->{'status'} = $self->{'mp'}->ok;
 			$self->_client_fault(700, $e->error, $e->target);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::RunTime") && $self->{'engine'}->is_devel_mode()) {
 			# Apache::Voodoo::Exception::RunTime
 			# Apache::Voodoo::Exception::RunTime::BadCommand
 			# Apache::Voodoo::Exception::RunTime::BadReturn
-			$self->{status} = $self->{mp}->server_error;
-			$self->_server_fault($self->{mp}->server_error, $e->error, Apache::Voodoo::Exception::parse_stack_trace($e->trace));
+			$self->{'status'} = $self->{'mp'}->server_error;
+			$self->_server_fault($self->{'mp'}->server_error, $e->error, Apache::Voodoo::Exception::parse_stack_trace($e->trace));
 		}
 		elsif ($e->isa("Exception::Class::DBI") && $self->{'engine'}->is_devel_mode()) {
-			$self->{status} = $self->{mp}->server_error;
-			$self->_server_fault($self->{mp}->server_error, $@->description, {
+			$self->{'status'} = $self->{'mp'}->server_error;
+			$self->_server_fault($self->{'mp'}->server_error, $@->description, {
 				"message" => $@->errstr,
 				"package" => $@->package,
 				"line"    => $@->line,
@@ -209,16 +213,16 @@ sub handle_request {
 			});
 		}
 		elsif ($self->{'engine'}->is_devel_mode()) {
-			$self->{status} = $self->{mp}->server_error;
-			$self->_server_fault($self->{mp}->server_error, ref($e)?$e->error:"$e");
+			$self->{'status'} = $self->{'mp'}->server_error;
+			$self->_server_fault($self->{'mp'}->server_error, ref($e)?$e->error:"$e");
 		}
 		else {
-			$self->{status} = $self->{mp}->server_error;
-			$self->_server_fault($self->{mp}->server_error, "Internal Server Error");
+			$self->{'status'} = $self->{'mp'}->server_error;
+			$self->_server_fault($self->{'mp'}->server_error, "Internal Server Error");
 		}
 	}
 
-	$self->{status} = $self->{mp}->ok;
+	$self->{'status'} = $self->{'mp'}->ok;
 	return $content;
 }
 
@@ -239,15 +243,15 @@ sub _make_fault {
 
 	my %msg;
 	if (defined($c)) {
-		$msg{faultcode} = $t.'.'.$c;
+		$msg{'faultcode'} = $t.'.'.$c;
 	}
 	else {
-		$msg{faultcode} = $t;
+		$msg{'faultcode'} = $t;
 	}
 
-	warn($msg{faultcode});
-	$msg{faultstring} = $s;
-	$msg{faultdetail} = $d if (defined($d));
+	warn($msg{'faultcode'});
+	$msg{'faultstring'} = $s;
+	$msg{'faultdetail'} = $d if (defined($d));
 
 	die SOAP::Fault->new(%msg);
 }

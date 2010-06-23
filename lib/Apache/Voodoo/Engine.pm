@@ -22,15 +22,9 @@ use Exception::Class::DBI;
 # myself that this is STDERR on god's own steroids so I can sleep at night.
 our $debug;
 
-our $i_am_a_singleton;
-
 sub new {
 	my $class = shift;
 	my %opts  = @_;
-
-	if (ref($i_am_a_singleton)) {
-		return $i_am_a_singleton;
-	}
 
 	my $self = {};
 	bless $self, $class;
@@ -53,8 +47,6 @@ sub new {
 		}
 	};
 
-	$i_am_a_singleton = $self;
-
 	return $self;
 }
 
@@ -73,7 +65,7 @@ sub get_apps {
 
 sub is_devel_mode {
 	my $self = shift;
-	return ($self->{'run'}->{'config'}->{'devel_mode'})?1:0;
+	return ($self->_app->config->{'devel_mode'})?1:0;
 }
 
 sub set_request {
@@ -86,6 +78,8 @@ sub init_app {
 
 	my $id = shift || $self->{'mp'}->get_app_id();
 
+	$self->{'app_id'} = $id;
+
 	unless (defined($id)) {
 		Apache::Voodoo::Exception::Application->throw(
 			"PerlSetVar ID not present in configuration.  Giving up."
@@ -94,28 +88,19 @@ sub init_app {
 
 	# app exists?
 	unless ($self->valid_app($id)) {
-		delete $self->{'run'};
 		Apache::Voodoo::Exception::Application->throw(
 			"Application id '$id' unknown. Valid ids are: ".join(",",$self->get_apps())
 		);
 	}
 
-	my $run = {};
-	$run->{'app_id'} = $id;
-	$run->{'app'}    = $self->{'apps'}->{$id};
-
-	if ($run->{'app'}->{'dynamic_loading'}) {
-		$run->{'app'}->refresh();
+	if ($self->_app->{'dynamic_loading'}) {
+		$self->_app->refresh();
 	}
 
-	if ($run->{'app'}->{'DEAD'}) {
+	if ($self->_app->{'DEAD'}) {
 		Apache::Voodoo::Exception::Application->throw("Application $id failed to load.");
 	}
 
-	$run->{'config'}    = $run->{'app'}->config();
-	$run->{'site_root'} = $self->{'mp'}->site_root();
-
-	$self->{'run'} = $run;
 
 	return 1;
 }
@@ -123,21 +108,18 @@ sub init_app {
 sub begin_run {
 	my $self = shift;
 
-	my $run = $self->{'run'};
-	my $app = $run->{'app'};
-
 	# setup debugging
-	$debug = $app->{'debug_handler'};
+	$debug = $self->_app->{'debug_handler'};
 	$debug->init($self->{'mp'});
 	$debug->mark(Time::HiRes::time,"START");
 
-	$run->{'session_handler'} = $self->attach_session();
-	$run->{'session'} = $run->{'session_handler'}->session;
+	$self->{'session_handler'} = $self->attach_session();
+	$self->{'session'} = $self->{'session_handler'}->session;
 
-	$debug->session_id($run->{'session_handler'}->{'id'});
+	$debug->session_id($self->{'session_handler'}->{'id'});
 	$debug->mark(Time::HiRes::time,'Session Attachment');
 
-	$run->{'dbh'} = $self->attach_db();
+	$self->{'dbh'} = $self->attach_db();
 
 	$debug->mark(Time::HiRes::time,'DB Connect');
 
@@ -148,7 +130,7 @@ sub attach_db {
 	my $self = shift;
 
 	my $db = undef;
-	foreach (@{$self->{'run'}->{'app'}->databases}) {
+	foreach (@{$self->_app->databases}) {
 		eval {
 			$db = DBI->connect_cached(@{$_});
 		};
@@ -163,7 +145,7 @@ sub attach_db {
 sub parse_params {
 	my $self = shift;
 
-	my $params = $self->{mp}->parse_params($self->{'run'}->{'config'}->{'upload_size_max'});
+	my $params = $self->{mp}->parse_params($self->_app->config->{'upload_size_max'});
 	unless (ref($params)) {
 		Apache::Voodoo::Exception::ParamParse->throw($params);
 	}
@@ -178,7 +160,7 @@ sub status {
 	my $status = shift;
 
 	if (defined($debug)) {
-		$debug->session($self->{'run'}->{'session'});
+		$debug->session($self->{'session'});
 		$debug->status($status);
 	}
 }
@@ -189,13 +171,13 @@ sub finish {
 
 	$self->status($status);
 
-	if (defined($self->{'run'}) && defined($self->{'run'}->{'session_handler'})) {
-		if ($self->{'run'}->{'p'}->{'uri'} =~ /\/?logout(_[^\/]+)?$/) {
-			$self->{'mp'}->set_cookie($self->{'run'}->{'config'}->{'cookie_name'},'!','now');
-			$self->{'run'}->{'session_handler'}->destroy();
+	if (defined($self->_app) && defined($self->{'session_handler'})) {
+		if ($self->{'p'}->{'uri'} =~ /\/?logout(_[^\/]+)?$/) {
+			$self->{'mp'}->set_cookie($self->_app->config->{'cookie_name'},'!','now');
+			$self->{'session_handler'}->destroy();
 		}
 		else {
-			$self->{'run'}->{'session_handler'}->disconnect();
+			$self->{'session_handler'}->disconnect();
 		}
 	}
 
@@ -204,17 +186,19 @@ sub finish {
 		$debug->shutdown();
 	}
 
-	delete $self->{'run'};
+	delete $self->{'app_id'};
+	delete $self->{'session_handler'};
+	delete $self->{'p'};
+	delete $self->{'dbh'};
 }
 
 sub attach_session {
 	my $self = shift;
 
-	my $app  = $self->{'run'}->{'app'};
-	my $conf = $self->{'run'}->{'config'};
+	my $conf = $self->_app->config;
 
 	my $session_id = $self->{'mp'}->get_cookie($conf->{'cookie_name'});
-	my $session = $app->{'session_handler'}->attach($session_id,$self->{'run'}->{'dbh'});
+	my $session = $self->_app->{'session_handler'}->attach($session_id,$self->{'dbh'});
 
 	if (!defined($session_id) || $session->id() ne $session_id) {
 		# This is a new session, or there was an old cookie from a previous sesion,
@@ -242,7 +226,7 @@ sub history_capture {
 	my $uri    = shift;
 	my $params = shift;
 
-	my $session = $self->{'run'}->{'session'};
+	my $session = $self->{'session'};
 
 	$uri = "/".$uri if $uri !~ /^\//;
 
@@ -291,28 +275,27 @@ sub execute_controllers {
 	$uri =~ s/^\///;
 	$debug->url($uri);
 
-	my $run = $self->{'run'};
-	my $app = $self->{'run'}->{'app'};
+	my $app = $self->_app;
 
 	my $template_conf = $app->resolve_conf_section($uri);
 
 	$debug->mark(Time::HiRes::time,"config section resolution");
 	$debug->template_conf($template_conf);
 
-	$self->{'run'}->{'p'} = {
-		"dbh"           => $self->{'run'}->{'dbh'},
+	$self->{'p'} = {
+		"dbh"           => $self->{'dbh'},
 		"params"        => $params,
-		"session"       => $self->{'run'}->{'session'},
+		"session"       => $self->{'session'},
 		"template_conf" => $template_conf,
 		"mp"            => $self->{'mp'},
 		"uri"           => $uri,
 
 		# these are deprecated.  In the future get them from $p->{mp} or $p->{config}
-		"document_root" => $self->{'run'}->{'config'}->{'template_dir'},
+		"document_root" => $self->_app->config->{'template_dir'},
 		"dir_config"    => $self->{'mp'}->dir_config,
 		"user-agent"    => $self->{'mp'}->header_in('User-Agent'),
 		"r"             => $self->{'mp'}->{'r'},
-		"themes"        => $self->{'run'}->{'config'}->{'themes'}
+		"themes"        => $self->_app->config->{'themes'}
 	};
 
 	my $template_params;
@@ -330,7 +313,7 @@ sub execute_controllers {
 
 			my $return;
 			eval {
-				$return = $obj->$method($self->{'run'}->{'p'});
+				$return = $obj->$method($self->{'p'});
 			};
 
 			$debug->mark(Time::HiRes::time,"handler for ".$c->[0]." ".$c->[1]);
@@ -373,7 +356,7 @@ sub execute_controllers {
 				);
 			}
 
-			last if $self->{'run'}->{'p'}->{'_stop_chain_'};
+			last if $self->{'p'}->{'_stop_chain_'};
 		}
 	}
 
@@ -385,28 +368,28 @@ sub execute_view {
 	my $content = shift;
 
 	my $view;
-	if (defined($self->{'run'}->{'p'}->{'_view_'}) &&
-		defined($self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'p'}->{'_view_'}})) {
+	if (defined($self->{'p'}->{'_view_'}) &&
+		defined($self->_app->{'views'}->{$self->{'p'}->{'_view_'}})) {
 
-		$view = $self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'p'}->{'_view_'}};
+		$view = $self->_app->{'views'}->{$self->{'p'}->{'_view_'}};
 	}
-	elsif (defined($self->{'run'}->{'template_conf'}->{'default_view'}) &&
-	       defined($self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'template_conf'}->{'default_view'}})) {
+	elsif (defined($self->{'p'}->{'template_conf'}->{'default_view'}) &&
+	       defined($self->_app->{'views'}->{$self->{'p'}->{'template_conf'}->{'default_view'}})) {
 
-		$view = $self->{'run'}->{'app'}->{'views'}->{$self->{'run'}->{'template_conf'}->{'default_view'}};
+		$view = $self->_app->{'views'}->{$self->{'p'}->{'template_conf'}->{'default_view'}};
 	}
 	else {
-		$view = $self->{'run'}->{'app'}->{'views'}->{'HTML'};
+		$view = $self->_app->{'views'}->{'HTML'};
 	}
 
-	$view->begin($self->{'run'}->{'p'});
+	$view->begin($self->{'p'});
 
 	if (blessed($content) && $content->can('rethrow')) {
 		$view->exception($content);
 	}
 	else {
 		# pack up the params. note the presidence: module overrides template_conf
-		$view->params($self->{'run'}->{'template_conf'});
+		$view->params($self->{'p'}->{'template_conf'});
 		$view->params($content);
 	}
 
@@ -495,12 +478,20 @@ sub _adjust_url {
 	my $self = shift;
 	my $uri  = shift;
 
-	if ($self->{'run'}->{'site_root'} ne "/" && $uri =~ /^\//o) {
-		return $self->{'run'}->{'site_root'}.$uri;
+	my $sr = $self->{'mp'}->site_root();
+	if ($sr ne "/" && $uri =~ /^\//o) {
+		return $sr.$uri;
 	}
 	else {
 		return $uri;
 	}
+
+}
+
+sub _app {
+	my $self = shift;
+
+	return $self->{'apps'}->{$self->{'app_id'}};
 
 }
 
