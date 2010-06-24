@@ -22,9 +22,15 @@ use Exception::Class::DBI;
 # myself that this is STDERR on god's own steroids so I can sleep at night.
 our $debug;
 
+our $i_am_a_singleton;
+
 sub new {
 	my $class = shift;
 	my %opts  = @_;
+
+	if (ref($i_am_a_singleton)) {
+		return $i_am_a_singleton;
+	}
 
 	my $self = {};
 	bless $self, $class;
@@ -46,6 +52,8 @@ sub new {
 			Apache::Voodoo::Exception::RunTime->throw(error => join("\n", @_));
 		}
 	};
+
+	$i_am_a_singleton = $self;
 
 	return $self;
 }
@@ -179,17 +187,18 @@ sub finish {
 		else {
 			$self->{'session_handler'}->disconnect();
 		}
-	}
-
-	if (defined($debug)) {
-		$debug->mark(Time::HiRes::time,'END');
-		$debug->shutdown();
+		$debug->mark(Time::HiRes::time,'Session detachment');
 	}
 
 	delete $self->{'app_id'};
 	delete $self->{'session_handler'};
 	delete $self->{'p'};
 	delete $self->{'dbh'};
+
+	if (defined($debug)) {
+		$debug->mark(Time::HiRes::time,'END');
+		$debug->shutdown();
+	}
 }
 
 sub attach_session {
