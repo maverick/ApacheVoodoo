@@ -103,7 +103,7 @@ sub handler {
 	};
 	if (my $e = Exception::Class->caught()) {
 		if ($e->isa("Apache::Voodoo::Exception::Application::Redirect")) {
-			$self->{'engine'}->finish($self->{mp}->redirect);
+			$self->{'engine'}->status($self->{mp}->redirect);
 			return $self->{'mp'}->redirect($e->target());
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::RawData")) {
@@ -111,11 +111,11 @@ sub handler {
 			$self->{mp}->content_type($e->content_type);
 			$self->{mp}->print($e->data);
 
-			$self->{'engine'}->finish($self->{mp}->ok);
+			$self->{'engine'}->status($self->{mp}->ok);
 			return $self->{mp}->ok;
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::Unauthorized")) {
-			$self->{'engine'}->finish($self->{mp}->unauthorized);
+			$self->{'engine'}->status($self->{mp}->unauthorized);
 			return $self->{mp}->unauthorized;
 		}
 		elsif (! $e->isa("Apache::Voodoo::Exception::Application")) {
@@ -125,7 +125,7 @@ sub handler {
 			# Exception::Class::DBI
 			unless ($self->{'engine'}->is_devel_mode()) {
 				warn "$@";
-				$self->{'engine'}->finish($self->{mp}->server_error);
+				$self->{'engine'}->status($self->{mp}->server_error);
 				return $self->{mp}->server_error;
 			}
 
@@ -143,7 +143,7 @@ sub handler {
 	####################
 	# Clean up
 	####################
-	$self->{'engine'}->finish($self->{mp}->ok);
+	$self->{'engine'}->status($self->{mp}->ok);
 	$view->finish();
 
 	return $self->{mp}->ok;

@@ -117,7 +117,7 @@ sub handler {
 		$return = $self->{'soap'}->handle($r);
 	}
 
-	$self->{'engine'}->finish($self->{'status'});
+	$self->{'engine'}->status($self->{'status'});
 
 	return $self->{'status'};
 }

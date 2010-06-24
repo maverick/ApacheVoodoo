@@ -116,6 +116,8 @@ sub init_app {
 sub begin_run {
 	my $self = shift;
 
+	$self->{'mp'}->{'r'}->pool->cleanup_register(\&finish,$self);
+
 	# setup debugging
 	$debug = $self->_app->{'debug_handler'};
 	$debug->init($self->{'mp'});
@@ -168,16 +170,16 @@ sub status {
 	my $status = shift;
 
 	if (defined($debug)) {
-		$debug->session($self->{'session'});
 		$debug->status($status);
 	}
 }
 
 sub finish {
-	my $self   = shift;
-	my $status = shift;
+	my $self = shift;
 
-	$self->status($status);
+	if (defined($debug)) {
+		$debug->session($self->{'session'});
+	}
 
 	if (defined($self->_app) && defined($self->{'session_handler'})) {
 		if ($self->{'p'}->{'uri'} =~ /\/?logout(_[^\/]+)?$/) {
