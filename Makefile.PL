@@ -28,7 +28,8 @@ my %optionals = (
 	'Apache2::Request' => 2.08,
 	'Apache2::Cookie'  => 2.08,
 
-	'SOAP::Lite'       => 0.710,
+	'SOAP::Lite'            => 0.710,
+	'Data::Structure::Util' => 0.15,
 
 	'Pod::WSDL2'       => 0.06,	# prefer my forked version,
 	'Pod::WSDL'        => 0.05,	# fallback to the main one if it's not installed
@@ -89,6 +90,8 @@ else {
 }
 
 if ($required_modules{'SOAP::Lite'}) {
+	$required_modules{'Data::Structure::Util'} = $optionals{'Data::Structure::Util'};
+
 	eval { require Pod::WSDL2; };
 	if ($@) {
 		$required_modules{'Pod::WSDL'}  = $optionals{'Pod::WSDL'};
