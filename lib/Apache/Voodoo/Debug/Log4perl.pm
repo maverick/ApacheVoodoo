@@ -99,7 +99,7 @@ sub mark {
 sub shutdown {
 	my $self = shift;
 
-	my @d = $self->{profile};
+	my @d = @{$self->{profile}};
 	my $last = $#d;
 	if ($last > 0) {
 		my $total_time = $d[$last]->[0] - $d[0]->[0];
