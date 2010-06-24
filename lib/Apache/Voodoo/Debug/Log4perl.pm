@@ -83,12 +83,12 @@ sub exception { my $self = shift; $self->_get_logger->fatal($self->_dumper(@_));
 sub trace     { my $self = shift; $self->_get_logger->trace($self->_dump_trace(@_)); }
 sub table     { my $self = shift; $self->_get_logger->debug($self->_dump_table(@_)); }
 
-sub return_data   { my $self = shift; $self->_get_logger('ReturnData'  )->debug($self->_dumper(@_)); }
-sub url           { my $self = shift; $self->_get_logger('Url'         )->debug($self->_dumper(@_)); }
-sub status        { my $self = shift; $self->_get_logger('Status'      )->debug($self->_dumper(@_)); }
-sub params        { my $self = shift; $self->_get_logger('Params'      )->debug($self->_dumper(@_)); }
-sub template_conf { my $self = shift; $self->_get_logger('TemplateConf')->debug($self->_dumper(@_)); }
-sub session       { my $self = shift; $self->_get_logger('Session'     )->debug($self->_dumper(@_)); }
+sub return_data   { my $self = shift; $self->_get_logger('ReturnData'  )->trace($self->_dumper(@_)); }
+sub url           { my $self = shift; $self->_get_logger('Url'         )->trace($self->_dumper(@_)); }
+sub status        { my $self = shift; $self->_get_logger('Status'      )->trace($self->_dumper(@_)); }
+sub params        { my $self = shift; $self->_get_logger('Params'      )->trace($self->_dumper(@_)); }
+sub template_conf { my $self = shift; $self->_get_logger('TemplateConf')->trace($self->_dumper(@_)); }
+sub session       { my $self = shift; $self->_get_logger('Session'     )->trace($self->_dumper(@_)); }
 
 sub mark {
 	my $self = shift;
