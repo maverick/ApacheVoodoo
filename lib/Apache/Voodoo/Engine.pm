@@ -123,13 +123,14 @@ sub begin_run {
 	$debug->init($self->{'mp'});
 	$debug->mark(Time::HiRes::time,"START");
 
+	$self->{'dbh'} = $self->attach_db();
+
 	$self->{'session_handler'} = $self->attach_session();
 	$self->{'session'} = $self->{'session_handler'}->session;
 
 	$debug->session_id($self->{'session_handler'}->{'id'});
 	$debug->mark(Time::HiRes::time,'Session Attachment');
 
-	$self->{'dbh'} = $self->attach_db();
 
 	$debug->mark(Time::HiRes::time,'DB Connect');
 
@@ -171,13 +172,6 @@ sub status {
 
 	if (defined($debug)) {
 		$debug->status($status);
-	}
-}
-
-sub finish {
-	my $self = shift;
-
-	if (defined($debug)) {
 		$debug->session($self->{'session'});
 	}
 
@@ -191,9 +185,16 @@ sub finish {
 		}
 		$debug->mark(Time::HiRes::time,'Session detachment');
 	}
+}
+
+sub finish {
+	my $self = shift;
+
+	$debug->mark(Time::HiRes::time,'Cleaning up.');
 
 	delete $self->{'app_id'};
 	delete $self->{'session_handler'};
+	delete $self->{'session'};
 	delete $self->{'p'};
 	delete $self->{'dbh'};
 
@@ -209,11 +210,12 @@ sub attach_session {
 	my $conf = $self->_app->config;
 
 	my $session_id = $self->{'mp'}->get_cookie($conf->{'cookie_name'});
+
 	my $session = $self->_app->{'session_handler'}->attach($session_id,$self->{'dbh'});
 
 	if (!defined($session_id) || $session->id() ne $session_id) {
 		# This is a new session, or there was an old cookie from a previous sesion,
-		$self->{'mp'}->set_cookie($conf->{'cookie_name'},$session->{'id'});
+		$self->{'mp'}->set_cookie($conf->{'cookie_name'},$session->id());
 	}
 	elsif ($session->has_expired($conf->{'session_timeout'})) {
 		# the session has expired
