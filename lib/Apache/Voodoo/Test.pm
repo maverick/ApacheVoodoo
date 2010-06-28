@@ -23,8 +23,6 @@ use File::Spec;
 use Apache::Voodoo::Constants;
 use Apache::Voodoo::Engine;
 
-
-
 sub new {
 	my $class = shift;
 	my %opts  = @_;
@@ -193,13 +191,13 @@ sub get_wsdl {
 	# FIXME hack.  Shouldn't be looking in there to get this
 	$uri =~ s/^\/+//;
 
-	unless ($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}) {
+	unless ($self->{'engine'}->_app->{'controllers'}->{$uri}) {
 		return $self->not_found();
 	}
 
-	my $m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri});
+	my $m = ref($self->{'engine'}->_app->{'controllers'}->{$uri});
 	if ($m eq "Apache::Voodoo::Loader::Dynamic") {
-		$m = ref($self->{'engine'}->{'run'}->{'app'}->{'controllers'}->{$uri}->{'object'});
+		$m = ref($self->{'engine'}->_app->{'controllers'}->{$uri}->{'object'});
 	}
 	# FIXME here ends the hackery
 
@@ -228,12 +226,12 @@ sub get_wsdl {
 
 sub get_dbh {
 	my $self = shift;
-	return $self->{'engine'}->{'run'}->{'dbh'};
+	return $self->{'engine'}->{'dbh'};
 }
 
 sub get_session {
 	my $self = shift;
-	return $self->{'engine'}->{'run'}->{'session'};
+	return $self->{'engine'}->{'session'};
 }
 
 sub get_model {
@@ -338,6 +336,11 @@ sub server_url {
 }
 
 sub if_modified_since {
+}
+
+sub register_cleanup {
+	my $self = shift;
+
 }
 
 sub status { return $_[0]->{'status'}; }
