@@ -29,11 +29,10 @@ any scenario where data must be paginated.
 =cut ################################################################################
 package Apache::Voodoo::Pager;
 
-$VERSION = "3.0102";
+$VERSION = "3.0200";
 
 use strict;
 use POSIX qw(ceil);
-use Data::Dumper;
 
 sub new {
 	my $class = shift;

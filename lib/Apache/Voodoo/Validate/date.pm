@@ -1,6 +1,6 @@
 package Apache::Voodoo::Validate::date;
 
-$VERSION = "3.0102";
+$VERSION = "3.0200";
 
 use strict;
 use warnings;

@@ -7,13 +7,12 @@
 ################################################################################
 package Apache::Voodoo::Table;
 
-$VERSION = "3.0102";
+$VERSION = "3.0200";
 
 use strict;
 use warnings;
 
 use base("Apache::Voodoo");
-use Data::Dumper;
 
 use Apache::Voodoo::Validate;
 use Apache::Voodoo::Pager;

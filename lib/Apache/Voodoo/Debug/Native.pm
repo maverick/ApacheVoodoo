@@ -10,7 +10,7 @@
 ################################################################################
 package Apache::Voodoo::Debug::Native;
 
-$VERSION = "3.0102";
+$VERSION = "3.0200";
 
 use strict;
 use warnings;
