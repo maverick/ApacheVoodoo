@@ -136,6 +136,14 @@ sub get_cookie {
 	}
 }
 
+sub register_cleanup {
+	my $self = shift;
+	my $obj  = shift;
+	my $sub  = shift;
+
+	$self->{'r'}->pool->cleanup_register($sub,$obj);
+}
+
 1;
 
 ################################################################################

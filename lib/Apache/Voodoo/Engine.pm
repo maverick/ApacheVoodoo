@@ -116,7 +116,7 @@ sub init_app {
 sub begin_run {
 	my $self = shift;
 
-	$self->{'mp'}->{'r'}->pool->cleanup_register(\&finish,$self);
+	$self->{'mp'}->register_cleanup($self,\&finish);
 
 	# setup debugging
 	$debug = $self->_app->{'debug_handler'};

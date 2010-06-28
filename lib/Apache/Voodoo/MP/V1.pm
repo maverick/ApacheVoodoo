@@ -118,6 +118,14 @@ sub get_cookie {
 	}
 }
 
+sub register_cleanup {
+	my $self = shift;
+	my $obj  = shift;
+	my $sub  = shift;
+
+	$self->{'r'}->register_cleanup(sub { $obj->$sub });
+}
+
 1;
 
 ################################################################################
