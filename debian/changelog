@@ -1,3 +1,15 @@
+libapache-voodoo-perl (3.0200-1) lucid; urgency=low
+
+  * Added dependance on Data::Structure::Util
+  * Moved all the cleanup tasks to an Apache cleanup handler, thus making
+    the system more responsive.
+  * Fixed a glitch in Debug/Log4perl.pm.  The Apache.Voodoo name space works
+    again.
+  * Cleaned up the debug javascript to remove inadvertent use of reserved
+    keywords, and to to be more jslint compliant.
+
+ -- Maverick Edwards <maverick@smurfbane.org>  Tue, 1 June 2010 15:17:44 -0500
+
 libapache-voodoo-perl (3.0102-1) lucid; urgency=low
 
   * Removed dependance on IPC::SharedCache
