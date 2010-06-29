@@ -1,3 +1,15 @@
+3.02 - 6/28/2010
+================
+Added dependance on Data::Structure::Util
+
+Moved all the cleanup tasks to an Apache cleanup handler, thus making the system
+more responsive.
+
+Fixed a glitch in Debug/Log4perl.pm.  The Apache.Voodoo name space works again.
+
+Cleaned up the debug javascript to remove inadvertent use of reserved keywords,
+and to be more jslint compliant.
+
 3.01 - 5/13/2010
 ================
 Added A::V::Test which lets you driving an application outside of Apache so
