@@ -20,4 +20,6 @@ Voodoo/experimental
 ^cover_db
 ^cover.sh
 ^experimental
-
+^t/app_newstyle/C/a/controller.pm$
+^t/app_newstyle/M/a/model.pm$
+^t/app_newstyle/M/a/view.pm$
