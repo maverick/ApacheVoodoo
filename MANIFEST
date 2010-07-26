@@ -81,16 +81,13 @@ README
 t/00-distribution.t
 t/01-check_compilation.t
 t/app_blank/etc/voodoo.conf
-t/app_newstyle/C/a/controller.pm
 t/app_newstyle/C/a/controller.pm.new
 t/app_newstyle/C/a/controller.pm.orig
 t/app_newstyle/etc/voodoo.conf
-t/app_newstyle/M/a/model.pm
 t/app_newstyle/M/a/model.pm.new
 t/app_newstyle/M/a/model.pm.orig
 t/app_newstyle/skeleton.pm
 t/app_newstyle/test_module.pm
-t/app_newstyle/V/a/view.pm
 t/app_newstyle/V/a/view.pm.orig
 t/app_oldstyle/etc/voodoo.conf
 t/Application-ConfigParser.t
