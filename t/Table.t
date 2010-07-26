@@ -1,14 +1,22 @@
 use strict;
 use warnings;
 
+BEGIN {
+    # fall back to is_deeply if we don't have Test::Differences
+    if (!eval q{ use Test::Differences; 1 }) {
+        *eq_or_diff = \&is_deeply;
+    }
+}
+
 use Data::Dumper;
-use Test::More tests => 17;
+use Test::More tests => 23;
 
 use_ok('File::Temp');
 use_ok('DBI');
 use_ok('Apache::Voodoo::Exception');
 use_ok('Apache::Voodoo::Table');
 use_ok('Apache::Voodoo::Table::Probe');
+
 
 ################################################################################
 # Tests related to checking the config syntax
@@ -32,36 +40,6 @@ eval {
 	});
 };
 
-my $avt_table_config = {
-	table => 'avt_table',
-	primary_key => 'id',
-	columns => {
-		id     => { type => 'unsigned_int', bytes => 4, required => 1 },
-		avt_ref_table_id => { 
-			type => 'unsigned_int', 
-			bytes => 4, 
-			required => 1,
-			references => {
-				table => 'avt_ref_table',
-				primary_key => 'id',
-				columns => ['name'],
-				select_label => 'name'
-			}
-		},
-		a_date     => { type => 'date' },
-		a_time     => { type => 'time' },
-		a_datetime => { type => 'datetime' },
-		a_varchar  => { type => 'varchar', length => 128},
-		a_text     => { type => 'text'}
-	},
-	'list_options' => {
-		'default_sort' => 'varchar',
-		'sort' => {
-			'varchar' => 'a_varchar',
-			'text' => 'a_text'
-		}
-	}
-};
 
 $e = Exception::Class->caught();
 isa_ok($e,"Apache::Voodoo::Exception::RunTime::BadConfig");
@@ -78,12 +56,13 @@ SKIP: {
 	};
 	skip "Can't connect to mysql test database on localhost, skipping these tests",6 if $@;
 
-	setup_db(   'MySQL',$dbh);
-	table_tests('MySQL',$dbh);
-	probe_tests('MySQL',$dbh);
+	setup_db(        'MySQL',$dbh);
+	simple_view_list('MySQL',$dbh);
+	complex_view_list('MySQL',$dbh);
+	probe_tests(     'MySQL',$dbh);
 	my $res = $dbh->selectall_arrayref("SHOW TABLES LIKE 'avt_%'");
 	foreach (@{$res}) {
-		$dbh->do("DROP TABLE $_->[0]");
+#		$dbh->do("DROP TABLE $_->[0]");
 	}
 	$dbh->disconnect;
 }
@@ -95,8 +74,9 @@ SKIP: {
 	my ($fh,$filename) = File::Temp::tmpnam();
 	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: ".DBI->errstr);
 
-	setup_db(   'SQLite',$dbh);
-	table_tests('SQLite',$dbh);
+	setup_db(         'SQLite',$dbh);
+	simple_view_list( 'SQLite',$dbh);
+	complex_view_list('SQLite',$dbh);
 	$dbh->disconnect;
 	unlink($filename);
 }
@@ -119,13 +99,42 @@ sub setup_db {
 	close(F);
 }
 
-sub table_tests {
+sub simple_view_list {
 	my $type = shift;
 	my $dbh  = shift;
 
+	my $table = Apache::Voodoo::Table->new({
+		table => 'avt_table',
+		primary_key => 'id',
+		columns => {
+			id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+			avt_ref_table_id => { 
+				type => 'unsigned_int', 
+				bytes => 4, 
+				required => 1,
+				references => {
+					table => 'avt_ref_table',
+					primary_key => 'id',
+					columns => ['name'],
+					select_label => 'name'
+				}
+			},
+			a_date     => { type => 'date' },
+			a_time     => { type => 'time' },
+			a_datetime => { type => 'datetime' },
+			a_varchar  => { type => 'varchar', length => 128},
+			a_text     => { type => 'text'}
+		},
+		'list_options' => {
+			'default_sort' => 'varchar',
+			'sort' => {
+				'varchar' => 'a_varchar',
+				'text' => 'a_text'
+			}
+		}
+	});
 
-	my $table = Apache::Voodoo::Table->new($avt_table_config);
-	is_deeply(
+	eq_or_diff(
 		$table->view({dbh => $dbh,'params' => {'id' => 1}}),
 		{
           'a_text' => 'a much larger text string',
@@ -147,7 +156,7 @@ sub table_tests {
 	$e = Exception::Class->caught();
 	isa_ok($e,"Apache::Voodoo::Exception::Application::DisplayError");
 
-	is_deeply(
+	eq_or_diff(
 		$table->list({ dbh => $dbh }),
 		{
 			'PATTERN' => '',
@@ -159,8 +168,8 @@ sub table_tests {
 					'a_varchar' => 'a text string',
 					'avt_ref_table.name' => 'First Value',
 					'a_datetime' => '2000-02-01 12:00:00',
-					'avt_ref_table_id' => 1,
-					'id' => 1,
+					'avt_ref_table_id' => '1',
+					'id' => '1',
 					'a_time' => ' 1:00 PM'
 				},
 				{
@@ -169,8 +178,8 @@ sub table_tests {
 					'a_varchar' => 'another text string',
 					'avt_ref_table.name' => 'Second Value',
 					'a_datetime' => '2010-02-01 14:00:00',
-					'avt_ref_table_id' => 2,
-					'id' => 2,
+					'avt_ref_table_id' => '2',
+					'id' => '2',
 					'a_time' => ' 5:00 PM'
 				},
 				{
@@ -179,18 +188,18 @@ sub table_tests {
 					'a_date' => '03/15/2010',
 					'avt_ref_table.name' => 'Fourth Value',
 					'a_datetime' => '2010-01-01 12:00:00',
-					'avt_ref_table_id' => 4,
-					'id' => 3,
+					'avt_ref_table_id' => '4',
+					'id' => '3',
 					'a_time' => ' 4:00 PM'
 				}
 			],
-			'NUM_MATCHES' => 3,
+			'NUM_MATCHES' => '3',
 			'LIMIT' => []
 		},
 		"($type) list results"
 	);
 
-	is_deeply(
+	eq_or_diff(
 		$table->list({ dbh => $dbh, params => { 'search_a_varchar' => 'a text' }}),
 		{
 			'PATTERN' => '',
@@ -202,17 +211,122 @@ sub table_tests {
 					'a_varchar' => 'a text string',
 					'avt_ref_table.name' => 'First Value',
 					'a_datetime' => '2000-02-01 12:00:00',
-					'avt_ref_table_id' => 1,
-					'id' => 1,
+					'avt_ref_table_id' => '1',
+					'id' => '1',
 					'a_time' => ' 1:00 PM'
 				}
 			],
-			'NUM_MATCHES' => 1,
+			'NUM_MATCHES' => '1',
 			'LIMIT' => []
 		},
 		"($type) list search results"
 	);
 
+}
+
+sub complex_view_list {
+	my $type = shift;
+	my $dbh  = shift;
+
+	my $table = Apache::Voodoo::Table->new({
+		table => 'avt_table',
+		primary_key => 'id',
+		columns => {
+			id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+			a_date     => { type => 'date' },
+			a_time     => { type => 'time' },
+			a_datetime => { type => 'datetime' },
+			a_varchar  => { type => 'varchar', length => 128},
+			a_text     => { type => 'text'}
+		},
+		joins => [
+			{
+				table       => 'avt_ref_table',
+				foreign_key => 'avt_ref_table_id',
+				primary_key => 'id',
+				columns     => ['name']
+			},
+			{
+				table       => 'avt_ref_table',
+				alias       => 'second_ref',
+				context     => 'list',
+				foreign_key => 'avt_ref_table_id',
+				primary_key => 'id',
+				columns     => ['name']
+			},
+		],
+		'list_options' => {
+			'default_sort' => 'varchar',
+			'sort' => {
+				'varchar' => 'a_varchar',
+				'text' => 'a_text'
+			}
+		}
+	});
+
+	eq_or_diff(
+		$table->view({dbh => $dbh,'params' => {'id' => 1}}),
+		{
+          'a_text' => 'a much larger text string',
+          'a_date' => '01/01/2009',
+          'a_varchar' => 'a text string',
+          'a_time' => ' 1:00 PM',
+          'id' => '1',
+          'avt_ref_table.name' => 'First Value',
+          'a_datetime' => '2000-02-01 12:00:00'
+        },
+		"($type) complex view with valid id"
+	);
+
+	my $v;
+	eval {
+		$v = $table->view({dbh => $dbh,'params' => {'id' => 100}});
+	};
+	$e = Exception::Class->caught();
+	isa_ok($e,"Apache::Voodoo::Exception::Application::DisplayError");
+
+	eq_or_diff(
+		$table->list({ dbh => $dbh }),
+		{
+          'PATTERN' => '',
+          'SORT_PARAMS' => 'desc=1&amp;last_sort=varchar&amp;showall=0',
+          'DATA' => [
+                      {
+                        'a_text' => 'a much larger text string',
+                        'a_date' => '01/01/2009',
+                        'a_varchar' => 'a text string',
+                        'second_ref.name' => 'First Value',
+                        'avt_ref_table.name' => 'First Value',
+                        'a_datetime' => '2000-02-01 12:00:00',
+                        'id' => '1',
+                        'a_time' => ' 1:00 PM'
+                      },
+                      {
+                        'a_text' => 'different much longer string',
+                        'a_date' => '01/01/2010',
+                        'a_varchar' => 'another text string',
+                        'second_ref.name' => 'Second Value',
+                        'avt_ref_table.name' => 'Second Value',
+                        'a_datetime' => '2010-02-01 14:00:00',
+                        'id' => '2',
+                        'a_time' => ' 5:00 PM'
+                      },
+                      {
+                        'a_text' => 'consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                        'a_date' => '03/15/2010',
+                        'a_varchar' => 'loren ipsum solor sit amet',
+                        'second_ref.name' => 'Fourth Value',
+                        'avt_ref_table.name' => 'Fourth Value',
+                        'a_datetime' => '2010-01-01 12:00:00',
+                        'id' => '3',
+                        'a_time' => ' 4:00 PM'
+                      }
+                    ],
+          'NUM_MATCHES' => '3',
+          'LIMIT' => []
+        },
+		"($type) complex list results"
+	);
 }
 
 sub probe_tests {

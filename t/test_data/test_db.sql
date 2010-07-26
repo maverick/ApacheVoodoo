@@ -1,14 +1,3 @@
-DROP TABLE IF EXISTS avt_ref_table;
-CREATE TABLE avt_ref_table (
-	id int unsigned not null primary key,
-	name varchar(64)
-);
-
-INSERT INTO avt_ref_table VALUES (1,'First Value');
-INSERT INTO avt_ref_table VALUES (2,'Second Value');
-INSERT INTO avt_ref_table VALUES (3,'Third Value');
-INSERT INTO avt_ref_table VALUES (4,'Fourth Value');
-
 DROP TABLE IF EXISTS avt_table;
 CREATE TABLE avt_table (
     id int unsigned not null primary key,
@@ -20,6 +9,34 @@ CREATE TABLE avt_table (
 	a_varchar varchar(128),
 	a_text text
 );
+
+
+-- so we can test simple foreign key references
+DROP TABLE IF EXISTS avt_ref_table;
+CREATE TABLE avt_ref_table (
+	id int unsigned not null primary key,
+	name varchar(64)
+);
+
+INSERT INTO avt_ref_table VALUES (1,'First Value');
+INSERT INTO avt_ref_table VALUES (2,'Second Value');
+INSERT INTO avt_ref_table VALUES (3,'Third Value');
+INSERT INTO avt_ref_table VALUES (4,'Fourth Value');
+
+
+-- so we can test many to many relationships
+DROP TABLE IF EXISTS avt_xref_table;
+CREATE TABLE avt_xref_table (
+	avt_table_id int unsigned not null,
+	avt_ref_table_id int unsigned not null
+);
+
+INSERT INTO avt_xref_table VALUES (1,1);
+INSERT INTO avt_xref_table VALUES (2,1);
+INSERT INTO avt_xref_table VALUES (2,2);
+INSERT INTO avt_xref_table VALUES (3,1);
+INSERT INTO avt_xref_table VALUES (3,2);
+INSERT INTO avt_xref_table VALUES (3,3);
 
 INSERT INTO avt_table VALUES(1,1,0,'2009-01-01','13:00:00','2000-02-01 12:00:00','a text string',             'a much larger text string');
 INSERT INTO avt_table VALUES(2,2,1,'2010-01-01','17:00:00','2010-02-01 14:00:00','another text string',       'different much longer string');

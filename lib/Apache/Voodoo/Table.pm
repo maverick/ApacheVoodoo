@@ -179,6 +179,10 @@ sub set_configuration {
 		foreach my $j (@{$conf->{'joins'}}) {
 			$j->{'columns'} ||= [];
 
+			if (defined($j->{'extra'}) && ref($j->{'extra'}) ne "ARRAY") {
+				$j->{'extra'} = [ $j->{'extra'} ];
+			}
+
 			foreach (@{$j->{'columns'}}) {
 				$self->{'column_names'}->{$j->{'table'}.'.'.$_} = 1;
 			}
@@ -189,6 +193,7 @@ sub set_configuration {
 			push(@{$self->{$context.'joins'}},
 				{
 					table     => $j->{'table'},
+					alias     => $j->{'alias'} || $j->{'table'},
 					type      => $j->{'type'} || 'LEFT',
 					pkey      => $j->{'primary_key'},
 					fkey      => $j->{'foreign_key'},
@@ -731,19 +736,23 @@ sub list {
 
 	foreach my $join (@{$self->{'joins'}},@{$self->{'list_joins'}}) {
 		my @join_clauses = ();
-		my $join_stmt = "$join->{type} JOIN $join->{'table'} ON ";
 
-		if($join->{'pkey'} and $join->{'fkey'}){
+		my $join_stmt = "$join->{type} JOIN $join->{'table'}";
+		if ($join->{'table'} ne $join->{'alias'}) {
+			$join_stmt .= " AS $join->{'alias'}";
+		}
+		$join_stmt .= " ON ";
+
+		if ($join->{'pkey'} and $join->{'fkey'}) {
 			push(@join_clauses,
 		 		(($join->{'fkey'} =~ /\./) ? $join->{'fkey'} : $self->{'table'} .".". $join->{'fkey'}).
 		 			" = " .
-				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'table'} .".". $join->{'pkey'})
+				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'alias'} .".". $join->{'pkey'})
 			);
 		}
 
-		if($join->{'extra'}){
-			push(@join_clauses, $join->{'extra'}) unless ref $join->{'extra'};
-			push(@join_clauses, @{$join->{'extra'}}) if ref($join->{'extra'}) eq 'ARRAY';
+		if (defined($join->{'extra'})) {
+			push(@join_clauses, @{$join->{'extra'}});
 		}
 
 		next unless scalar @join_clauses;
@@ -754,7 +763,7 @@ sub list {
 				push(@columns,$_);
 			}
 			else {
-				push(@columns,$join->{'table'}.".$_");
+				push(@columns,$join->{'alias'}.".$_");
 			}
 		}
 	}
@@ -978,19 +987,23 @@ sub view {
 
 	foreach my $join (@{$self->{joins}},@{$self->{view_joins}}) {
 		my @join_clauses = ();
-		my $join_stmt = "$join->{type} JOIN $join->{'table'} ON ";
+		my $join_stmt = "$join->{type} JOIN $join->{'table'}";
 
-		if($join->{'pkey'} and $join->{'fkey'}){
+		if ($join->{'table'} ne $join->{'alias'}) {
+			$join_stmt .= " AS $join->{'alias'}";
+		}
+		$join_stmt .= " ON ";
+
+		if ($join->{'pkey'} and $join->{'fkey'}) {
 			push(@join_clauses,
 		 		(($join->{'fkey'} =~ /\./) ? $join->{'fkey'} : $self->{'table'} .".". $join->{'fkey'}).
 		 			" = " .
-				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'table'} .".". $join->{'pkey'})
+				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'alias'} .".". $join->{'pkey'})
 			);
 		}
 
-		if($join->{'extra'}){
-			push(@join_clauses, $join->{'extra'}) unless ref $join->{'extra'};
-			push(@join_clauses, @{$join->{'extra'}}) if ref($join->{'extra'}) eq 'ARRAY';
+		if (defined($join->{'extra'})) {
+			push(@join_clauses, @{$join->{'extra'}});
 		}
 
 		next unless scalar @join_clauses;
@@ -1001,7 +1014,7 @@ sub view {
 				push(@list,$_);
 			}
 			else {
-				push(@list,$join->{'table'}.".$_");
+				push(@list,$join->{'alias'}.".$_");
 			}
 		}
 	}
@@ -1016,7 +1029,6 @@ sub view {
 			$self->{'table'}.$self->{'pkey'} = ?
 			$additional_constraint";
 
-	#$self->debug($select_statement);
 	my $res = $dbh->selectall_arrayref($select_statement,undef,$params->{$self->{'pkey'}});
 
 	my %v;
