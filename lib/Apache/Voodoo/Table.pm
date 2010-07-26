@@ -514,8 +514,14 @@ sub edit {
 
 			# let's figure out what they changed so caller can do something with that info if they want
 			foreach (@{$self->{'columns'}}) {
-				if ($values->{$_} ne $original_values{$_}) {
-					push(@{$self->{'edit_details'}},[$_,$original_values{$_},$values->{$_}]);
+				if (exists($values->{$_})) {
+					if ($values->{$_} ne $original_values{$_}) {
+						push(@{$self->{'edit_details'}},[$_,$original_values{$_},$values->{$_}]);
+					}
+				}
+				else {
+					# val not passed in, but needed for update
+					$values->{$_} = $original_values{$_};
 				}
 			}
 			my $update_statement = "
