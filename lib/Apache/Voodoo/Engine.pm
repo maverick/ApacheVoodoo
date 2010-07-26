@@ -302,9 +302,9 @@ sub execute_controllers {
 		"template_conf" => $template_conf,
 		"mp"            => $self->{'mp'},
 		"uri"           => $uri,
+		"document_root" => $self->_app->config->{'template_dir'},
 
 		# these are deprecated.  In the future get them from $p->{mp} or $p->{config}
-		"document_root" => $self->_app->config->{'template_dir'},
 		"dir_config"    => $self->{'mp'}->dir_config,
 		"user-agent"    => $self->{'mp'}->header_in('User-Agent'),
 		"r"             => $self->{'mp'}->{'r'},
