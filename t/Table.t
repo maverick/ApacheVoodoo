@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Test::More tests => 17;
+use Test::More tests => 19;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -36,7 +36,7 @@ my $avt_table_config = {
 	table => 'avt_table',
 	primary_key => 'id',
 	columns => {
-		id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+		id     => { type => 'unsigned_int', bytes => 4 },
 		avt_ref_table_id => { 
 			type => 'unsigned_int', 
 			bytes => 4, 
@@ -80,6 +80,9 @@ SKIP: {
 
 	setup_db(   'MySQL',$dbh);
 	table_tests('MySQL',$dbh);
+	add_tests(  'MySQL',$dbh);
+	edit_tests( 'MySQL',$dbh);
+
 	probe_tests('MySQL',$dbh);
 	my $res = $dbh->selectall_arrayref("SHOW TABLES LIKE 'avt_%'");
 	foreach (@{$res}) {
@@ -97,6 +100,8 @@ SKIP: {
 
 	setup_db(   'SQLite',$dbh);
 	table_tests('SQLite',$dbh);
+	#add_tests(  'SQLite',$dbh);
+	edit_tests( 'SQLite',$dbh);
 	$dbh->disconnect;
 	unlink($filename);
 }
@@ -122,7 +127,6 @@ sub setup_db {
 sub table_tests {
 	my $type = shift;
 	my $dbh  = shift;
-
 
 	my $table = Apache::Voodoo::Table->new($avt_table_config);
 	is_deeply(
@@ -213,6 +217,63 @@ sub table_tests {
 		"($type) list search results"
 	);
 
+}
+
+sub add_tests {
+	my $type = shift;
+	my $dbh  = shift;
+
+	my $table = Apache::Voodoo::Table->new($avt_table_config);
+
+	my $r = $table->add({
+		'dbh' => $dbh,
+		'params' => {
+			'cm' => 'add',
+			'id' => 5,
+			'a_text' => 'a much larger text string',
+			'a_date' => '01/01/2009',
+			'a_varchar' => 'a text string',
+			'avt_ref_table_id' => 1,
+			'a_datetime' => '2000-02-01 12:00:00',
+			'a_time' => '1:00 PM'
+        }
+	});
+}
+
+sub edit_tests {
+	my $type = shift;
+	my $dbh  = shift;
+
+	my $table = Apache::Voodoo::Table->new($avt_table_config);
+
+	my $r = $table->edit({
+		'dbh' => $dbh,
+		'params' => {
+			'cm' => 'update',
+			'id' => 1,
+			'a_text' => 'a very much larger text string',
+			'a_date' => '01/01/2010',
+			'a_varchar' => 'a updated text string',
+			'avt_ref_table_id' => 2,
+			'a_datetime' => '2010-02-01 12:00:00',
+			'a_time' => '2:00 PM'
+        }
+	});
+
+	is_deeply(
+		$table->view({dbh=>$dbh,params=>{'id' => 1}}),
+		{
+          'a_text' => 'a very much larger text string',
+          'a_date' => '01/01/2010',
+          'a_varchar' => 'a updated text string',
+          'avt_ref_table.name' => 'Second Value',
+          'a_datetime' => '2010-02-01 12:00:00',
+          'avt_ref_table_id' => '2',
+          'id' => '1',
+          'a_time' => ' 2:00 PM'
+        },
+		"($type) basic edit"
+	);
 }
 
 sub probe_tests {
