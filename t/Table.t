@@ -9,7 +9,7 @@ BEGIN {
 }
 
 use Data::Dumper;
-use Test::More tests => 23;
+use Test::More tests => 25;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -39,10 +39,39 @@ eval {
 		}
 	});
 };
-
-
 $e = Exception::Class->caught();
 isa_ok($e,"Apache::Voodoo::Exception::RunTime::BadConfig");
+
+my $simple_table = Apache::Voodoo::Table->new({
+	table => 'avt_table',
+	primary_key => 'id',
+	columns => {
+	id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+		avt_ref_table_id => { 
+			type => 'unsigned_int', 
+			bytes => 4, 
+			required => 1,
+			references => {
+				table => 'avt_ref_table',
+				primary_key => 'id',
+				columns => ['name'],
+				select_label => 'name'
+			}
+		},
+		a_date     => { type => 'date' },
+		a_time     => { type => 'time' },
+		a_datetime => { type => 'datetime' },
+		a_varchar  => { type => 'varchar', length => 128},
+		a_text     => { type => 'text'}
+	},
+	'list_options' => {
+		'default_sort' => 'varchar',
+		'sort' => {
+			'varchar' => 'a_varchar',
+			'text' => 'a_text'
+		}
+	}
+});
 
 my $dbh;
 
@@ -56,13 +85,16 @@ SKIP: {
 	};
 	skip "Can't connect to mysql test database on localhost, skipping these tests",6 if $@;
 
-	setup_db(        'MySQL',$dbh);
-	simple_view_list('MySQL',$dbh);
+	setup_db(         'MySQL',$dbh);
+	simple_view_list( 'MySQL',$dbh);
 	complex_view_list('MySQL',$dbh);
-	probe_tests(     'MySQL',$dbh);
+	add_tests(        'MySQL',$dbh);
+	edit_tests(       'MySQL',$dbh);
+	probe_tests(      'MySQL',$dbh);
+
 	my $res = $dbh->selectall_arrayref("SHOW TABLES LIKE 'avt_%'");
 	foreach (@{$res}) {
-#		$dbh->do("DROP TABLE $_->[0]");
+		$dbh->do("DROP TABLE $_->[0]");
 	}
 	$dbh->disconnect;
 }
@@ -77,6 +109,8 @@ SKIP: {
 	setup_db(         'SQLite',$dbh);
 	simple_view_list( 'SQLite',$dbh);
 	complex_view_list('SQLite',$dbh);
+#	add_tests(        'SQLite',$dbh);
+	edit_tests(       'SQLite',$dbh);
 	$dbh->disconnect;
 	unlink($filename);
 }
@@ -103,39 +137,8 @@ sub simple_view_list {
 	my $type = shift;
 	my $dbh  = shift;
 
-	my $table = Apache::Voodoo::Table->new({
-		table => 'avt_table',
-		primary_key => 'id',
-		columns => {
-			id     => { type => 'unsigned_int', bytes => 4, required => 1 },
-			avt_ref_table_id => { 
-				type => 'unsigned_int', 
-				bytes => 4, 
-				required => 1,
-				references => {
-					table => 'avt_ref_table',
-					primary_key => 'id',
-					columns => ['name'],
-					select_label => 'name'
-				}
-			},
-			a_date     => { type => 'date' },
-			a_time     => { type => 'time' },
-			a_datetime => { type => 'datetime' },
-			a_varchar  => { type => 'varchar', length => 128},
-			a_text     => { type => 'text'}
-		},
-		'list_options' => {
-			'default_sort' => 'varchar',
-			'sort' => {
-				'varchar' => 'a_varchar',
-				'text' => 'a_text'
-			}
-		}
-	});
-
 	eq_or_diff(
-		$table->view({dbh => $dbh,'params' => {'id' => 1}}),
+		$simple_table->view({dbh => $dbh,'params' => {'id' => 1}}),
 		{
           'a_text' => 'a much larger text string',
           'a_date' => '01/01/2009',
@@ -151,13 +154,13 @@ sub simple_view_list {
 
 	my $v;
 	eval {
-		$v = $table->view({dbh => $dbh,'params' => {'id' => 100}});
+		$v = $simple_table->view({dbh => $dbh,'params' => {'id' => 100}});
 	};
 	$e = Exception::Class->caught();
 	isa_ok($e,"Apache::Voodoo::Exception::Application::DisplayError");
 
 	eq_or_diff(
-		$table->list({ dbh => $dbh }),
+		$simple_table->list({ dbh => $dbh }),
 		{
 			'PATTERN' => '',
 			'SORT_PARAMS' => 'desc=1&amp;last_sort=varchar&amp;showall=0',
@@ -200,7 +203,7 @@ sub simple_view_list {
 	);
 
 	eq_or_diff(
-		$table->list({ dbh => $dbh, params => { 'search_a_varchar' => 'a text' }}),
+		$simple_table->list({ dbh => $dbh, params => { 'search_a_varchar' => 'a text' }}),
 		{
 			'PATTERN' => '',
 			'SORT_PARAMS' => 'desc=1&amp;last_sort=varchar&amp;showall=0',
@@ -325,7 +328,59 @@ sub complex_view_list {
           'NUM_MATCHES' => '3',
           'LIMIT' => []
         },
-		"($type) complex list results"
+		"($type) complex list results");
+}
+
+sub add_tests {
+	my $type = shift;
+	my $dbh  = shift;
+
+	my $r = $simple_table->add({
+		'dbh' => $dbh,
+		'params' => {
+			'cm' => 'add',
+			'id' => 5,
+			'a_text' => 'a much larger text string',
+			'a_date' => '01/01/2009',
+			'a_varchar' => 'a text string',
+			'avt_ref_table_id' => 1,
+			'a_datetime' => '2000-02-01 12:00:00',
+			'a_time' => '1:00 PM'
+        }
+	});
+}
+
+sub edit_tests {
+	my $type = shift;
+	my $dbh  = shift;
+
+	my $r = $simple_table->edit({
+		'dbh' => $dbh,
+		'params' => {
+			'cm' => 'update',
+			'id' => 1,
+			'a_text' => 'a very much larger text string',
+			'a_date' => '01/01/2010',
+			'a_varchar' => 'a updated text string',
+			'avt_ref_table_id' => 2,
+			'a_datetime' => '2010-02-01 12:00:00',
+			'a_time' => '2:00 PM'
+        }
+	});
+
+	eq_or_diff(
+		$simple_table->view({dbh=>$dbh,params=>{'id' => 1}}),
+		{
+          'a_text' => 'a very much larger text string',
+          'a_date' => '01/01/2010',
+          'a_varchar' => 'a updated text string',
+          'avt_ref_table.name' => 'Second Value',
+          'a_datetime' => '2010-02-01 12:00:00',
+          'avt_ref_table_id' => '2',
+          'id' => '1',
+          'a_time' => ' 2:00 PM'
+        },
+		"($type) basic edit"
 	);
 }
 

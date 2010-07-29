@@ -393,7 +393,8 @@ sub add {
 	$self->{'add_details'} = [];
 
 	if ($params->{'cm'} eq "add") {
-		my ($values,$errors) = $self->validate_add($p);
+		my $values;
+		($values,$errors) = $self->validate_add($p);
 
 		if (scalar keys %{$errors}) {
 			$errors->{'HAS_ERRORS'} = 1;
@@ -404,10 +405,10 @@ sub add {
 			}
 		}
 		else {
-			# copy clean dates,times into params for insertion
-			foreach (@{$self->{'dates'}},@{$self->{'times'}}) {
-				$values->{$_->{'name'}} = $values->{$_->{'name'}."_CLEAN"};
-			}
+#			# copy clean dates,times into params for insertion
+#			foreach (@{$self->{'dates'}},@{$self->{'times'}}) {
+#				$values->{$_} = $values->{$_."_CLEAN"};
+#			}
 
 			my $c = join(",",          @{$self->{'columns'}});		# the column names
 			my $q = join(",",map {"?"} @{$self->{'columns'}});		# the ? mark placeholders
@@ -459,7 +460,7 @@ sub add {
 sub edit {
 	my $self = shift;
 	my $p    = shift;
-	my $additional_constraint = shift;
+	my $additional_constraint = shift || '';
 
 	$self->{'success'} = 0;
 	$self->{'edit_details'} = [];
@@ -500,7 +501,8 @@ sub edit {
 
 	my $errors = {};
 	if ($params->{'cm'} eq "update") {
-		my ($values,$errors) = $self->validate_edit($p);
+		my $values;
+		($values,$errors) = $self->validate_edit($p);
 
 		if (scalar keys %{$errors}) {
 			$errors->{'has_errors'} = 1;
@@ -513,9 +515,9 @@ sub edit {
 		}
 		else {
 			# copy clean dates,times into params for insertion
-			foreach (@{$self->{'dates'}},@{$self->{'times'}}) {
-				$values->{$_->{'name'}} = $values->{$_->{'name'}."_CLEAN"};
-			}
+#			foreach (@{$self->{'dates'}},@{$self->{'times'}}) {
+#				$values->{$_} = $values->{$_."_CLEAN"};
+#			}
 
 			# let's figure out what they changed so caller can do something with that info if they want
 			foreach (@{$self->{'columns'}}) {
@@ -559,12 +561,12 @@ sub edit {
 
 		# pretty up dates
 		foreach (@{$self->{'dates'}}) {
-			$errors->{$_->{'name'}} = $self->sql_to_date($errors->{$_->{'name'}});
+			$errors->{$_} = $self->sql_to_date($errors->{$_});
 		}
 
 		# pretty up times
 		foreach (@{$self->{'times'}}) {
-			$errors->{$_->{'name'}} = $self->sql_to_time($errors->{$_->{'name'}});
+			$errors->{$_} = $self->sql_to_time($errors->{$_});
 		}
 	}
 
