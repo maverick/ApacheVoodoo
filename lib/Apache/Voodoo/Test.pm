@@ -68,7 +68,7 @@ sub new {
 }
 
 sub make_request {
-	my $self   = shift;
+	my $self = shift;
 
 	$self->set_request();
 
