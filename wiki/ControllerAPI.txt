@@ -1,0 +1,143 @@
+%META:TOPICINFO{author="MaverickEdwards" date="1251732980" format="1.1" version="1.9"}%
+---+ !!Controller API
+%TOC%
+
+---++ Overview
+%STARTSECTION{"overview"}%
+Controllers are loaded by listing the names of the packages inside the =<controllers>= block in the application's =voodoo.conf= file.  Note that the modules names do not contain the base package name. "my_app::C::index" becomes "index", this saves a bunch of typing, but more importantly prevents accidental cross-application module loading.  Despite this, the package still follow perl's conventions for their location in the file system.  =my_app::C::index= would reside in =<ServerRoot>/sites/my_app/code/C/index.pm=.
+
+Each Controller package must inherit from Apache::Voodoo.  This module provides the new() method to make the package a proper object under Voodoo, along with some other minor black magic.
+Inheriting from this module provides access to some essential methods for interacting with Voodoo.
+
+Overriding the =init()= method allows you to the sort of things you would normally do inside of a =new()=. The =init()= is passed 3 things, a reference to =$self=, a hash reference representing the contents of the =voodoo.conf= file, and a hash reference (keyed by package name) of instances of the [[ModelAPI][model objects]].
+
+For example if you have the following in =<ServerRoot>/my_app/etc/voodoo.conf=
+<verbatim>
+<controllers>
+    index
+</controllers>
+</verbatim>
+
+Then inside =<ServerRoot>/my_app/code/C/index.pm= you can have
+<verbatim>
+package my_app::C::index;
+
+use strict;
+use warnings;
+
+use base ("Apache::Voodoo");
+
+sub init {
+    my $self = shift;
+
+    my $config = shift;
+    my $models = shift;
+}
+
+sub handle {
+    my $self = shift;
+    my $p    = shift;
+
+    # hash reference of data suitable for passing to the view
+    return $hash_ref;
+}
+
+1;
+</verbatim>
+
+%ENDSECTION{"overview"}%
+
+=modules= is for all practical purposes just an alias for =controllers= but with one subtle difference.  Packages loaded with the =modules= configuration option *do not* fall under the =C= namespace.  In other words
+<verbatim>
+<modules>
+    index
+</modules>
+</verbatim>
+corresponds to a package named =my_app::index=.  This is here for backwards compatibility with applications written under 2.x versions of Voodoo, and for those who do not wish to use the Model, View, Controller pattern.  Beyond this one difference, the APIs are identical.
+
+---++ URL to Controller Method Mapping
+Voodoo matches URLs to controllers according to two rules.
+
+   * If a controller exists that matches the URL and it has a method named =handle=, it is called. ie. =/some/url/path= would call =my_app::C::some::url::path->handle()=
+   * Otherwise it splits the filename component of the URL at the first underscore and looks for a controller named the second half that contains a method named the first half. ie. =/some/url/foo_path= would call =my_app::C::some::url::path->foo()=
+
+If neither of these rules match, then no controller method is called, and nothing is passed to the view.  In the case of the [[ViewHTML][HTML view]] the contents of the template file are just inserted into the skeleton as is. This allows you to create static content without having to make a controller that does nothing.
+
+The useful side effect of these rules is that any controller methods that have a underscore in them will never match the criteria of either rule.  This allows you to make methods that have no way of accidentally being mapped to a URL by simply adding an underscore to them.
+
+*NOTE* the template file must be present.  Voodoo returns a =404 - File Not Found= error if the requested URL does not have a corresponding =.tmpl= file.
+
+---+++ Examples
+<verbatim>
+# matches first rule
+my_app::C::index->handle        /index
+my_app::C::foo::bar->handle     /foo/bar
+my_app::C::foo::bar_baz->handle /foo/bar_baz
+
+# matches second rule
+my_app::C::foo::bar->qux        /foo/qux_bar
+my_app::C::foo::bar_baz->qux    /foo/qux_bar_baz
+
+# won't match any url as it contains an underscore
+my_app::C::foo::bar->_foo 
+my_app::C::foo::bar->do_something      
+</verbatim>
+
+---++ How the Controllers are called
+Controller methods are passed two parameters, the first is a reference to the controller instance, the second is a hash reference which contains a number of things.
+
+---+++ Elements of $p
+---++++ dbh
+DBI object already connected to the database as described in the Voodoo configuration file.
+
+---++++ params
+key / value pairs of all the url POST or GET parameters.  If a given key is present more than
+once in the POST/GET parameters then the value is an array reference of them.
+
+---++++ session
+CPAN:Apache::Session object where you may store any client persistent data.
+
+Voodoo keeps a few of it's own internal variables here as well, so a little bit of care must be taken
+to not clobber them.  'timestamp' and 'history' are reserved, look but don't touch.
+
+---++++ template_conf
+Contents of the matching template_conf section(s) in the Voodoo configuration file.
+
+---++++ uri
+/the/current/url/minus/the/server.com/part/and/parameters
+
+---++++ mp
+An instance of Apache::Voodoo::MP, which is essentially a mod_perl version agnostic wrapper for some of the most common interactions with Apache.
+
+---+++++ request_id()
+Unique ID of the current request
+
+---+++++ dir_config($string)
+Allow you to retrieve any of the PerlSetVar values in the Apache config file.
+
+---+++++ is_get()
+Returns true if the current request is a GET
+
+---+++++ get_app_id()
+Returns the id of the application
+
+---+++++ header_in($key)
+Returns the value of the given HTTP header
+
+---+++++ header_out($key => $value)
+Sets the value of the HTTP header =$key= to =$value=.
+
+---+++++ set_cookie($name,$value[,$expires])
+Set the cookie =$name= to =$value= with and expiration of =$expires=.  If =$expires= is omitted, the cookie never expires.
+
+---+++++ get_cookie($name);
+Get the value of the cookie =$name=.
+
+---+++++ remote_host();
+Get the hostname of the connecting client.  Could return =undef= if DNS resolution is disabled, or fails.
+
+---+++++ remote_ip();
+Get the IP address of the connecting client.
+
+%META:TOPICMOVED{by="MaverickEdwards" date="1244559756" from="Voodoo.PageModules" to="Voodoo.ControllerAPI"}%
+%META:REVCOMMENT{ncomments="0"}%

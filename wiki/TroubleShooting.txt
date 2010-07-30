@@ -1,0 +1,11 @@
+%META:TOPICINFO{author="MaverickEdwards" date="1247501366" format="1.1" reprev="1.1" version="1.1"}%
+%META:TOPICPARENT{name="WebHome"}%
+---+ !!Trouble Shooting Common Problems
+%TOC%
+
+---++ I upgraded from Version 2 to 3 and now I get...
+
+---+++ Not a HASH reference at /Apache/Voodoo/Handler.pm line 4x.
+One of the changed between Version 2 and 3 was moving from the procedural mod_perl calling style to the object one.  If you find that this error occurs on a line which has =$self= in it, then most likely Voodoo isn't being called like a method as it should be.  Check that your perl startup file and the directory configuration blocks in your Apache configuration have been updated to the new syntax.  See the [[MigratingToVersion3#Updating_the_Apache_Configuration][Updating the Apache Configuration]] section of the MigratingToVersion3 doc for details.
+
+%META:REVCOMMENT{ncomments="0"}%

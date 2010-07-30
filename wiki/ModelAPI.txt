@@ -1,0 +1,50 @@
+%META:TOPICINFO{author="MaverickEdwards" date="1250268050" format="1.1" version="1.3"}%
+%META:TOPICPARENT{name="WebHome"}%
+---+ !!Model API
+
+%STARTSECTION{"overview"}%
+Models are loaded by listing the names of the packages inside the =<models>= block in the application's =voodoo.conf= file.  Note that the modules names do not contain the base package name. =my_app::M::index= becomes =index=, this saves a bunch of typing, but more importantly prevents accidental cross-application module loading.  Despite this, the package still follow perl's conventions for their location in the file system.  =my_app::M::index= would reside in =<ServerRoot>/sites/my_app/code/M/index.pm=.
+
+Each Model package must inherit from Apache::Voodoo.  This package provides the new() method to make the package a proper object under Voodoo, along with some other minor black magic.  Inheriting from this module provides access to some essential methods for interacting with Voodoo.
+
+Overriding the =init()= method allows you to the sort of things you would normally do inside of a new. The =init()= is passed 3 things, a reference to =$self=, a hash reference representing the contents of the =voodoo.conf= file, and a references to all the other models.  A reference to the current model object is not included, that's =$self=.
+
+For example if you have the following in =<ServerRoot>/my_app/etc/voodoo.conf=
+<verbatim>
+<models>
+    user
+</models>
+</verbatim>
+
+Then inside =<ServerRoot>/my_app/code/M/user.pm= you can have
+<verbatim>
+package my_app::M::user;
+
+use strict;
+use warnings;
+
+use base ("Apache::Voodoo");
+
+sub init {
+    my $self = shift;
+
+    my $config = shift;
+    my $models = shift;
+}
+
+sub method_a {
+    my $self = shift;
+    
+    my ($whataver,$params,$i,$want) = @_;
+
+    return $whatever_i_want_to;
+}
+
+1;
+</verbatim>
+
+Models are accessed via the [[ControllerAPI][Controllers]] (which you write) and therefore you can pass and return whatever you wish.
+
+%ENDSECTION{"overview"}%
+
+%META:REVCOMMENT{ncomments="0"}%
