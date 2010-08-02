@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 113;
+use Test::More tests => 116;
 use Data::Dumper;
 
 BEGIN {
@@ -453,3 +453,12 @@ eval {
 	$E = Apache::Voodoo::Validate->new();
 };
 ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Empty configuration throws exception 2 ');
+
+my $bit = $B->get_by_name('bit');
+is($bit->required,1,'accessor for required');
+   $bit->required(0);
+is($bit->required,0,'mutator for required');
+($v,$e) = $B->validate({});
+ok(!$e->{MISSING_bit},'bit no longer required');
+
+

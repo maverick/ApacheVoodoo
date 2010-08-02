@@ -41,15 +41,19 @@ sub new {
 		}
 	}
 
-	return $self,@e;
+	$self->{'errors'} = \@e if scalar(@e);
+
+	return $self;
 }
 
-sub valid_sub { return $_[0]->{valid_sub} }
-sub type      { return $_[0]->{type};     }
-sub name      { return $_[0]->{name};     }
-sub required  { return $_[0]->{required}; }
-sub unique    { return $_[0]->{unique};   }
-sub multiple  { return $_[0]->{multiple}; }
+sub type   { return $_[0]->{type};   }
+sub name   { return $_[0]->{name};   }
+sub errors { return $_[0]->{errors}; }
+
+sub valid_sub { $_[0]->{valid_sub} = $_[1] if scalar(@_) > 1; return $_[0]->{valid_sub} }
+sub required  { $_[0]->{required}  = $_[1] if scalar(@_) > 1; return $_[0]->{required}; }
+sub unique    { $_[0]->{unique}    = $_[1] if scalar(@_) > 1; return $_[0]->{unique};   }
+sub multiple  { $_[0]->{multiple}  = $_[1] if scalar(@_) > 1; return $_[0]->{multiple}; }
 
 sub config {
 	my $self = shift;

@@ -54,6 +54,13 @@ sub required  { return map { $_->name } grep { $_->required } @{$_[0]->{fields}}
 sub unique    { return map { $_->name } grep { $_->unique   } @{$_[0]->{fields}} };
 sub multiple  { return map { $_->name } grep { $_->multiple } @{$_[0]->{fields}} };
 
+sub get_by_name {
+	my $self = shift;
+	my $name = shift;
+
+	return (grep { $_->name eq $name } @{$self->{fields}})[0];
+}
+
 sub fields {
 	my $self = shift;
 	my $type = shift;
@@ -178,20 +185,20 @@ sub _configure {
 			next;
 		}
 
-		my ($field,@e);
+		my $field;
 		eval {
 			my $m = 'Apache::Voodoo::Validate::'.$conf->{'type'};
 			my $f = 'Apache/Voodoo/Validate/'.$conf->{'type'}.'.pm';
 			require $f;
-			($field,@e) = $m->new($conf);
+			$field = $m->new($conf);
 		};
 		if ($@) {
 			push(@errors,"Don't know how to handle data type $conf->{'type'}");
 			next;
 		}
 
-		if (defined($e[0])) {
-			push(@errors,@e);
+		if (defined($field->errors)) {
+			push(@errors,$field->errors);
 			next;
 		}
 
