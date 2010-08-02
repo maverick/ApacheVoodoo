@@ -178,12 +178,7 @@ sub status {
 	if (defined($self->_app) && defined($self->{'session_handler'})) {
 		if ($self->{'p'}->{'uri'} =~ /\/?logout(_[^\/]+)?$/) {
 			$self->{'mp'}->set_cookie($self->_app->config->{'cookie_name'},'!','now');
-			$self->{'session_handler'}->destroy();
 		}
-		else {
-			$self->{'session_handler'}->disconnect();
-		}
-		$debug->mark(Time::HiRes::time,'Session detachment');
 	}
 }
 
@@ -191,6 +186,16 @@ sub finish {
 	my $self = shift;
 
 	$debug->mark(Time::HiRes::time,'Cleaning up.');
+
+	if (defined($self->_app) && defined($self->{'session_handler'})) {
+		if ($self->{'p'}->{'uri'} =~ /\/?logout(_[^\/]+)?$/) {
+			$self->{'session_handler'}->destroy();
+		}
+		else {
+			$self->{'session_handler'}->disconnect();
+		}
+		$debug->mark(Time::HiRes::time,'Session detachment');
+	}
 
 	delete $self->{'app_id'};
 	delete $self->{'session_handler'};

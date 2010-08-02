@@ -410,26 +410,32 @@ sub add {
 #				$values->{$_} = $values->{$_."_CLEAN"};
 #			}
 
-			my $c = join(",",          @{$self->{'columns'}});		# the column names
-			my $q = join(",",map {"?"} @{$self->{'columns'}});		# the ? mark placeholders
+			my @cols = grep{ exists($values->{$_})} @{$self->{'columns'}}; # columns with values
 
-			my @v = map { $values->{$_} } @{$self->{'columns'}};	# and the values
+			my $c = join(",",          @cols);              # the column names
+			my $q = join(",",map {"?"} @cols);              # the ? mark placeholders
+
+			my @v = map { $values->{$_} } @cols;           # and the values
 
 			# store the values as they went into the db here incase the caller wants to
 			# use them for something.
-			foreach (@{$self->{'columns'}}) {
+			foreach (@cols) {
 				push(@{$self->{'add_details'}},[$_,'',$values->{$_}]);
 			}
 
 			if ($self->{'pkey_user_supplied'}) {
-				$c .= ",".$self->{'pkey'};
-				$q .= ",?";
+				if(length($c)){
+					$c .= ",";
+					$q .= ",";
+				}
+				$c .= $self->{'pkey'};
+				$q .= "?";
 
 				push(@v,$params->{$self->{'pkey'}});
 			}
 
-
-			my $insert_statement = "INSERT INTO $self->{'table'} ($c) VALUES ($q)";
+			my $insert_statement = "INSERT INTO $self->{'table'}";
+			$insert_statement .= " ($c) VALUES ($q)" if(length($c));
 
 			$dbh->do($insert_statement, undef, @v);
 
