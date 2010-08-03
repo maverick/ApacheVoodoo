@@ -20,7 +20,6 @@ sub new {
 	my $self = {};
 	bless $self,$class;
 
-
 	$self->{'name'} = $config->{'id'};
 	$self->{'type'} = $config->{'type'};
 
