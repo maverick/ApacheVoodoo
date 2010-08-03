@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 116;
+use Test::More tests => 117;
 use Data::Dumper;
 
 BEGIN {
@@ -453,6 +453,11 @@ eval {
 	$E = Apache::Voodoo::Validate->new();
 };
 ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Empty configuration throws exception 2 ');
+
+eval {
+	$E = Apache::Voodoo::Validate->new({ 'foo' => { type=>'unsigned_int', required => 1 }});
+};
+ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Empty missing size on varchar throws exception 1 ');
 
 my $bit = $B->get_by_name('bit');
 is($bit->required,1,'accessor for required');
