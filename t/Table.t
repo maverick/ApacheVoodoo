@@ -9,7 +9,7 @@ BEGIN {
 }
 
 use Data::Dumper;
-use Test::More tests => 25;
+use Test::More tests => 35;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -17,6 +17,37 @@ use_ok('Apache::Voodoo::Exception');
 use_ok('Apache::Voodoo::Table');
 use_ok('Apache::Voodoo::Table::Probe');
 
+
+################################################################################
+# Internal objects
+################################################################################
+my $join = Apache::Voodoo::Table::Join->new({
+	table       => 'foo',
+	foreign_key => 'bar_id',
+	primary_key => 'id',
+	columns     => ['name','foo.thing']
+});
+
+is($join->primary_key,'id',    'primary key accessor');
+is($join->foreign_key,'bar_id','foreign key accessor');
+
+is($join->table,$join->alias,"join alias defaults correctly");
+eq_or_diff([$join->columns],['foo.name','foo.thing'],"column name namespaced correctly");
+is($join->context,'common','context defaults correctly');
+is($join->type,'LEFT','join type defautls correctly');
+is($join->enabled,1,'join enabled by default');
+
+$join->enabled(0);
+is($join->enabled,0,'setter for join enabled works');
+
+my $join = Apache::Voodoo::Table::Join->new({
+	table       => 'avt_ref_table',
+	alias       => 'second_ref',
+	context     => 'list',
+	foreign_key => 'avt_ref_table_id',
+	primary_key => 'id',
+	columns     => ['name']
+});
 
 ################################################################################
 # Tests related to checking the config syntax
@@ -46,7 +77,7 @@ my $simple_table = Apache::Voodoo::Table->new({
 	table => 'avt_table',
 	primary_key => 'id',
 	columns => {
-	id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+		id  => { type => 'unsigned_int', bytes => 4, required => 1 },
 		avt_ref_table_id => { 
 			type => 'unsigned_int', 
 			bytes => 4, 
@@ -78,7 +109,7 @@ my $dbh;
 SKIP: {
 	my $dbh;
 	eval { require DBD::mysql; };
-	skip "DBD::mysql not found, skipping these tests",6 if $@;
+	skip "DBD::mysql not found, skipping these tests",11 if $@;
 
 	eval {
 		$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1});
@@ -94,14 +125,14 @@ SKIP: {
 
 	my $res = $dbh->selectall_arrayref("SHOW TABLES LIKE 'avt_%'");
 	foreach (@{$res}) {
-		$dbh->do("DROP TABLE $_->[0]");
+#		$dbh->do("DROP TABLE $_->[0]");
 	}
 	$dbh->disconnect;
 }
 
 SKIP: {
 	eval { require DBD::SQLite; };
-	skip "DBD::SQLite not found, skipping these tests",4 if $@;
+	skip "DBD::SQLite not found, skipping these tests",8 if $@;
 
 	my ($fh,$filename) = File::Temp::tmpnam();
 	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: ".DBI->errstr);
@@ -109,15 +140,28 @@ SKIP: {
 	setup_db(         'SQLite',$dbh);
 	simple_view_list( 'SQLite',$dbh);
 	complex_view_list('SQLite',$dbh);
-#	add_tests(        'SQLite',$dbh);
+	add_tests(        'SQLite',$dbh);
 	edit_tests(       'SQLite',$dbh);
 	$dbh->disconnect;
 	unlink($filename);
 }
 
 sub setup_db {
-	my $type = shift;
+	my $type = lc(shift);
 	my $dbh  = shift;
+
+	open(F,"t/test_data/test_db_$type.sql") || BAIL_OUT("Can't open test db source file: $!");
+	{
+		local $/ = ';';
+		while (<F>) {
+			$_ =~ s/^\s*//;
+			$_ =~ s/\s*$//;
+			$_ =~ s/;$//;
+			next unless length($_);
+			$dbh->do($_);
+		}
+	}
+	close(F);
 
 	open(F,"t/test_data/test_db.sql") || BAIL_OUT("Can't open test db source file: $!");
 	{
@@ -329,6 +373,48 @@ sub complex_view_list {
           'LIMIT' => []
         },
 		"($type) complex list results");
+
+	my @joins = $table->joins('second_ref');
+	$joins[0]->enabled(0);
+
+	eq_or_diff(
+		$table->list({ dbh => $dbh }),
+		{
+          'PATTERN' => '',
+          'SORT_PARAMS' => 'desc=1&amp;last_sort=varchar&amp;showall=0',
+          'DATA' => [
+                      {
+                        'a_text' => 'a much larger text string',
+                        'a_date' => '01/01/2009',
+                        'a_varchar' => 'a text string',
+                        'avt_ref_table.name' => 'First Value',
+                        'a_datetime' => '2000-02-01 12:00:00',
+                        'id' => '1',
+                        'a_time' => ' 1:00 PM'
+                      },
+                      {
+                        'a_text' => 'different much longer string',
+                        'a_date' => '01/01/2010',
+                        'a_varchar' => 'another text string',
+                        'avt_ref_table.name' => 'Second Value',
+                        'a_datetime' => '2010-02-01 14:00:00',
+                        'id' => '2',
+                        'a_time' => ' 5:00 PM'
+                      },
+                      {
+                        'a_text' => 'consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                        'a_date' => '03/15/2010',
+                        'a_varchar' => 'loren ipsum solor sit amet',
+                        'avt_ref_table.name' => 'Fourth Value',
+                        'a_datetime' => '2010-01-01 12:00:00',
+                        'id' => '3',
+                        'a_time' => ' 4:00 PM'
+                      }
+                    ],
+          'NUM_MATCHES' => '3',
+          'LIMIT' => []
+        },
+		"($type) complex list results with disabled join");
 }
 
 sub add_tests {
@@ -339,7 +425,7 @@ sub add_tests {
 		'dbh' => $dbh,
 		'params' => {
 			'cm' => 'add',
-			'id' => 5,
+			#'id' => 5,
 			'a_text' => 'a much larger text string',
 			'a_date' => '01/01/2009',
 			'a_varchar' => 'a text string',

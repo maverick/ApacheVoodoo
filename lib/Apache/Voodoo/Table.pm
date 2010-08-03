@@ -79,18 +79,6 @@ sub set_configuration {
 		$self->{'table'} = $conf->{'table'};
 	}
 
-	if (!defined($conf->{'primary_key'})) {
-		push(@errors,"missing primary key");
-	}
-	elsif ($conf->{'primary_key'} !~ /^[a-z_]\w*$/) {
-		push(@errors,"bad primary key");
-	}
-	else {
-		$self->{'pkey'} = $conf->{'primary_key'};
-	}
-
-	$self->{'pkey_regexp'} = ($conf->{'primary_key_regexp'})?$conf->{'primary_key_regexp'}:'^\d+$';
-	$self->{'pkey_user_supplied'} = ($conf->{'primary_key_user_supplied'})?1:0;
 	eval {
 		$self->{valid} = Apache::Voodoo::Validate->new($conf->{'columns'});
 	};
@@ -104,6 +92,29 @@ sub set_configuration {
 			$@->rethrow:
 			Apache::Voodoo::Exception::RunTime->throw($@);
 	}
+
+	if (!defined($conf->{'primary_key'})) {
+		push(@errors,"missing primary key");
+	}
+	elsif ($conf->{'primary_key'} !~ /^[a-z_]\w*$/) {
+		push(@errors,"bad primary key");
+	}
+	else {
+		$self->{'pkey'} = $conf->{'primary_key'};
+
+		# If the user supplies the primary key, then it's always required, otherwise it's optional.
+		# This keeps add() from saying the id is missing when it's auto generated.  edit() checks
+		# for it every time anyway outside of A::V::Validate.
+		if ($conf->{'primary_key_user_supplied'}) {
+			$self->{'pkey_user_supplied'} = 1;
+			$self->{valid}->get_by_name($self->{'pkey'})->required(1);
+		}
+		else {
+			$self->{'pkey_user_supplied'} = 0;
+			$self->{valid}->get_by_name($self->{'pkey'})->required(0);
+		}
+	}
+	$self->{'pkey_regexp'} = ($conf->{'primary_key_regexp'})?$conf->{'primary_key_regexp'}:'^\d+$';
 
 	$self->{'column_names'} = {};
 	while (my ($name,$conf) = each %{$conf->{'columns'}}) {
@@ -171,36 +182,15 @@ sub set_configuration {
 		$self->{'group_by'} = $conf->{'table'}.".".$self->{'group_by'} unless ($self->{'group_by'} =~ /\./);
 	}
 
-	$self->{'joins'}      = [];
-	$self->{'list_joins'} = [];
-	$self->{'view_joins'} = [];
-
+	$self->{'joins'} = [];
 	if (ref($conf->{'joins'}) eq "ARRAY") {
 		foreach my $j (@{$conf->{'joins'}}) {
-			$j->{'columns'} ||= [];
+			my $join = Apache::Voodoo::Table::Join->new($j);
+			push(@{$self->{'joins'}},$join);
 
-			if (defined($j->{'extra'}) && ref($j->{'extra'}) ne "ARRAY") {
-				$j->{'extra'} = [ $j->{'extra'} ];
+			foreach ($join->columns) {
+				$self->{'column_names'}->{$_} = 1;
 			}
-
-			foreach (@{$j->{'columns'}}) {
-				$self->{'column_names'}->{$j->{'table'}.'.'.$_} = 1;
-			}
-
-			my $context = lc($j->{'context'}) || '';
-			$context = ($context =~ /^(list|view)$/i)?$context."_":'';
-
-			push(@{$self->{$context.'joins'}},
-				{
-					table     => $j->{'table'},
-					alias     => $j->{'alias'} || $j->{'table'},
-					type      => $j->{'type'} || 'LEFT',
-					pkey      => $j->{'primary_key'},
-					fkey      => $j->{'foreign_key'},
-					columns   => $j->{'columns'},
-					extra     => $j->{'extra'}
-				}
-			);
 		}
 	}
 
@@ -235,6 +225,18 @@ sub table {
 		$self->{'table'} = $_[0];
 	}
 	return $self->{'table'};
+}
+
+sub joins {
+	my $self  = shift;
+	my $alias = shift;
+
+	if ($alias) {
+		return grep { $_->alias eq $alias } @{$self->{joins}};
+	}
+	else {
+		return @{$self->{joins}};
+	}
 }
 
 sub success {
@@ -748,38 +750,29 @@ sub list {
 		}
 	}
 
-	foreach my $join (@{$self->{'joins'}},@{$self->{'list_joins'}}) {
+	foreach my $join (grep { $_->enabled && $_->context =~ /(common|list)/ } @{$self->{'joins'}}) {
 		my @join_clauses = ();
 
-		my $join_stmt = "$join->{type} JOIN $join->{'table'}";
-		if ($join->{'table'} ne $join->{'alias'}) {
-			$join_stmt .= " AS $join->{'alias'}";
+		my $join_stmt = $join->type." JOIN ".$join->table;
+		if ($join->table ne $join->alias) {
+			$join_stmt .= " AS ".$join->alias;
 		}
 		$join_stmt .= " ON ";
 
-		if ($join->{'pkey'} and $join->{'fkey'}) {
+		if ($join->primary_key and $join->foreign_key) {
 			push(@join_clauses,
-		 		(($join->{'fkey'} =~ /\./) ? $join->{'fkey'} : $self->{'table'} .".". $join->{'fkey'}).
+		 		(($join->foreign_key =~ /\./) ? $join->foreign_key : $self->{'table'} .".". $join->foreign_key).
 		 			" = " .
-				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'alias'} .".". $join->{'pkey'})
+				(($join->primary_key =~ /\./) ? $join->primary_key : $join->alias     .".". $join->primary_key)
 			);
 		}
 
-		if (defined($join->{'extra'})) {
-			push(@join_clauses, @{$join->{'extra'}});
-		}
+		push(@join_clauses, $join->extra);
 
 		next unless scalar @join_clauses;
 		push(@joins,$join_stmt . join(" AND ", @join_clauses));
 
-		foreach (@{$join->{'columns'}}) {
-			if ($_ =~ /\./) {
-				push(@columns,$_);
-			}
-			else {
-				push(@columns,$join->{'alias'}.".$_");
-			}
-		}
+		push(@columns,$join->columns);
 	}
 
 	if (defined($self->{'list_search'}->{$limit}) && $self->safe_text($pattern)) {
@@ -999,38 +992,29 @@ sub view {
 		}
 	}
 
-	foreach my $join (@{$self->{joins}},@{$self->{view_joins}}) {
+	foreach my $join (grep { $_->enabled && $_->context =~ /(common|view)/ }  @{$self->{'joins'}}) {
 		my @join_clauses = ();
-		my $join_stmt = "$join->{type} JOIN $join->{'table'}";
 
-		if ($join->{'table'} ne $join->{'alias'}) {
-			$join_stmt .= " AS $join->{'alias'}";
+		my $join_stmt = $join->type." JOIN ".$join->table;
+		if ($join->table ne $join->alias) {
+			$join_stmt .= " AS ".$join->alias;
 		}
 		$join_stmt .= " ON ";
 
-		if ($join->{'pkey'} and $join->{'fkey'}) {
+		if ($join->primary_key and $join->foreign_key) {
 			push(@join_clauses,
-		 		(($join->{'fkey'} =~ /\./) ? $join->{'fkey'} : $self->{'table'} .".". $join->{'fkey'}).
+		 		(($join->foreign_key =~ /\./) ? $join->foreign_key : $self->{'table'} .".". $join->foreign_key).
 		 			" = " .
-				(($join->{'pkey'} =~ /\./) ? $join->{'pkey'} : $join->{'alias'} .".". $join->{'pkey'})
+				(($join->primary_key =~ /\./) ? $join->primary_key : $join->alias     .".". $join->primary_key)
 			);
 		}
 
-		if (defined($join->{'extra'})) {
-			push(@join_clauses, @{$join->{'extra'}});
-		}
+		push(@join_clauses, $join->extra);
 
 		next unless scalar @join_clauses;
 		push(@joins,$join_stmt . join(" AND ", @join_clauses));
 
-		foreach (@{$join->{columns}}) {
-			if ($_ =~ /\./) {
-				push(@list,$_);
-			}
-			else {
-				push(@list,$join->{'alias'}.".$_");
-			}
-		}
+		push(@list,$join->columns);
 	}
 
 	my $select_statement = "
@@ -1118,6 +1102,92 @@ sub get_insert_id {
 }
 
 1;
+
+package Apache::Voodoo::Table::Join;
+
+use strict;
+use warnings;
+
+use base ("Class::Accessor::Fast");
+__PACKAGE__->mk_accessors(   qw(primary_key foreign_key enabled));
+__PACKAGE__->mk_ro_accessors(qw(table alias));
+
+sub new {
+	my $class = shift;
+	my $j     = shift;
+
+	my $self = {};
+	bless $self,$class;
+
+	$self->{'table'} = $j->{'table'};
+	$self->{'alias'} = $j->{'alias'} || $j->{'table'};
+
+	$self->{'columns'} = [];
+	foreach (@{$j->{'columns'}}) {
+		push(@{$self->{'columns'}}, ($_ =~ /\./)?$_:$self->{'alias'}.'.'.$_);
+	}
+
+	$self->{'type'} = 'LEFT';
+	$self->type($j->{'type'});
+
+	$self->{'context'} = 'common';
+	$self->context($j->{'context'});
+
+	$self->{'extra'} = [];
+	$self->extra($j->{'extra'});
+
+	$self->{'primary_key'} = $j->{'primary_key'};
+	$self->{'foreign_key'} = $j->{'foreign_key'};
+
+
+	$self->{'enabled'} = 1;
+
+	return $self;
+}
+
+sub columns {
+	return @{$_[0]->{'columns'}};
+}
+
+sub type {
+	my $self = shift;
+	my $type = shift;
+
+	if (defined($type) && $type =~ /^(left|right|inner|outer|straight)$/i) {
+		$self->{'type'} = uc($type);
+	}
+
+	return $self->{'type'};
+}
+
+sub context {
+	my $self    = shift;
+	my $context = shift;
+
+	if (defined($context) && $context =~ /^(list|view|common)$/i) {
+		$self->{'context'} = lc($context);
+	}
+	return $self->{'context'};
+}
+
+sub extra {
+	my $self  = shift;
+	my $extra = shift;
+
+	if (defined($extra)) {
+		if (ref($extra) eq "ARRAY") {
+			$self->{'extra'} = $extra;
+		}
+		else {
+			$self->{'extra'} = [ $extra ];
+		}
+	}
+
+	return @{$self->{'extra'}};
+}
+
+1;
+
 
 ################################################################################
 # Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
