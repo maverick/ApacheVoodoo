@@ -1,16 +1,3 @@
-DROP TABLE IF EXISTS avt_table;
-CREATE TABLE avt_table (
-    id int unsigned not null primary key,
-	avt_ref_table_id int unsigned not null,
-	a_bit  bit,
-	a_date date,
-	a_time time,
-	a_datetime datetime,
-	a_varchar varchar(128),
-	a_text text
-);
-
-
 -- so we can test simple foreign key references
 DROP TABLE IF EXISTS avt_ref_table;
 CREATE TABLE avt_ref_table (
