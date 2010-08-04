@@ -9,7 +9,7 @@ BEGIN {
 }
 
 use Data::Dumper;
-use Test::More tests => 35;
+use Test::More tests => 37;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -109,7 +109,7 @@ my $dbh;
 SKIP: {
 	my $dbh;
 	eval { require DBD::mysql; };
-	skip "DBD::mysql not found, skipping these tests",11 if $@;
+	skip "DBD::mysql not found, skipping these tests",13 if $@;
 
 	eval {
 		$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1});
@@ -119,20 +119,21 @@ SKIP: {
 	setup_db(         'MySQL',$dbh);
 	simple_view_list( 'MySQL',$dbh);
 	complex_view_list('MySQL',$dbh);
+	nested_join_list( 'MySQL',$dbh);
 	add_tests(        'MySQL',$dbh);
 	edit_tests(       'MySQL',$dbh);
 	probe_tests(      'MySQL',$dbh);
 
 	my $res = $dbh->selectall_arrayref("SHOW TABLES LIKE 'avt_%'");
 	foreach (@{$res}) {
-#		$dbh->do("DROP TABLE $_->[0]");
+		$dbh->do("DROP TABLE $_->[0]");
 	}
 	$dbh->disconnect;
 }
 
 SKIP: {
 	eval { require DBD::SQLite; };
-	skip "DBD::SQLite not found, skipping these tests",8 if $@;
+	skip "DBD::SQLite not found, skipping these tests",9 if $@;
 
 	my ($fh,$filename) = File::Temp::tmpnam();
 	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: ".DBI->errstr);
@@ -268,7 +269,6 @@ sub simple_view_list {
 		},
 		"($type) list search results"
 	);
-
 }
 
 sub complex_view_list {
@@ -415,6 +415,133 @@ sub complex_view_list {
           'LIMIT' => []
         },
 		"($type) complex list results with disabled join");
+
+}
+
+sub nested_join_list {
+	my $type = shift;
+	my $dbh  = shift;
+
+	my $result = {
+		'PATTERN' => '',
+		'SORT_PARAMS' => 'desc=1&amp;last_sort=varchar&amp;showall=0',
+		'DATA' => [
+			{
+				'a_text' => 'a much larger text string',
+				'a_date' => '01/01/2009',
+				'a_varchar' => 'a text string',
+				'sec_ref.name' => undef,
+				'avt_ref_table.name' => 'First Value',
+				'a_datetime' => '2000-02-01 12:00:00',
+				'id' => '1',
+				'a_time' => ' 1:00 PM'
+			},
+			{
+				'a_text' => 'different much longer string',
+				'a_date' => '01/01/2010',
+				'a_varchar' => 'another text string',
+				'sec_ref.name' => 'Second Value',
+				'avt_ref_table.name' => 'First Value',
+				'a_datetime' => '2010-02-01 14:00:00',
+				'id' => '2',
+				'a_time' => ' 5:00 PM'
+			},
+			{
+				'a_text' => 'consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+				'a_date' => '03/15/2010',
+				'a_varchar' => 'loren ipsum solor sit amet',
+				'sec_ref.name' => 'Second Value',
+				'avt_ref_table.name' => 'First Value',
+				'a_datetime' => '2010-01-01 12:00:00',
+				'id' => '3',
+				'a_time' => ' 4:00 PM'
+			}
+		],
+		'NUM_MATCHES' => '3',
+		'LIMIT' => []
+	};
+
+	my $table = Apache::Voodoo::Table->new({
+		table => 'avt_table',
+		primary_key => 'id',
+		columns => {
+			id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+			a_date     => { type => 'date' },
+			a_time     => { type => 'time' },
+			a_datetime => { type => 'datetime' },
+			a_varchar  => { type => 'varchar', length => 128},
+			a_text     => { type => 'text'}
+		},
+		joins => [
+			{
+				table => '(avt_xref_table,avt_ref_table)',
+				extra => [
+					'avt_xref_table.avt_table_id     = avt_table.id',
+					'avt_xref_table.avt_ref_table_id = avt_ref_table.id',
+					'avt_ref_table.name = "First Value"',
+				],
+				columns => ['avt_ref_table.name']
+			},
+			{
+				table => '(avt_xref_table AS sec_xref,avt_ref_table AS sec_ref)',
+				extra => [
+					'sec_xref.avt_table_id     = avt_table.id',
+					'sec_xref.avt_ref_table_id = sec_ref.id',
+					'sec_ref.name = "Second Value"',
+				],
+				columns => ['sec_ref.name']
+			},
+		],
+		'list_options' => {
+			'default_sort' => 'varchar',
+			'sort' => {
+				'varchar' => 'a_varchar',
+				'text' => 'a_text'
+			}
+		}
+	});
+
+	eq_or_diff($table->list({dbh => $dbh}),$result,'nest join style 1');
+
+	my $table = Apache::Voodoo::Table->new({
+		table => 'avt_table',
+		primary_key => 'id',
+		columns => {
+			id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+			a_date     => { type => 'date' },
+			a_time     => { type => 'time' },
+			a_datetime => { type => 'datetime' },
+			a_varchar  => { type => 'varchar', length => 128},
+			a_text     => { type => 'text'}
+		},
+		joins => [
+			{
+				table => '(avt_xref_table JOIN avt_ref_table ON 
+					avt_xref_table.avt_ref_table_id = avt_ref_table.id AND
+					avt_ref_table.name = "First Value")',
+				foreign_key => 'avt_table.id',
+				primary_key => 'avt_xref_table.avt_table_id',
+				columns => ['avt_ref_table.name']
+			},
+			{
+				table => '(avt_xref_table AS sec_xref JOIN avt_ref_table AS sec_ref ON
+					sec_xref.avt_ref_table_id = sec_ref.id AND
+					sec_ref.name = "Second Value")',
+				foreign_key => 'avt_table.id',
+				primary_key => 'sec_xref.avt_table_id',
+				columns => ['sec_ref.name']
+			},
+		],
+		'list_options' => {
+			'default_sort' => 'varchar',
+			'sort' => {
+				'varchar' => 'a_varchar',
+				'text' => 'a_text'
+			}
+		}
+	});
+
+	eq_or_diff($table->list({dbh => $dbh}),$result,'nest join style 2');
 }
 
 sub add_tests {
