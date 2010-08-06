@@ -139,20 +139,13 @@ sub handle_request {
 		$c++;
 	}
 
-	my $uri      = $self->{'mp'}->uri();
-	my $filename = $self->{'mp'}->filename();
-
-	# if the SOAP endpoint happens to overlap with a directory name
-	# libapr "helpfully" appends a / to the end of the uri and filenames.
-	$uri      =~ s/\/$//;
-	$filename =~ s/\/$//;
-
-	$filename =~ s/\.tmpl$//;
+	my $uri = $self->{'mp'}->uri();
+	$uri =~ s/(\/|\.tmpl)*$//;
 	unless ($self->{'run'}->{'method'} eq 'handle') {
-		$filename =~ s/([\w_]+)$/$self->{'run'}->{'method'}_$1/i;
-		$uri      =~ s/([\w_]+)$/$self->{'run'}->{'method'}_$1/i;
+		$uri =~ s/([\w_]+)$/$self->{'run'}->{'method'}_$1/i;
 	}
 
+	my $filename = $self->{'mp'}->document_root().$uri;
 	unless (-e "$filename.tmpl" &&
 	        -r "$filename.tmpl") {
 		$self->{'status'} = $self->{'mp'}->not_found();

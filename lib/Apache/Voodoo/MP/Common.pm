@@ -27,12 +27,13 @@ sub set_request {
 
 sub request_id { return $_[0]->{request_id}; }
 
-sub dir_config { shift()->{r}->dir_config(@_); }
-sub filename   { shift()->{r}->filename(); }
-sub flush      { shift()->{r}->rflush(); }
-sub method     { shift()->{r}->method(@_); }
-sub print      { shift()->{r}->print(@_); }
-sub uri        { shift()->{r}->uri(); }
+sub dir_config    { shift()->{r}->dir_config(@_); }
+sub filename      { shift()->{r}->filename(); }
+sub document_root { shift()->{r}->document_root(); }
+sub flush         { shift()->{r}->rflush(); }
+sub method        { shift()->{r}->method(@_); }
+sub print         { shift()->{r}->print(@_); }
+sub uri           { shift()->{r}->uri(); }
 
 sub is_get     { return ($_[0]->{r}->method eq "GET"); }
 sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
