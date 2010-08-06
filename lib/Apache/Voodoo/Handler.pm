@@ -48,12 +48,10 @@ sub handler {
 		return $self->{'mp'}->redirect($uri."index");
 	}
 
-	my $filename = $self->{'mp'}->filename();
-
 	# remove the optional trailing .tmpl
-	$filename =~ s/\.tmpl$//o;
-	$uri      =~ s/\.tmpl$//o;
+	$uri =~ s/\.tmpl$//o;
 
+	my $filename = $self->{'mp'}->document_root().$uri;
 	unless (-e "$filename.tmpl") { return $self->{mp}->declined;  }
 	unless (-r "$filename.tmpl") { return $self->{mp}->forbidden; }
 
