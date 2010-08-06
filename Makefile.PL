@@ -8,6 +8,7 @@ my %required_modules = (
 	'CPAN'                  => 1.9205,	
 	'Apache::Session'       => 1.6,
 	'Config::General'       => 2.27,
+	'Class::Accessor'       => 0.31,
 	'DBI'                   => 1.609,
 	'Devel::StackTrace'     => 1.20,
 	'Digest::MD5'           => 2.36,
