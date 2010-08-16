@@ -9,7 +9,7 @@ BEGIN {
 }
 
 use Data::Dumper;
-use Test::More tests => 37;
+use Test::More tests => 39;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -57,7 +57,7 @@ eval {
 	$table = Apache::Voodoo::Table->new({ });
 };
 my $e = Exception::Class->caught();
-isa_ok($e,"Apache::Voodoo::Exception::RunTime::BadConfig");
+isa_ok($e,"Apache::Voodoo::Exception::RunTime::BadConfig") || diag($e);
 
 eval {
 	$table = Apache::Voodoo::Table->new({
@@ -100,7 +100,11 @@ my $simple_table = Apache::Voodoo::Table->new({
 		'sort' => {
 			'varchar' => 'a_varchar',
 			'text' => 'a_text'
-		}
+		},
+		search => [
+			['Varchar','a_varchar'],
+			['Text','a_text']
+		]
 	}
 });
 
@@ -109,7 +113,7 @@ my $dbh;
 SKIP: {
 	my $dbh;
 	eval { require DBD::mysql; };
-	skip "DBD::mysql not found, skipping these tests",13 if $@;
+	skip "DBD::mysql not found, skipping these tests",14 if $@;
 
 	eval {
 		$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1});
@@ -133,7 +137,7 @@ SKIP: {
 
 SKIP: {
 	eval { require DBD::SQLite; };
-	skip "DBD::SQLite not found, skipping these tests",9 if $@;
+	skip "DBD::SQLite not found, skipping these tests",10 if $@;
 
 	my ($fh,$filename) = File::Temp::tmpnam();
 	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: ".DBI->errstr);
@@ -242,7 +246,22 @@ sub simple_view_list {
 				}
 			],
 			'NUM_MATCHES' => '3',
-			'LIMIT' => []
+			'LIMIT' => [
+				{
+					'ID' => 'a_varchar',
+					'ID.a_varchar' => 1,
+					'NAME' => 'Varchar',
+					'NAME.Varchar' => 1,
+					'SELECTED' => 0
+				},
+				{
+					'ID' => 'a_text',
+					'ID.a_text' => 1,
+					'NAME' => 'Text',
+					'NAME.Text' => 1,
+					'SELECTED' => 0
+				}
+			]
 		},
 		"($type) list results"
 	);
@@ -265,9 +284,61 @@ sub simple_view_list {
 				}
 			],
 			'NUM_MATCHES' => '1',
-			'LIMIT' => []
+			'LIMIT' => [
+				{
+					'ID' => 'a_varchar',
+					'ID.a_varchar' => 1,
+					'NAME' => 'Varchar',
+					'NAME.Varchar' => 1,
+					'SELECTED' => 0
+				},
+				{
+					'ID' => 'a_text',
+					'ID.a_text' => 1,
+					'NAME' => 'Text',
+					'NAME.Text' => 1,
+					'SELECTED' => 0
+				}
+			]
 		},
 		"($type) list search results"
+	);
+
+	eq_or_diff(
+		$simple_table->list({ dbh => $dbh, params => { 'limit' => 'a_text', 'pattern' => 'elit' }}),
+		{
+			'PATTERN' => 'elit',
+			'SORT_PARAMS' => 'pattern=elit&amp;desc=1&amp;last_sort=varchar&amp;limit=a_text&amp;showall=0',
+			'DATA' => [
+				{
+					'a_text' => 'consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+					'a_date' => '03/15/2010',
+					'a_varchar' => 'loren ipsum solor sit amet',
+					'avt_ref_table.name' => 'Fourth Value',
+					'a_datetime' => '2010-01-01 12:00:00',
+					'avt_ref_table_id' => '4',
+					'id' => '3',
+					'a_time' => ' 4:00 PM'
+				}
+			],
+			'NUM_MATCHES' => '1',
+			'LIMIT' => [
+				{
+					'ID' => 'a_varchar',
+					'NAME' => 'Varchar',
+					'ID.a_varchar' => 1,
+					'SELECTED' => 0,
+					'NAME.Varchar' => 1
+				},
+				{
+					'ID.a_text' => 1,
+					'ID' => 'a_text',
+					'NAME.Text' => 1,
+					'NAME' => 'Text',
+					'SELECTED' => 'SELECTED'
+				}
+			]
+        }
 	);
 }
 
@@ -415,7 +486,6 @@ sub complex_view_list {
           'LIMIT' => []
         },
 		"($type) complex list results with disabled join");
-
 }
 
 sub nested_join_list {

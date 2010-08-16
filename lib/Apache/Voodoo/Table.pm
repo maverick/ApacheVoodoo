@@ -167,20 +167,9 @@ sub set_configuration {
 		}
 	}
 
-	$self->{'default_sort'} = $conf->{'list_options'}->{'default_sort'};
-	while (my ($k,$v) = each %{$conf->{'list_options'}->{'sort'}}) {
-		$self->{'list_sort'}->{$k} = (ref($v) eq "ARRAY")? join(", ",@{$v}) : $v;
-	}
+	$conf->{'list_options'} = {} unless defined $conf->{'list_options'};
 
-	foreach (@{$conf->{'list_options'}->{'search'}}) {
-		push(@{$self->{'list_search_items'}},[$_->[1],$_->[0]]);
-		$self->{'list_search'}->{$_->[1]} = 1;
-	}
-
-	if ($conf->{'list_options'}->{'group_by'}) {
-		$self->{'group_by'} = $conf->{'list_options'}->{'group_by'};
-		$self->{'group_by'} = $conf->{'table'}.".".$self->{'group_by'} unless ($self->{'group_by'} =~ /\./);
-	}
+	$self->{'list_options'} = Apache::Voodoo::Table::ListOptions->new({ %{$conf->{'list_options'}}, table => $conf->{'table'} });
 
 	$self->{'joins'} = [];
 	if (ref($conf->{'joins'}) eq "ARRAY") {
@@ -209,7 +198,7 @@ sub set_configuration {
 				'sort',
 				'last_sort',
 				'desc',
-				@{$conf->{'list_options'}->{'persist'} || []}
+				@{$self->{'list_options'}->persist}
 			]
 		);
 	}
@@ -693,21 +682,8 @@ sub list {
 	my $pattern = $params->{'pattern'};
 	my $limit   = $params->{'limit'};
 
-	my $sort;
-	if (defined($self->{'list_sort'}->{$params->{'sort'}})) {
-		$sort = $params->{'sort'};
-	}
-	else {
-		$sort = $self->{'default_sort'};
-	}
-
-	my $last_sort;
-	if (defined($self->{'list_sort'}->{$params->{'last_sort'}})) {
-		$last_sort = $params->{'last_sort'};
-	}
-	else {
-		$last_sort = $self->{'default_sort'};
-	}
+	my $sort      = $self->{'list_options'}->validate_sort($params->{'sort'});;
+	my $last_sort = $self->{'list_options'}->validate_sort($params->{'last_sort'});;
 
 	my $desc    = $params->{'desc'};
 	my $showall = $params->{'showall'} || 0;
@@ -775,7 +751,7 @@ sub list {
 		push(@columns,$join->columns);
 	}
 
-	if (defined($self->{'list_search'}->{$limit}) && $self->safe_text($pattern)) {
+	if ($self->{'list_options'}->valid_search($limit) && $self->safe_text($pattern)) {
 		push(@search_params,[$limit,'LIKE',$pattern]);
 	}
 
@@ -819,12 +795,15 @@ sub list {
 					push(@values,$clause->[2]);
 				}
 				elsif ($clause->[1] =~ /^(not )?\s*like/i) {
-					if ($dbh->get_info(17) eq "SQLite") {
-						push(@where,"$clause->[0] $clause->[1] ? || '%'");
-					}
-					else {
-						push(@where,"$clause->[0] $clause->[1] concat(?,'%')");
-					}
+					push(@where,"$clause->[0] $clause->[1] ".$self->_db_concat($dbh,"'%'",'?',"'%'"));
+					push(@values,$clause->[2]);
+				}
+				elsif ($clause->[1] =~ /^begins$/i) {
+					push(@where,"$clause->[0] $clause->[1] ".$self->_db_concat($dbh,'?',"'%'"));
+					push(@values,$clause->[2]);
+				}
+				elsif ($clause->[1] =~ /^ends$/i) {
+					push(@where,"$clause->[0] $clause->[1] ".$self->_db_concat($dbh,"'%'",'?'));
 					push(@values,$clause->[2]);
 				}
 			}
@@ -843,8 +822,8 @@ sub list {
 		$where = "\nWHERE\n".join(" AND\n",@where)."\n";
 	}
 
-	if ($self->{'group_by'}) {
-		$where .= "GROUP BY ".$self->{'group_by'}."\n";
+	if ($self->{'list_options'}->group_by) {
+		$where .= "GROUP BY ".$self->{'list_options'}->group_by."\n";
 	}
 
 	# From the DBI docs. This will give us the database server name.
@@ -860,7 +839,7 @@ sub list {
 
 	my $n_desc = $desc;
 	if (defined($sort)) {
-		my $q = $self->{'list_sort'}->{$sort};
+		my $q = $self->{'list_options'}->get_sort($sort);
 
 		# if we're sorting on the same key as before, then we have the chance to go descending
 		if ($sort eq $last_sort) {
@@ -912,10 +891,8 @@ sub list {
 		}
 	);
 
-	$return{'LIMIT'}   = $self->prep_select($self->{'list_search_items'},$limit);
-	$return{'PATTERN'} = $pattern;
-
-
+	$return{'LIMIT'}       = $self->prep_select($self->{'list_options'}->search_items,$limit);
+	$return{'PATTERN'}     = $pattern;
 	$return{'NUM_MATCHES'} = $res_count;
 
 	################################################################################
@@ -1101,6 +1078,21 @@ sub get_insert_id {
 	return $p->{dbh}->last_insert_id(undef,undef,$self->{'table'},$self->{'pkey'});
 }
 
+#
+# returns the db specific sql for concatenate
+#
+sub _db_concat {
+	my $self = shift;
+	my $dbh  = shift;
+
+	if ($dbh->get_info(17) eq "SQLite") {
+		return join(' || ',@_);
+	}
+	else {
+		return "concat(".join(',',@_).')';
+	}
+}
+
 1;
 
 package Apache::Voodoo::Table::Join;
@@ -1188,6 +1180,76 @@ sub extra {
 
 1;
 
+package Apache::Voodoo::Table::ListOptions;
+
+use strict;
+use warnings;
+
+use base ("Class::Accessor::Fast");
+__PACKAGE__->mk_accessors(   qw(default_sort group_by persist));
+__PACKAGE__->mk_ro_accessors(qw(sort search search_items ));
+
+sub new {
+	my $class = shift;
+	my $opts  = shift;
+
+	my $self = {};
+	bless $self,$class;
+
+	while (my ($k,$v) = each %{$opts->{'sort'}}) {
+		$self->{'sort'}->{$k} = (ref($v) eq "ARRAY")? join(", ",@{$v}) : $v;
+	}
+
+	if (defined($self->{'sort'}->{$opts->{'default_sort'}})) {
+		$self->{'default_sort'} = $opts->{'default_sort'};
+	}
+	else {
+		my @s = sort keys %{$self->{'sort'}};
+		$self->{'default_sort'} = $s[0];
+	}
+
+	$self->{'search_items'} = [];
+	$self->{'search'}       = {};
+	foreach (@{$opts->{'search'}}) {
+		push(@{$self->{'search_items'}},[$_->[1],$_->[0]]);
+		$self->{'search'}->{$_->[1]} = 1;
+	}
+
+	if ($opts->{'group_by'}) {
+		$self->{'group_by'} = $opts->{'group_by'};
+		$self->{'group_by'} = $opts->{'table'}.".".$self->{'group_by'} unless ($self->{'group_by'} =~ /\./);
+	}
+
+	$self->{'persist'} = $opts->{'persist'} || [];
+
+	return $self;
+}
+
+sub get_sort {
+	my $self = shift;
+	my $sort = shift;
+
+	return $self->{'sort'}->{$self->validate_sort($sort)};
+}
+
+sub validate_sort {
+	my $self = shift;
+	my $sort = shift;
+
+	if (defined($sort) && defined($self->{'sort'}->{$sort})) {
+		return $sort;
+	}
+	return $self->{'default_sort'};
+}
+
+sub valid_search {
+	my $self   = shift;
+	my $search = shift;
+
+	return (defined($search) && defined($self->{'search'}->{$search}));
+}
+
+1;
 
 ################################################################################
 # Copyright (c) 2005-2010 Steven Edwards (maverick@smurfbane.org).
