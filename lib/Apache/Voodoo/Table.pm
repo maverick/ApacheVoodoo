@@ -1196,16 +1196,19 @@ sub new {
 	my $self = {};
 	bless $self,$class;
 
-	while (my ($k,$v) = each %{$opts->{'sort'}}) {
-		$self->{'sort'}->{$k} = (ref($v) eq "ARRAY")? join(", ",@{$v}) : $v;
-	}
+	$self->{'sort'} = {};
+	if (defined($opts->{'sort'})) {
+		while (my ($k,$v) = each %{$opts->{'sort'}}) {
+			$self->{'sort'}->{$k} = (ref($v) eq "ARRAY")? join(", ",@{$v}) : $v;
+		}
 
-	if (defined($self->{'sort'}->{$opts->{'default_sort'}})) {
-		$self->{'default_sort'} = $opts->{'default_sort'};
-	}
-	else {
-		my @s = sort keys %{$self->{'sort'}};
-		$self->{'default_sort'} = $s[0];
+		if (defined($opts->{'default_sort'}) && defined($self->{'sort'}->{$opts->{'default_sort'}})) {
+			$self->{'default_sort'} = $opts->{'default_sort'};
+		}
+		else {
+			my @s = sort keys %{$self->{'sort'}};
+			$self->{'default_sort'} = $s[0];
+		}
 	}
 
 	$self->{'search_items'} = [];
