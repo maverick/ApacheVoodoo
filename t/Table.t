@@ -9,7 +9,7 @@ BEGIN {
 }
 
 use Data::Dumper;
-use Test::More tests => 41;
+use Test::More tests => 42;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -114,7 +114,7 @@ my $dbh;
 SKIP: {
 	my $dbh;
 	eval { require DBD::mysql; };
-	skip "DBD::mysql not found, skipping these tests",15 if $@;
+	skip "DBD::mysql not found, skipping these tests",16 if $@;
 
 	eval {
 		$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1});
@@ -125,6 +125,7 @@ SKIP: {
 	simple_view_list( 'MySQL',$dbh);
 	complex_view_list('MySQL',$dbh);
 	nested_join_list( 'MySQL',$dbh);
+	having_clause(    'MySQL',$dbh);
 	add_tests(        'MySQL',$dbh);
 	edit_tests(       'MySQL',$dbh);
 	probe_tests(      'MySQL',$dbh);
@@ -671,6 +672,59 @@ sub nested_join_list {
 	});
 
 	eq_or_diff($table->list({dbh => $dbh}),$result,'nest join style 2');
+}
+
+sub having_clause {
+	my $type = shift;
+	my $dbh  = shift;
+
+	my $table = Apache::Voodoo::Table->new({
+		table => 'avt_table',
+		primary_key => 'id',
+		columns => {
+			id     => { type => 'unsigned_int', bytes => 4, required => 1 },
+			a_date     => { type => 'date' },
+			a_time     => { type => 'time' },
+			a_datetime => { type => 'datetime' },
+			a_varchar  => { type => 'varchar', length => 128},
+			a_text     => { type => 'text'}
+		},
+		'list_options' => {
+			'default_sort' => 'varchar',
+			'sort' => {
+				'varchar' => 'a_varchar',
+				'text' => 'a_text'
+			},
+			group_by => 'id'	# SQLite requires a group by to use having
+		}
+	});
+
+	eq_or_diff($table->list({dbh => $dbh},{'having' => 'a_datetime > "2010-01-01"'}),
+	{
+		DATA => [
+			{
+				a_date => '01/01/2010',
+				a_datetime => '2010-02-01 14:00:00',
+				a_text => 'different much longer string',
+				a_time => ' 5:00 PM',
+				a_varchar => 'another text string',
+				id => '2',
+			},
+			{
+				a_date => '03/15/2010',
+				a_datetime => '2010-01-01 12:00:00',
+				a_text => 'consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+				a_time => ' 4:00 PM',
+				a_varchar => 'loren ipsum solor sit amet',
+				id => '3',
+			}
+		],
+		LIMIT => [],
+		NUM_MATCHES => '2',
+		PATTERN => '',
+		SORT_PARAMS => 'desc=1&amp;last_sort=varchar&amp;showall=0'
+	},
+	"($type) having clause");
 }
 
 sub add_tests {

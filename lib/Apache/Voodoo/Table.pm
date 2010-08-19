@@ -652,7 +652,7 @@ sub delete {
 sub list {
 	my $self                  = shift;
 	my $p                     = shift;
-	my $additional_constraint = shift;
+	my $additional_constraint = shift || {};
 
 	$self->{'success'} = 0;
 
@@ -695,6 +695,10 @@ sub list {
 
 	my @search_params = $self->{'list_param_parser'}->($self,$dbh,$params);
 
+	unless (ref($additional_constraint) eq "HASH") {
+		$additional_constraint->{additional_constraint} = $additional_constraint;
+	}
+
 	# create the initial list of columns
 	my @columns;
 	foreach ($self->{'pkey'}, @{$self->{'columns'}}) {
@@ -706,10 +710,8 @@ sub list {
 		}
 	}
 
-	if (ref($additional_constraint)) {
-		if (defined($additional_constraint->{'additional_column'})) {
-			push(@columns, $additional_constraint->{'additional_column'});
-		}
+	if (defined($additional_constraint->{'additional_column'})) {
+		push(@columns, $additional_constraint->{'additional_column'});
 	}
 
 	# figure out tables to join against
@@ -755,19 +757,11 @@ sub list {
 		push(@search_params,[$limit,'LIKE',$pattern]);
 	}
 
-	if ($additional_constraint) {
-		if (ref($additional_constraint) eq "HASH" and
-		    defined($additional_constraint->{'additional_constraint'})) {
-
-			# make sure our additional constraint won't break the sql
-			my $ac = $additional_constraint->{'additional_constraint'};
-			$ac =~ s/^\s*(where|and|or)\s+//go;
-			push(@search_params,$ac);
-		}
-		elsif (!ref($additional_constraint)) {
-			$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
-			push(@search_params,$additional_constraint);
-		}
+	if (defined($additional_constraint->{'additional_constraint'})) {
+		# make sure our additional constraint won't break the sql
+		my $ac = $additional_constraint->{'additional_constraint'};
+		$ac =~ s/^\s*(where|and|or)\s+//go;
+		push(@search_params,$ac);
 	}
 
 	$self->debug(\@search_params);
@@ -829,13 +823,18 @@ sub list {
 	# From the DBI docs. This will give us the database server name.
 	my $is_mysql = ($dbh->get_info(17) eq "MySQL")?1:0;
 
+	if ($additional_constraint->{'having'} && $is_mysql) {
+		# because other dbs don't have the same found rows trick the mysql does,
+		# a having cause reaks havoc with the "select count(*) from" bit below.
+		$where .= "HAVING ".$additional_constraint->{'having'}."\n";
+	}
+
 	my $select_stmt =
 		"SELECT". (($is_mysql)?" SQL_CALC_FOUND_ROWS ": " ").
 		join(",\n",@columns)."\n".
 		"FROM $self->{'table'}\n".
 		join("\n",@joins).
 		$where;
-
 
 	my $n_desc = $desc;
 	if (defined($sort)) {
