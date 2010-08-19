@@ -825,7 +825,7 @@ sub list {
 
 	if ($additional_constraint->{'having'} && $is_mysql) {
 		# because other dbs don't have the same found rows trick the mysql does,
-		# a having cause reaks havoc with the "select count(*) from" bit below.
+		# a having clause reeks havoc with the "select count(*) from" bit below.
 		$where .= "HAVING ".$additional_constraint->{'having'}."\n";
 	}
 
