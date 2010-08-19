@@ -509,8 +509,11 @@ sub _adjust_url {
 sub _app {
 	my $self = shift;
 
-	return $self->{'apps'}->{$self->{'app_id'}};
+	unless (defined($self->{'apps'}->{$self->{'app_id'}})) {
+		warn "No such app: $self->{'app_id'}";
+	}
 
+	return $self->{'apps'}->{$self->{'app_id'}};
 }
 
 1;

@@ -9,7 +9,7 @@ BEGIN {
 }
 
 use Data::Dumper;
-use Test::More tests => 39;
+use Test::More tests => 41;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -99,7 +99,8 @@ my $simple_table = Apache::Voodoo::Table->new({
 		'default_sort' => 'varchar',
 		'sort' => {
 			'varchar' => 'a_varchar',
-			'text' => 'a_text'
+			'text' => 'a_text',
+			'datetime' => 'a_datetime'
 		},
 		search => [
 			['Varchar','a_varchar'],
@@ -113,7 +114,7 @@ my $dbh;
 SKIP: {
 	my $dbh;
 	eval { require DBD::mysql; };
-	skip "DBD::mysql not found, skipping these tests",14 if $@;
+	skip "DBD::mysql not found, skipping these tests",15 if $@;
 
 	eval {
 		$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1});
@@ -137,7 +138,7 @@ SKIP: {
 
 SKIP: {
 	eval { require DBD::SQLite; };
-	skip "DBD::SQLite not found, skipping these tests",10 if $@;
+	skip "DBD::SQLite not found, skipping these tests",11 if $@;
 
 	my ($fh,$filename) = File::Temp::tmpnam();
 	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: ".DBI->errstr);
@@ -339,6 +340,64 @@ sub simple_view_list {
 				}
 			]
         }
+	);
+
+	eq_or_diff(
+		$simple_table->list({ dbh => $dbh, params => {'sort' => 'datetime'}}),
+		{
+			'PATTERN' => '',
+			'SORT_PARAMS' => 'desc=1&amp;last_sort=datetime&amp;showall=0',
+			'DATA' => [
+				{
+					'a_text' => 'a much larger text string',
+					'a_date' => '01/01/2009',
+					'a_varchar' => 'a text string',
+					'avt_ref_table.name' => 'First Value',
+					'a_datetime' => '2000-02-01 12:00:00',
+					'avt_ref_table_id' => '1',
+					'id' => '1',
+					'a_time' => ' 1:00 PM'
+				},
+				{
+					'a_varchar' => 'loren ipsum solor sit amet',
+					'a_text' => 'consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+					'a_date' => '03/15/2010',
+					'avt_ref_table.name' => 'Fourth Value',
+					'a_datetime' => '2010-01-01 12:00:00',
+					'avt_ref_table_id' => '4',
+					'id' => '3',
+					'a_time' => ' 4:00 PM'
+				},
+				{
+					'a_text' => 'different much longer string',
+					'a_date' => '01/01/2010',
+					'a_varchar' => 'another text string',
+					'avt_ref_table.name' => 'Second Value',
+					'a_datetime' => '2010-02-01 14:00:00',
+					'avt_ref_table_id' => '2',
+					'id' => '2',
+					'a_time' => ' 5:00 PM'
+				}
+			],
+			'NUM_MATCHES' => '3',
+			'LIMIT' => [
+				{
+					'ID' => 'a_varchar',
+					'ID.a_varchar' => 1,
+					'NAME' => 'Varchar',
+					'NAME.Varchar' => 1,
+					'SELECTED' => 0
+				},
+				{
+					'ID' => 'a_text',
+					'ID.a_text' => 1,
+					'NAME' => 'Text',
+					'NAME.Text' => 1,
+					'SELECTED' => 0
+				}
+			]
+		},
+		"($type) list results sorted"
 	);
 }
 
