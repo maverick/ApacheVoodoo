@@ -132,7 +132,6 @@ sub make_request {
 	if (my $e = Exception::Class->caught()) {
 		if ($e->isa("Apache::Voodoo::Exception::Application::Redirect")) {
 			$self->{'engine'}->status($self->redirect);
-			$self->{'engine'}->finish();
 			return $self->redirect($e->target());
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::RawData")) {
@@ -141,12 +140,10 @@ sub make_request {
 			$self->print($e->data);
 
 			$self->{'engine'}->status($self->ok);
-			$self->{'engine'}->finish();
 			return $self->ok;
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::Unauthorized")) {
 			$self->{'engine'}->status($self->unauthorized);
-			$self->{'engine'}->finish();
 			return $self->unauthorized;
 		}
 		elsif (! $e->isa("Apache::Voodoo::Exception::Application")) {
@@ -157,7 +154,6 @@ sub make_request {
 			unless ($self->{'engine'}->is_devel_mode()) {
 				warn "$@";
 				$self->{'engine'}->status($self->server_error);
-				$self->{'engine'}->finish();
 				return $self->server_error;
 			}
 
@@ -176,7 +172,6 @@ sub make_request {
 	# Clean up
 	####################
 	$self->{'engine'}->status($self->ok);
-	$self->{'engine'}->finish();
 	$view->finish();
 
 	return $self->ok;
