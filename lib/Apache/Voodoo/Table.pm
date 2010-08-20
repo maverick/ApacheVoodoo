@@ -696,7 +696,9 @@ sub list {
 	my @search_params = $self->{'list_param_parser'}->($self,$dbh,$params);
 
 	unless (ref($additional_constraint) eq "HASH") {
-		$additional_constraint->{additional_constraint} = $additional_constraint;
+		$additional_constraint = {
+			'additional_constraint' => $additional_constraint
+		};
 	}
 
 	# create the initial list of columns
