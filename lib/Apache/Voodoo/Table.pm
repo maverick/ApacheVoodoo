@@ -763,7 +763,7 @@ sub list {
 		# make sure our additional constraint won't break the sql
 		my $ac = $additional_constraint->{'additional_constraint'};
 		$ac =~ s/^\s*(where|and|or)\s+//go;
-		push(@search_params,$ac);
+		push(@search_params,$ac) if length($ac);
 	}
 
 	$self->debug(\@search_params);
