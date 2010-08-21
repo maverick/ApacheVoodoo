@@ -1,0 +1,86 @@
+=head1 Apache Configuration
+
+
+=head1 Loading Apache::Voodoo into Apache
+
+Locate your C<modperl-startup.pl> for Apache and add the following:
+
+	use lib("/data/apache/lib/perl");
+	use Apache::Voodoo::Handler;
+	$Apache::Voodoo::Handler = Apache::Voodoo::Handler->new();
+
+
+If you want to use the L<Native Debugging Tools|DebuggingTools>, also add the following.
+
+	use Apache::Voodoo::Debug::Handler;
+	$Apache::Voodoo::Debug = Apache::Voodoo::Debug::Handler->new();
+
+
+Apache 1 includes C<E<lt>ServerRootE<gt>/lib/perl> in the Perl include path by default.  Apache 2, however, does not.  Thus it is necessary for Apache 2 users to manually add this directory to the Perl include path.  There are a couple of ways to do this.  
+
+Via the C<use lib> pragma in a startup file:
+
+	use lib qw(/data/apache/lib/perl);
+
+
+or via PerlSwitches in the httpd.conf:
+
+	PerlSwitches -I /data/apache/lib/perl
+
+
+=head1 Configuring Apache to point to your application
+
+Now we need to link a location in Apache to your application.  There are a couple of ways to do this depending on the needs of your particular environment, all that is really required is that the configuration options are either within a C<Directory> or C<Location> block.  You can configure your application to be attached to a virtual host or some URL path under the main host or a virtual host.  You can also host multiple applications by setting up multiple configuration blocks.
+
+=head2 Example Virtual Host Configuration
+
+
+
+	<VirtualHost *:80>
+	    ServerName my.host.com
+	    DocumentRoot /data/apache/sites/my_app/html
+	
+	    <Directory /data/apache/sites/my_app/html/>
+	         SetHandler modperl
+	
+	         PerlResponseHandler $Apache::Voodoo::Handler->handler
+	         PerlSetVar ID my_app
+	    </Directory>
+	</VirtualHost>
+
+
+=head2 Example URL path Configuration
+
+
+	    <Location /some/path>
+	         SetHandler modperl
+	
+	         PerlResponseHandler $Apache::Voodoo::Handler->handler
+	         PerlSetVar ID my_app
+	         PerlSetVar SiteRoot /some/path
+	    </Location>
+
+
+
+=head2 SetHandler modperl
+
+Tells Apache that a mod_perl is going to be used to handler requests for this directory
+
+=head2 PerlResponseHandler $Apache::Voodoo::Handler->handler
+
+Tells Apache what method to call to handle requests for this directory
+
+=head2 PerlSetVar ID
+
+This lets Voodoo know what application is attached to this directory.  An application's name must match the pattern C</[a-z][a-z0-9_-]*/i>.
+
+=head2 PerlSetVar SiteRoot
+
+The C<SiteRoot> parameter lets Voodoo know where your application is, URL wise, in relation to C</>.  It is necessary to set this if your application is located in a sub directory or aliased location on the host.  This is necessary to deal with the fact that there isn't a good way from inside mod_perl to know if the URL that's being requested is part of a C<Location> or C<Alias> directive.
+
+|* If you have this * | *SiteRoot should be* |
+| E<lt>Location /foo/barE<gt> | /foo/bar |
+| Alias /bar/baz/qux /some/path/here<br>E<lt>Directory /some/path/hereE<gt>| /bar/baz/qux |
+|DocumentRoot /some/path<br>E<lt>Directory /some/path/subdirectoryE<gt>| /subdirectory |
+
+

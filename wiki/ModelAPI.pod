@@ -1,0 +1,48 @@
+=head1 Model API
+
+
+%STARTSECTION{"overview"}%
+Models are loaded by listing the names of the packages inside the C<<models>> block in the application's C<voodoo.conf> file.  Note that the modules names do not contain the base package name. C<my_app::M::index> becomes C<index>, this saves a bunch of typing, but more importantly prevents accidental cross-application module loading.  Despite this, the package still follow perl's conventions for their location in the file system.  C<my_app::M::index> would reside in C<<ServerRoot>/sites/my_app/code/M/index.pm>.
+
+Each Model package must inherit from Apache::Voodoo.  This package provides the new() method to make the package a proper object under Voodoo, along with some other minor black magic.  Inheriting from this module provides access to some essential methods for interacting with Voodoo.
+
+Overriding the C<init()> method allows you to the sort of things you would normally do inside of a new. The C<init()> is passed 3 things, a reference to C<$self>, a hash reference representing the contents of the C<voodoo.conf> file, and a references to all the other models.  A reference to the current model object is not included, that's C<$self>.
+
+For example if you have the following in C<<ServerRoot>/my_app/etc/voodoo.conf>
+
+	<models>
+	    user
+	</models>
+
+
+Then inside C<<ServerRoot>/my_app/code/M/user.pm> you can have
+
+	package my_app::M::user;
+	
+	use strict;
+	use warnings;
+	
+	use base ("Apache::Voodoo");
+	
+	sub init {
+	    my $self = shift;
+	
+	    my $config = shift;
+	    my $models = shift;
+	}
+	
+	sub method_a {
+	    my $self = shift;
+	    
+	    my ($whataver,$params,$i,$want) = @_;
+	
+	    return $whatever_i_want_to;
+	}
+	
+	1;
+
+
+Models are accessed via the L<Controllers|ControllerAPI> (which you write) and therefore you can pass and return whatever you wish.
+
+%ENDSECTION{"overview"}%
+

@@ -11,6 +11,8 @@ foreach my $ifile (@ARGV) {
 
 	my $verbatim = 0;
 	while (my $line=<IN>) {
+		next if $line =~ /^%META/ or $line =~ /\%TOC/;
+
 		$line =~ s/^---\+\+\+\+\+\+\s*(.*)/=head5 $1\n/;
 		$line =~ s/^---\+\+\+\+\+\s*(.*)/=head4 $1\n/;
 		$line =~ s/^---\+\+\+\+\s*(.*)/=head3 $1\n/;
@@ -25,7 +27,8 @@ foreach my $ifile (@ARGV) {
 		$line =~ s/!!//g;
 		$line =~ s/<nop>//g;
 
-		next if $line =~ /^%META/ or $line =~ /\%TOC/;
+		$line =~ s/\[\[http:\/\/([^\]]+)\]\[([^\]]+)\]\]/$2/g; #  (L<http:\/\/$1>)/g;
+		$line =~ s/\[\[([^\]]+)\]\[([^\]]+)\]\]/L<$2|$1>/g;
 
 		if ($line =~ /<verbatim>/) {
 			$verbatim = 1;

@@ -1,0 +1,59 @@
+=head1 Example Site Layout
+
+
+etc, html, and code are the three directories whose locations are fixed, you can create other "top level" directories as you need them.  For example, this layout has worked well for myself and others.
+
+	<ServerRoot>/sites/my_app
+	    |_ bin
+	    |   |_ a_cron_job.pl
+	    |   |_ a_utility_program.pl
+	    |_ code
+	    |   |_ skeleton.pm
+	    |   |_ login.pm
+	    |_ db
+	    |   |_ database_schema.sql
+	    |_ docs
+	    |   |_ who_are_we_kidding_right_guys.doc
+	    |_ etc
+	    |   |_ voodoo.conf
+	    |_ html
+	    |   |_ skeleton.tmpl
+	    |   |_ login.tmpl
+	    |   |_ images
+	    |   |_ logo.gif
+	    |_ tests
+	        |_ a_test_script.t
+
+
+=head1 Automating installs/upgrades.
+
+
+Voodoo has a automated install/upgrade system for sites developed within it.  See the program L<voodoo-control|VoodooControl>.
+
+FIXME: loads of docs needed here.
+
+=head1 Template to module method mapping
+
+
+Voodoo matches templates to code according to two rules.
+
+	/my/url/path => base_package::my::url::path->handle
+	/my/url/foo_path => base_package::my::url::path->foo
+
+If a module exists that matches the URL and it has a method named 'handle', it is called. Otherwise it splits the filename at the first underscore and looks for module matching the second half that contains a method named the first half.
+
+If neither of these rules match, then the template is just inserted into the skeleton as is. This allows you to create static content without having to make a module that does nothing.
+
+The interesting side effect of these rules is that any page handling methods that have a underscore in them will never match the criteria of either rule.  This allows you to make methods that have no way of accidentally being mapped to a URL by simply add an underscore to them.
+
+=head2 Examples
+
+
+	my_app::index->handle        /index
+	my_app::foo::bar->handle     /foo/bar
+	my_app::foo::bar->qux        /foo/qux_bar
+	my_app::foo::bar_baz->handle /foo/bar_baz
+	my_app::foo::bar_baz->qux    /foo/qux_bar_baz
+	my_app::foo::bar->_foo       # won't match any url as it contains an underscore
+
+

@@ -1,0 +1,10 @@
+=head1 Fundamental Concepts
+
+
+
+=head1 Overview
+
+     <img srcC<"%ATTACHURLPATH%/voodoo.png" alt>"voodoo.png" widthC<'675' height>'774' />
+
+L<Model View Controller Pattern|Wikipedia:Model-View-Controller>
+
