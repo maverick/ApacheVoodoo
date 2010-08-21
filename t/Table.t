@@ -11,6 +11,9 @@ BEGIN {
 use Data::Dumper;
 use Test::More tests => 42;
 
+my $mysql_skip = 16;
+my $sqlite_skip = 11;
+
 use_ok('File::Temp');
 use_ok('DBI');
 use_ok('Apache::Voodoo::Exception');
@@ -114,12 +117,12 @@ my $dbh;
 SKIP: {
 	my $dbh;
 	eval { require DBD::mysql; };
-	skip "DBD::mysql not found, skipping these tests",16 if $@;
+	skip "DBD::mysql not found, skipping these tests",$mysql_skip if $@;
 
 	eval {
 		$dbh = DBI->connect("dbi:mysql:test:localhost",'root','',{RaiseError => 1});
 	};
-	skip "Can't connect to mysql test database on localhost, skipping these tests",6 if $@;
+	skip "Can't connect to mysql test database on localhost, skipping these tests",$mysql_skip if $@;
 
 	setup_db(         'MySQL',$dbh);
 	simple_view_list( 'MySQL',$dbh);
@@ -139,7 +142,7 @@ SKIP: {
 
 SKIP: {
 	eval { require DBD::SQLite; };
-	skip "DBD::SQLite not found, skipping these tests",11 if $@;
+	skip "DBD::SQLite not found, skipping these tests",$sqlite_skip if $@;
 
 	my ($fh,$filename) = File::Temp::tmpnam();
 	$dbh = DBI->connect("dbi:SQLite:dbname=$filename","","",{RaiseError => 1}) || BAIL_OUT("Couldn't make a testing database: ".DBI->errstr);
