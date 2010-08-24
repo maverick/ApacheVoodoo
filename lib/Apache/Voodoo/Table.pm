@@ -466,7 +466,7 @@ sub edit {
 	my $params = $p->{'params'};
 
 	# make sure our additional constraint won't break the sql
-	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//goi;
 	if (length($additional_constraint)) {
 		$additional_constraint = "AND $additional_constraint";
 	}
@@ -603,7 +603,7 @@ sub delete {
 	}
 
 	# make sure our additional constraint won't break the sql
-	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//goi;
 	if (length($additional_constraint)) {
 		$additional_constraint = "AND $additional_constraint";
 	}
@@ -762,7 +762,7 @@ sub list {
 	if (defined($additional_constraint->{'additional_constraint'})) {
 		# make sure our additional constraint won't break the sql
 		my $ac = $additional_constraint->{'additional_constraint'};
-		$ac =~ s/^\s*(where|and|or)\s+//go;
+		$ac =~ s/^\s*(where|and|or)\s+//goi;
 		push(@search_params,$ac) if length($ac);
 	}
 
@@ -951,7 +951,7 @@ sub view {
 	}
 
 	# make sure our additional constraint won't break the sql
-	$additional_constraint =~ s/^\s*(where|and|or)\s+//go;
+	$additional_constraint =~ s/^\s*(where|and|or)\s+//goi;
 	if (length($additional_constraint)) {
 		$additional_constraint = "AND $additional_constraint";
 	}
