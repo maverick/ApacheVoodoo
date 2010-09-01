@@ -13,22 +13,32 @@ foreach my $ifile (@ARGV) {
 	while (my $line=<IN>) {
 		next if $line =~ /^%META/ or $line =~ /\%TOC/;
 
-		$line =~ s/^---\+\+\+\+\+\+\s*(.*)/=head5 $1\n/;
-		$line =~ s/^---\+\+\+\+\+\s*(.*)/=head4 $1\n/;
-		$line =~ s/^---\+\+\+\+\s*(.*)/=head3 $1\n/;
-		$line =~ s/^---\+\+\+\s*(.*)/=head2 $1\n/;
-		$line =~ s/^---\+\+\s*(.*)/=head1 $1\n/;
-		$line =~ s/^---\+\s*(.*)/=head1 $1\n/;
+		unless ($verbatim) {
+			$line =~ s/^---\+\+\+\+\+\+\s*(.*)/=head5 $1\n/;
+			$line =~ s/^---\+\+\+\+\+\s*(.*)/=head4 $1\n/;
+			$line =~ s/^---\+\+\+\+\s*(.*)/=head3 $1\n/;
+			$line =~ s/^---\+\+\+\s*(.*)/=head2 $1\n/;
+			$line =~ s/^---\+\+\s*(.*)/=head1 $1\n/;
+			$line =~ s/^---\+\s*(.*)/=head1 $1\n/;
 
-		$line =~ s/=([^=]+)=/C<$1>/g;
-		
-		$line =~ s/&lt;/E<lt>/g;
-		$line =~ s/&gt;/E<gt>/g;
-		$line =~ s/!!//g;
-		$line =~ s/<nop>//g;
+			$line =~ s/=([^=]+)=/C<$1>/g;
+			
+			$line =~ s/&lt;/E<lt>/g;
+			$line =~ s/&gt;/E<gt>/g;
+			$line =~ s/\!\!+//g;
+			$line =~ s/<nop>//g;
 
-		$line =~ s/\[\[http:\/\/([^\]]+)\]\[([^\]]+)\]\]/$2/g; #  (L<http:\/\/$1>)/g;
-		$line =~ s/\[\[([^\]]+)\]\[([^\]]+)\]\]/L<$2|$1>/g;
+			$line =~ s/\[\[http:\/\/([^\]]+)\]\[([^\]]+)\]\]/$2/g; #  (L<http:\/\/$1>)/g;
+
+			$line =~ s/\[\[#([^\]]+)\]\[([^\]]+)\]\]/L<$2|\/$1>/g;
+			$line =~ s/\[\[([^\]]+)\]\[([^\]]+)\]\]/L<$2|$1>/g;
+
+			# CPAN: macro
+			$line =~ s/CPAN:([^ ]+)/L<$1>/g;
+
+			# CamelCase links.
+			$line =~ s/\b([A-Z][a-z]+[A-Z]\w+)\b/L<Apache::Voodoo::$1>/g;
+		}
 
 		if ($line =~ /<verbatim>/) {
 			$verbatim = 1;

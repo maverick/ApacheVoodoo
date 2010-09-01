@@ -1,16 +1,16 @@
-=head1 !Voodoo Configuration File
+=head1 Voodoo Configuration File
 
 
 =head1 Overview
 
-Each Voodoo application has it's own configuration file that is kept in C<E<lt>ServerRootE<gt>/sites/E<lt>name_of_applicationE<gt>/etc/voodoo.conf>
+Each Voodoo application has it's own configuration file that is kept in C<E<lt>L<Apache::Voodoo::ServerRootE><gt>/sites/E<lt>name_of_applicationE<gt>/etc/voodoo.conf>
 
-The "name_of_application" directory must match the value of the ID parameter in the ApacheConfiguration file. In the case of the example given there, it
+The "name_of_application" directory must match the value of the ID parameter in the L<Apache::Voodoo::ApacheConfiguration> file. In the case of the example given there, it
 would be "my_app".
 
-This is also used as the top level package name that Voodoo will use in loading all other modules. This can be overridden with the optional L<base_package|#base_package> directive.
+This is also used as the top level package name that Voodoo will use in loading all other modules. This can be overridden with the optional L<base_package|/base_package> directive.
 
-Voodoo uses the CPAN:Config::General module for its configuration files.  See its documentation for more information on its syntax rules.
+Voodoo uses the L<Config::General> module for its configuration files.  See its documentation for more information on its syntax rules.
 
 =head1 Example Configuration
 
@@ -30,7 +30,7 @@ Voodoo uses the CPAN:Config::General module for its configuration files.  See it
 	</debug>
 	
 	<database>
-	    connect  C< "dbi:mysql:database>my_app;hostC<127.0.0.1;mysql_connect_timeout>2"
+	    connect  = "dbi:mysql:database=my_app;host=127.0.0.1;mysql_connect_timeout=2"
 	    username = "test_user"
 	    password = "test_password"
 	</database>
@@ -82,7 +82,7 @@ Maximum size in bytes of any uploaded files.  Defaults to 5 MB.
 
 =head2 debug
 
-Configures the various debugging back ends.  See DebuggingTools for more details.
+Configures the various debugging back ends.  See L<Apache::Voodoo::DebuggingTools> for more details.
 
 =head1 Database Options
 
@@ -108,42 +108,42 @@ Number of minutes before a cookie expires.  Set to 0 for no expiration, defaults
 
 =head2 session_dir
 
-This is the directory that CPAN:Apache::Session will use to store session information.  This directory must be present and writeable by whatever user Apache runs as.
+This is the directory that L<Apache::Session> will use to store session information.  This directory must be present and writeable by whatever user Apache runs as.
 
 =head2 session_table
 
 Optionally, you can store session data inside the database instead of a directory by setting this option to the name of the table.
 Either this option of C<session_dir> must be present.
-See CPAN:Apache::Session for details.
+See L<Apache::Session> for details.
 
 
 =head1 Perl Modules
 
 =head2 controllers
 
-This contains the list of controllers that will be loaded by Voodoo. See ControllerAPI for more details.
+This contains the list of controllers that will be loaded by Voodoo. See L<Apache::Voodoo::ControllerAPI> for more details.
 
 =head2 includes
 
-This contains the list of modules to be loaded that behave like controllers that can be called either before or after the controller for a given URL. See ControllerAPI for more details.
+This contains the list of modules to be loaded that behave like controllers that can be called either before or after the controller for a given URL. See L<Apache::Voodoo::ControllerAPI> for more details.
 
 For example, if your application has a dynamic menu that appears on every page, you can create a include that handles that instead of having to remember to handle it in each controller.
 
-See ControllerAPI for more details.
+See L<Apache::Voodoo::ControllerAPI> for more details.
 
 =head2 models
 
-This contains the list of models that will be loaded by Voodoo. See ModelAPI for more details.
+This contains the list of models that will be loaded by Voodoo. See L<Apache::Voodoo::ModelAPI> for more details.
 
 =head2 views
 
-This contains the list of views that will be loaded by Voodoo. See ViewAPI for more details.
+This contains the list of views that will be loaded by Voodoo. See L<Apache::Voodoo::ViewAPI> for more details.
 
-=head1 ViewHTML Options
+=head1 L<Apache::Voodoo::ViewHTML> Options
 
 =head2 template_opts
 
-Key value pairs passed to the new of L<HTML::Template|CPAN:HTML::Template>.  See ViewHTML for more details.
+Key value pairs passed to the new of L<HTML::Template|L<HTML::Template>.>  See L<Apache::Voodoo::ViewHTML> for more details.
 
 =head2 themes
 
@@ -165,15 +165,15 @@ A list of include controllers to call on this page, *AFTER* the main page contro
 
 =head3 default_view
 
-Which view to use by default.  Defaults to L<HTML|ViewHTML>.
+Which view to use by default.  Defaults to L<HTML|L<Apache::Voodoo::ViewHTML>>.
 
 =head3 skeleton
 
-Which skeleton template to use. See ViewHTML
+Which skeleton template to use. See L<Apache::Voodoo::ViewHTML>
 
 =head3 content-type
 
 Content type for the output.  Defaults to text/html
 
-Any other parameters are accessible to the controllers via L<$p|ControllerAPI>->{'template_conf'}.  The L<HTML view|ViewHTML> also passes these to the underlying template.
+Any other parameters are accessible to the controllers via L<$p|L<Apache::Voodoo::ControllerAPI>>->{'template_conf'}.  The L<HTML view|L<Apache::Voodoo::ViewHTML>> also passes these to the underlying template.
 

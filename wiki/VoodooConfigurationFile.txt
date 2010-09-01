@@ -1,5 +1,5 @@
 %META:TOPICINFO{author="MaverickEdwards" date="1244666281" format="1.1" reprev="1.5" version="1.5"}%
----+ !Voodoo Configuration File
+---+ Voodoo Configuration File
 %TOC%
 
 ---++ Overview

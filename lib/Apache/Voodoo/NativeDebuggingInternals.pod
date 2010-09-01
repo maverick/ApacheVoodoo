@@ -151,15 +151,15 @@ digraph G {
 =head2 request
 
 Each record uniquely identifies a single request.
-   * request_timestamp: CPAN::Time::HiRes timestamp for when the request began.
-   * application: which application this goes with.  Same as the C<ID> parameter in the ApacheConfiguration.
+   * request_timestamp: L<:Time::L<Apache::Voodoo::HiRes>> timestamp for when the request began.
+   * application: which application this goes with.  Same as the C<ID> parameter in the L<Apache::Voodoo::ApacheConfiguration>.
    * session_id: session id.
    * url: the URL this request was for.
    * status: the HTTP status code returned at the end of this request.
 
 =head2 debug
 
-Each record contains the data related to single call from one of the L<Debugging Methods|DebuggingTools#Methods>.
+Each record contains the data related to single call from one of the L<Debugging Methods|L<Apache::Voodoo::DebuggingTools>#Methods>.
    * request_id: foreign key back to the corresponding entry in the request table.
    * seq: the order in which this debug data was generated for this request.
    * level: the debug level associated with this record, the possible values correspond one to one with the names of the methods.
@@ -176,7 +176,7 @@ Contains the GET/POST params for each request.
 
 Contains the benchmarking data associated with this request.
    * request_id: foreign key back to the corresponding entry in the request table.
-   * timestamp: CPAN::Time::HiRes timestamp of when the event occurred.
+   * timestamp: L<:Time::L<Apache::Voodoo::HiRes>> timestamp of when the event occurred.
    * data: value of the parameter passed to C<$self->mark()>
 
 =head2 return_data

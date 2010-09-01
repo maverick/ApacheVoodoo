@@ -1,4 +1,4 @@
-=head1 ViewAPI
+=head1 L<Apache::Voodoo::ViewAPI>
 
 
 =head1 Overview

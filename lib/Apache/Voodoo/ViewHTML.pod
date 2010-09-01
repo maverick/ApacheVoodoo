@@ -1,6 +1,6 @@
 =head1 Basic Templates
 
-In C<E<lt>ServerRootE<gt>/sites/E<lt>name_of_siteE<gt>/html> directory, create a file named C<skeleton.tmpl> (or whatever you specified in the "skeleton" parameter above), and place (at least) this in it:
+In C<E<lt>L<Apache::Voodoo::ServerRootE><gt>/sites/E<lt>name_of_siteE<gt>/html> directory, create a file named C<skeleton.tmpl> (or whatever you specified in the "skeleton" parameter above), and place (at least) this in it:
 
 	<html>
 	<TMPL_VAR _MAIN_BODY_>
@@ -27,6 +27,6 @@ The resulting html as sent to the browser would be:
 	</html>
 
 
-Any HTML::Template directives in the skeleton can be controlled by the L<Controller|ControllerAPI>.  You can think of it this way: The individual page template is inserted into the skeleton first and then normal L<HTML::Template|CPAN:HTML::Template> processing is done on the entire thing.
+Any HTML::Template directives in the skeleton can be controlled by the L<Controller|L<Apache::Voodoo::ControllerAPI>>.  You can think of it this way: The individual page template is inserted into the skeleton first and then normal L<HTML::Template|L<HTML::Template>> processing is done on the entire thing.
 
 

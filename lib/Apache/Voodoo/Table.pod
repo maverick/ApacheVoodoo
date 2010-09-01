@@ -55,8 +55,8 @@ FIXME<br/>
 	        },
 	        name6 => {
 	            type => "date",
-	            min  C<> "minimum date", # optional; magic value: 'now' date must be >> today's date
-	            max  C<> "maximum date"  # optional; magic value: 'now' date must be <> today's date
+	            min  => "minimum date", # optional; magic value: 'now' date must be >= today's date
+	            max  => "maximum date"  # optional; magic value: 'now' date must be <= today's date
 	        },
 	        name7 => {
 	            type => "time"
