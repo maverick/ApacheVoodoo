@@ -1,9 +1,0 @@
-=head1 L<Apache::Voodoo::ViewAPI>
-
-
-=head1 Overview
-
-%STARTSECTION{"overview"}%
-
-
-%ENDSECTION{"overview"}%
