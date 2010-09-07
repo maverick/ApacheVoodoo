@@ -43,7 +43,7 @@ is($join->enabled,1,'join enabled by default');
 $join->enabled(0);
 is($join->enabled,0,'setter for join enabled works');
 
-my $join = Apache::Voodoo::Table::Join->new({
+$join = Apache::Voodoo::Table::Join->new({
 	table       => 'avt_ref_table',
 	alias       => 'second_ref',
 	context     => 'list',
@@ -636,7 +636,7 @@ sub nested_join_list {
 
 	eq_or_diff($table->list({dbh => $dbh}),$result,'nest join style 1');
 
-	my $table = Apache::Voodoo::Table->new({
+	$table = Apache::Voodoo::Table->new({
 		table => 'avt_table',
 		primary_key => 'id',
 		columns => {
