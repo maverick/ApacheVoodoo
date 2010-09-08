@@ -88,6 +88,7 @@ t/app_newstyle/M/a/model.pm.new
 t/app_newstyle/M/a/model.pm.orig
 t/app_newstyle/skeleton.pm
 t/app_newstyle/test_module.pm
+t/app_newstyle/V/a/view.pm
 t/app_newstyle/V/a/view.pm.orig
 t/app_oldstyle/etc/voodoo.conf
 t/Application-ConfigParser.t
@@ -98,5 +99,7 @@ t/Table.t
 t/test_data/BrokenConfig.pm
 t/test_data/MyConfig.pm
 t/test_data/test_db.sql
+t/test_data/test_db_mysql.sql
+t/test_data/test_db_sqlite.sql
 t/Validate.t
 t/Zombie.t
