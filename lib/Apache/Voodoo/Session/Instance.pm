@@ -1,6 +1,6 @@
 package Apache::Voodoo::Session::Instance;
 
-$VERSION = "3.0200";
+$VERSION = "3.0201";
 
 use strict;
 use warnings;

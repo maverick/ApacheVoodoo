@@ -29,7 +29,7 @@ any scenario where data must be paginated.
 =cut ################################################################################
 package Apache::Voodoo::Pager;
 
-$VERSION = "3.0200";
+$VERSION = "3.0201";
 
 use strict;
 use POSIX qw(ceil);
