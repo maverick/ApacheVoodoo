@@ -13,13 +13,45 @@ would normally do inside a new().  For example:
 
 =head1 Debugging
 
-=head2 debug($one_message, [ $two_message, ... ] )
+With the exception of C<exception()>, these methods silently do nothing if debugging is not enabled.  Further, the
+methods all behave the same way regardless of which debugging backends are enabled, or how they are configured.  
+Thus you are free to use any of these in your code without any concern for how debugging has been configured.
 
-Prints user debugging messages to the error_log file and to the 'Debug' section of the DEBUG template block. (See L<Apache::Voodoo::DebuggingTools> for more details).  Messages can be turn on or off globally using the C<debug> option of the Voodoo configuration file.
+For specifics on configuring the various backends see L<Apache::Voodoo::DebuggingTools>
 
-If any of the parameters to debug a references, they printed using Data::Dumper.
+=head2 debug(), info(), warn(), error()
 
-	return $self->debug('The value of foo is:',$foo);
+Each of these take any number of parameters and produces a debug message at the given logging level.
+They each use L<Data::Dumper> internally so you can pass it any type of parameter.
+
+Examples:
+
+	$self->debug("The contents of $p is:",$p);
+	$self->info("What's in this object?",$some_object);
+	$self->warn("Something is suspicious in here",\@some_array,\%some_hash);
+	$self->error("Something went wrong:",$!);
+
+=head2 exception($string)
+
+Causes these immediate termination of the running program. Displays a stack trace with C<$string> as the error message.
+
+	$self->exeception("You can't have cake! You didn't eat your pudding.");
+
+=head2 trace($string)
+
+Displays a stack trace of the running program using C<$string> as the description. The effect is similar to
+C<exception()> except that it does I<not> cause the program to terminate.
+
+=head2 table($string,$array_ref)
+
+If you're trying to examine the contents of a sql result set, or and array-of-arrays, it is often helpful to view that
+as a grid instead of the format that L<Data::Dumper> produces.  C<table()> does just that.  The first parameter sets 
+the caption on the table, the second is the data to display.
+
+Example:
+
+	my $res = $p->{dbh}->selectall_arrayref("SELECT foo, bar, baz FROM qux");
+	$self->table("data from qux",$res);
 
 =head2 mark($message)
 
@@ -40,7 +72,7 @@ Example:
 =head1 Browser Redirection
 
 
-=head2 access_denied([$error],[$uri])
+=head2 access_denied([$error],[$url])
 
 By default it redirects to /access_denied which should contain some appropriate
 access denied message.  If there is a handler associated with that page, the optional
@@ -60,7 +92,7 @@ or
 	return $self->access_denied('need_user_privilege', '/user/access_denied');
 
 
-=head2 display_error($error,$uri)
+=head2 display_error($error,$url)
 
 Redirects the user to a generic error message display page.
 
@@ -68,23 +100,27 @@ Redirects the user to a generic error message display page.
 
 =head2 history($voodo_session,$index)
 
-Voodoo keeps a running list of the last 10 urls visited in the current session. This method provides access to that list.  $index =C< 0 is the current page, $index >= 1 is the page before this one.  Successive requests to the same page with different parameters DOES NOT add a new entry to this history, rather it only updates the URI parameters for that entry in the history.  For example, if you click the 'next' link in paginated result set 10 times, the history doesn't contain 10 entries for each of those pages.
+Voodoo keeps a running list of the last 10 URLs visited in the current session. This method provides access to that list.  
+C<$index = 0> is the current page, C<$index = 1> is the page before this one.  Successive requests to the same page with 
+different parameters DOES NOT add a new entry to this history, rather it only updates the URL parameters for that entry in
+the history.  For example, if you click the 'next' link in paginated result set 10 times, the history doesn't contain 10
+entries for each of those pages.
 
 	$url = $self->history($p->{'session'},3);
 
-=head2 tardis($p, $uri1, [$uri2, ...] )
+=head2 tardis($p, $url1, [$url2, ...] )
 
 Often within a website there is the need to go back to a previous page that the user has already visited.  For example 
 the page that let's you view a record contains an 'edit' link for that record.  After the edit has finished, odds are 
 you'd want to send the user back to that view page.  This can quickly lead to a lot of tedious parameter management 
 for those return-to pages. Plus there may be more than one entry point for the current module only adding to the 
-complexity.  Tardis provides a convenient way search the history for a set of URI's and redirect the user back to 
+complexity.  C<tardis> provides a convenient way search the history for a set of URLs and redirect the user back to 
 the first one it finds.
 
-The uri's must contain the full path, relative uri's don't work.  You do not need to specify the parameters for 
+The URLs must contain the full path, relative URLs don't work.  You do not need to specify the parameters for 
 that page, in fact doing so would kinda defeat the point :)
 
-If no history items match, it redirects to the previously accessed uri.
+If no history items match, it redirects to the previously accessed URL.
 
 	return $self->tardis($p,'/first/url/no_params','/second/url/no_params');
 
@@ -104,11 +140,11 @@ Your edit method could look like this:
 
 You no longer have to figure out which link they came from, and what parameters they were using at the time.
 
-=head2 redirect($uri)
+=head2 redirect($url)
 
-Redirects the user to the given URI. These may be absolute or relative
+Redirects the user to the given URL. These may be absolute or relative
 
-	return $self->redirect('/some/uri');
+	return $self->redirect('/some/url');
 
 =head1 Data Manipulation
 

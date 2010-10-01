@@ -1,4 +1,4 @@
-=head1  Debugging Tools
+=head1 Debugging Tools
 
 =head1 Backend Configuration
 
@@ -202,44 +202,3 @@ It is important to be aware of how the names of Voodoo's debugging methods corre
 
 This is only a small example.  Log4perl is a very flexible and powerful system, please see the Log4perl website for
 details.
-
-=head1 Methods
-
-With the exception of C<exception()>, these methods silently do nothing if debugging is not enabled.  Further, the
-methods all behave the same way regardless of which backends are enabled, or how they are configured.  Thus you are
-free to use any of these in your code without any concern for how debugging has been configured.
-
-=head2 debug(), info(), warn(), error()
-
-Each of these take any number of parameters and produces a debug message. They each use L<Data::Dumper> internally
-so you can pass it any type of parameter.
-
-Examples:
-
-	$self->debug("The contents of $p is:",$p);
-	$self->info("What's in this object?",$some_object);
-	$self->warn("Something is suspicious in here",\@some_array,\%some_hash);
-	$self->error("Something went wrong:",$!);
-
-=head2 exception($string)
-
-Causes these immediate termination of the running program. Displays a stack trace with C<$string> as the error message.
-
-	$self->exeception("You can't have cake! You didn't eat your pudding.");
-
-=head2 trace($string)
-
-Displays a stack trace of the running program using C<$string> as the description. The effect is similar to
-C<exception()> except that it does I<not> cause the program to terminate.
-
-=head2 table($string,$array_ref)
-
-If you're trying to examine the contents of a sql result set, or and array-of-arrays, it is often helpful to view that
-as a grid instead of the format that L<Data::Dumper> produces.  C<table()> does just that.  The first parameter sets 
-the caption on the table, the second is the data to display.
-
-Example:
-
-	my $res = $p->{dbh}->selectall_arrayref("SELECT foo, bar, baz FROM qux");
-	$self->table("data from qux",$res);
-

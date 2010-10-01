@@ -1,6 +1,7 @@
 =head1 Basic Templates
 
-In C<E<lt>L<Apache::Voodoo::ServerRootE><gt>/sites/E<lt>name_of_siteE<gt>/html> directory, create a file named C<skeleton.tmpl> (or whatever you specified in the "skeleton" parameter above), and place (at least) this in it:
+In C<E<lt>ServerRootE<gt>/sites/E<lt>name_of_siteE<gt>/html> directory, create a file named C<skeleton.tmpl> (or whatever you specified in
+the "skeleton" parameter above), and place (at least) this in it:
 
 	<html>
 	<TMPL_VAR _MAIN_BODY_>
@@ -8,9 +9,13 @@ In C<E<lt>L<Apache::Voodoo::ServerRootE><gt>/sites/E<lt>name_of_siteE<gt>/html> 
 	</html>
 
 
-Here's the logic.  The vast majority of the time, every page on a site has the same basic look; the same header, the same footer, the same menu, etc.  What changes page to page is the core content, the meat so to speak.  Why write the HTML for the headers, etc over and over?  Why have to remember to include header and footer templates in every file?  Why have to go back and edit every file if you want to move the menu from the left to the right side?
+Here's the logic.  The vast majority of the time, every page on a site has the same basic look; the same header, the same footer, the same
+menu, etc.  What changes page to page is the core content, the meat so to speak.  Why write the HTML for the headers, etc over and over?
+Why have to remember to include header and footer templates in every file?  Why have to go back and edit every file if you want to move
+the menu from the left to the right side?
 
-This method allows you to write all header/footer stuff once and have a single point of alteration for it. The core content (your other template files), are simply inlined where C<_MAIN_BODY_> is in the skeleton.
+This method allows you to write all header/footer stuff once and have a single point of alteration for it. The core content (your other
+template files), are simply inlined where C<_MAIN_BODY_> is in the skeleton.
 
 Let's say your C<index.tmpl> file contains:
 
@@ -27,6 +32,7 @@ The resulting html as sent to the browser would be:
 	</html>
 
 
-Any HTML::Template directives in the skeleton can be controlled by the L<Controller|L<Apache::Voodoo::ControllerAPI>>.  You can think of it this way: The individual page template is inserted into the skeleton first and then normal L<HTML::Template|L<HTML::Template>> processing is done on the entire thing.
-
+Any HTML::Template directives in the skeleton can be controlled by the L<Controller|L<Apache::Voodoo::ControllerAPI>>.  You can think
+of it this way: The individual page template is inserted into the skeleton first and then normal L<HTML::Template> processing is done
+on the entire thing.
 
