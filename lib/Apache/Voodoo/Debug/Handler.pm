@@ -113,18 +113,15 @@ sub handler {
 		eval {
 			$return = $self->$method($dbh,$params);
 		};
-		use Data::Dumper;
-		warn Dumper $@;
 		if ($@) {
 			return $self->display_host_error("$@");
 		}
 
-		if (ref($return) eq "HASH") {
-			$self->{mp}->content_type("application/json");
+		$self->{mp}->content_type("application/json");
+		if (ref($return)) {
 			$self->{mp}->print($self->{json}->to_json($return));
 		}
 		else {
-			$self->{mp}->content_type("text/plain");
 			$self->{mp}->print($return);
 		}
 
@@ -405,6 +402,7 @@ sub _process_debug {
 			$debug .= $row->[2];
 		}
 		else {
+			$row->[2] =~ s/\n/\\n/g;
 			$debug .= '"'.$row->[2].'"';
 		}
 

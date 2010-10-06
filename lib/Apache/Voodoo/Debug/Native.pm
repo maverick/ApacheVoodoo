@@ -74,10 +74,7 @@ sub new {
 			'loop_context_vars' => 1
 		);
 
-		$self->{template}->param(
-			debug_root => $ac->debug_path(),
-			app_id     => $self->{id}->{app_id}
-		);
+		$self->{template}->param(debug_root => $ac->debug_path());
 
 		$self->{json} = JSON::DWIW->new({bad_char_policy => 'convert', pretty => 1});
 
@@ -105,6 +102,13 @@ sub new {
 		}
 
 		$self->{db}->init_db($dbh,$ac);
+
+		if (defined($conf->{link})) {
+			$self->{link} = ref($conf->{link}) eq "ARRAY"?$conf->{link}:[$conf->{link}];
+		}
+		else {
+			$self->{link} = [];
+		}
 	}
 
 	# we always send this since is fundamental to identifying the request chain
@@ -130,8 +134,6 @@ sub init {
 		type => 'request',
 		id   => $self->{'id'}
 	});
-
-	$self->{template}->param(request_id => $self->{id}->{request_id});
 }
 
 sub enabled {
@@ -207,19 +209,28 @@ sub return_data {
 }
 
 
-# these all behave the same way.  With the execption of session_id which
-# also inserts it into the underlying template.
+# These all behave the same way.
 sub url           { my $self = shift; $self->_log('url',           @_); }
 sub status        { my $self = shift; $self->_log('status',        @_); }
 sub params        { my $self = shift; $self->_log('params',        @_); }
 sub template_conf { my $self = shift; $self->_log('template_conf', @_); }
-sub session       { my $self = shift; $self->_log('session',       @_); }
+
+sub session {
+	my $self    = shift;
+	my $session = shift;
+
+	$self->_log('session', $session);
+
+	foreach (@{$self->{link}}) {
+		$_->{session_id} = $session->{$_->{session_key}};
+	}
+}
 
 sub session_id {
 	my $self = shift;
 	my $id   = shift;
 
-	$self->{template}->param(session_id => $id);
+	$self->{id}->{session_id} = $id;
 	$self->_log('session_id',$id);
 }
 
@@ -281,6 +292,23 @@ sub finalize {
 	foreach (keys %{$self->{'enable'}}) {
 		$self->{template}->param('enable_'.$_ => $self->{'enable'}->{$_});
 	}
+
+	my $applications = [ $self->{id} ];
+
+	foreach (@{$self->{link}}) {
+		push(@{$applications},
+			{
+				app_id     => $_->{name},
+				session_id => $_->{session_id},
+				request_id => $self->{id}->{request_id}
+			}
+		);
+	}
+
+	$self->{template}->param(
+		applications => $applications,
+		multi_app    => $#{$applications}
+	);
 
 	return (_DEBUG_ => $self->{template}->output());
 }

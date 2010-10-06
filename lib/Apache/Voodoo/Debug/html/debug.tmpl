@@ -3,9 +3,15 @@
 <script language="Javascript" type="text/javascript">
 var vdDebug = new voodooDebug({
 	"debug_root": "<tmpl_var debug_root>",
-	'app_id':     "<tmpl_var app_id>",
-	'session_id': "<tmpl_var session_id>",
-	'request_id': "<tmpl_var request_id>"
+	"applications": [
+	<TMPL_LOOP name="applications">
+		{
+			"app_id":    "<tmpl_var app_id>",
+			"session_id":"<tmpl_var session_id>",
+			"request_id":"<tmpl_var request_id>"
+		}<TMPL_UNLESS __last__>,</TMPL_UNLESS>
+	</TMPL_LOOP>
+	]
 });
 </script>
 
@@ -13,7 +19,15 @@ var vdDebug = new voodooDebug({
 	<div class="vdClosed">
 		<span class="vdClick" onClick="vdDebug.handleSection(this,'top');"><img src="<tmpl_var debug_root>/plus.png" width="9"/>Debug</span>
 		<div class="vdContent">
-			Change Request: <select id="voodooDebugSelect" onChange="vdDebug.changeRequest(this)" onFocus="vdDebug.listRequests()"></select>
+			<TMPL_IF multi_app>
+			Change Application:
+			<select onChange="vdDebug.changeApplication(this)">
+				<TMPL_LOOP name="applications">
+				<option value="<TMPL_VAR __counter__>"><TMPL_VAR app_id></option>
+				</TMPL_LOOP>
+			</select><br/>
+			</TMPL_IF>
+			Change Request: <select id="voodooChangeRequest" onChange="vdDebug.changeRequest(this)" onFocus="vdDebug.listRequests()"></select>
 			<tmpl_if enable_profile><div class="vdClosed"><span onClick="vdDebug.handleSection(this,'profile');"      ><img src="<tmpl_var debug_root>/plus.png" width="9"/>Generation Time</span><div id="vd_profile"       class="vdContent"></div></div></tmpl_if>
 			<tmpl_if enable_anydebug>
 				<div class="vdClosed">
