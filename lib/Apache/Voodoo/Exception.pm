@@ -84,6 +84,8 @@ use Exception::Class (
 );
 
 Apache::Voodoo::Exception::RunTime->Trace(1);
+Apache::Voodoo::Exception::Application::DisplayError->Trace(1);
+Apache::Voodoo::Exception::Application::AccessDenied->Trace(1);
 #Apache::Voodoo::Exception::RunTime->NoRefs(0);
 
 sub parse_stack_trace {

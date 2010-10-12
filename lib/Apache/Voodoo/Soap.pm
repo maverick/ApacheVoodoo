@@ -168,11 +168,11 @@ sub handle_request {
 			# with a SOAP fault that lets the server default it to 500, which isn't what we want.
 			# The server didn't have an internal error, we just didn't like what the client sent.
 			$self->{'status'} = 200;
-			$self->_client_fault($e->code, $e->error, $e->detail);
+			$self->_client_fault($e->code, $e->error, $e->detail, $e->trace);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::AccessDenied")) {
 			$self->{'status'} = $self->{'mp'}->forbidden;
-			$self->_client_fault($self->{'mp'}->forbidden, $e->error, $e->detail);
+			$self->_client_fault($self->{'mp'}->forbidden, $e->error, $e->detail, $e->trace);
 		}
 		elsif ($e->isa("Apache::Voodoo::Exception::Application::RawData")) {
 			$self->{'status'} = $self->{'mp'}->ok;
@@ -189,25 +189,27 @@ sub handle_request {
 			$self->{'status'} = $self->{'mp'}->ok;
 			$self->_client_fault(700, $e->error, $e->target);
 		}
-		elsif ($e->isa("Apache::Voodoo::Exception::RunTime") && $self->{'engine'}->is_devel_mode()) {
-			# Apache::Voodoo::Exception::RunTime
-			# Apache::Voodoo::Exception::RunTime::BadCommand
-			# Apache::Voodoo::Exception::RunTime::BadReturn
-			$self->{'status'} = $self->{'mp'}->server_error;
-			$self->_server_fault($self->{'mp'}->server_error, $e->error, Apache::Voodoo::Exception::parse_stack_trace($e->trace));
-		}
-		elsif ($e->isa("Exception::Class::DBI") && $self->{'engine'}->is_devel_mode()) {
-			$self->{'status'} = $self->{'mp'}->server_error;
-			$self->_server_fault($self->{'mp'}->server_error, $@->description, {
-				"message" => $@->errstr,
-				"package" => $@->package,
-				"line"    => $@->line,
-				"query"   => $@->statement
-			});
-		}
-		elsif ($self->{'engine'}->is_devel_mode()) {
-			$self->{'status'} = $self->{'mp'}->server_error;
-			$self->_server_fault($self->{'mp'}->server_error, ref($e)?$e->error:"$e");
+		elsif ($self->{'engine'}->is_devel_mode) {
+			if ($e->isa("Apache::Voodoo::Exception::RunTime")) {
+				# Apache::Voodoo::Exception::RunTime
+				# Apache::Voodoo::Exception::RunTime::BadCommand
+				# Apache::Voodoo::Exception::RunTime::BadReturn
+				$self->{'status'} = $self->{'mp'}->server_error;
+				$self->_server_fault($self->{'mp'}->server_error, $e->error, undef, $e->trace);
+			}
+			elsif ($e->isa("Exception::Class::DBI")) {
+				$self->{'status'} = $self->{'mp'}->server_error;
+				$self->_server_fault($self->{'mp'}->server_error, $@->description, {
+					"message" => $@->errstr,
+					"package" => $@->package,
+					"line"    => $@->line,
+					"query"   => $@->statement
+				});
+			}
+			else {
+				$self->{'status'} = $self->{'mp'}->server_error;
+				$self->_server_fault($self->{'mp'}->server_error, ref($e)?$e->error:"$e");
+			}
 		}
 		else {
 			$self->{'status'} = $self->{'mp'}->server_error;
@@ -232,21 +234,26 @@ sub _server_fault {
 sub _make_fault {
 	my $self = shift;
 
-	my ($t,$c,$s,$d) = @_;
+	my ($type,$code,$string,$detail,$trace) = @_;
 
-	my %msg;
-	if (defined($c)) {
-		$msg{'faultcode'} = $t.'.'.$c;
+	my %message;
+	if (defined($code)) {
+		$message{'faultcode'} = $type.'.'.$code;
 	}
 	else {
-		$msg{'faultcode'} = $t;
+		$message{'faultcode'} = $type;
 	}
 
-	warn($msg{'faultcode'});
-	$msg{'faultstring'} = $s;
-	$msg{'faultdetail'} = $d if (defined($d));
+	$message{'faultstring'} = $string;
 
-	die SOAP::Fault->new(%msg);
+	if (defined($detail)) {
+		$message{'faultdetail'} = $detail;
+	}
+	elsif ($self->{'engine'}->is_devel_mode() && defined($trace)) {
+		$message{'faultdetail'} = Apache::Voodoo::Exception::parse_stack_trace($trace);
+	}
+
+	die SOAP::Fault->new(%message);
 }
 
 1;
