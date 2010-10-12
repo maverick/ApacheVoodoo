@@ -1,6 +1,6 @@
 package Apache::Voodoo::Loader::Static;
 
-$VERSION = "3.0201";
+$VERSION = "3.0202";
 
 use strict;
 use base("Apache::Voodoo::Loader");

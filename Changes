@@ -1,6 +1,14 @@
-3.02 - 6/28/2010
-================
-Added dependance on Data::Structure::Util
+3.0202 - 10/12/2010
+===================
+Fixed dynamic reloading bug on models.
+
+Added stack trace to display_error() and access_denied() methods
+
+Added a way to debug multiple sessions at once in the native debugging backend.
+
+3.0201 - 6/28/2010
+==================
+Added dependence on Data::Structure::Util
 
 Moved all the cleanup tasks to an Apache cleanup handler, thus making the system
 more responsive.
@@ -10,8 +18,8 @@ Fixed a glitch in Debug/Log4perl.pm.  The Apache.Voodoo name space works again.
 Cleaned up the debug javascript to remove inadvertent use of reserved keywords,
 and to be more jslint compliant.
 
-3.01 - 5/13/2010
-================
+3.0100 - 5/13/2010
+==================
 Added A::V::Test which lets you driving an application outside of Apache so
 that you can unit test your apps.
 
@@ -19,8 +27,8 @@ Simplified the Native debugging back end.
 
 Various bug fixes.
 
-3.00 - 2/1/2010
-================
+3.0000 - 2/1/2010
+=================
 Added true MVC support.
 
 Abstracted debugging into multiple backends.  The classic mechanism (aka Native) has
