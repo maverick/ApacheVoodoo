@@ -15,7 +15,6 @@ sub new {
 	$self->{handlers} = [];
 
 	unless (ref($conf->{'debug'}) eq "HASH") {
-		warn($conf->{'debug'});
 		# old style config, so we'll go full monty for devel and silence for production.
 		if ($conf->{'debug'} == 1) {
 			$conf->{'debug'} = {
