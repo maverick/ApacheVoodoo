@@ -13,7 +13,7 @@ Complete documentation is available at http://www.apachevoodoo.com
 =cut ###############################################################################
 package Apache::Voodoo::Test;
 
-$VERSION = "3.0203";
+$VERSION = "3.0204";
 
 use strict;
 
