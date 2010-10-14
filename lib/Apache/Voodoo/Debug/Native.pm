@@ -109,6 +109,30 @@ sub new {
 		else {
 			$self->{link} = [];
 		}
+
+		if (exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2) {
+			# There doesn't appear to be a way to pull off this same trick in Apache 1.
+			# For anyone who's still using that version, they'll have to do this configuration
+			# by hand.
+
+			unless ($INC{'Apache/Voodoo/Debug/Handler.pm'}) {
+				# add the handler into the mod_perl config
+				require Apache2::ServerUtil;
+				Apache2::ServerUtil->server->add_config([
+					'<Perl>',
+					'use Apache::Voodoo::Debug::Handler;',
+					'$Apache::Voodoo::Debug = Apache::Voodoo::Debug::Handler->new();',
+					'</Perl>',
+					'<Location '.$ac->debug_path().'>',
+					'SetHandler modperl',
+					'PerlResponseHandler $Apache::Voodoo::Debug->handler',
+					'Order Allow,Deny',
+					'Allow From all',
+					'Deny From none',
+					'</Location>'
+				]);
+			}
+		}
 	}
 
 	# we always send this since is fundamental to identifying the request chain
