@@ -388,7 +388,11 @@ sub add {
 		($values,$errors) = $self->validate_add($p);
 
 		if (scalar keys %{$errors}) {
+			# Preserve backward compatibility
+			# since add returned HAS_ERRORS (upper-case),
+			# and edit returned has_errors (lower-case).
 			$errors->{'HAS_ERRORS'} = 1;
+			$errors->{'has_errors'} = 1;
 
 			# copy values back into form
 			foreach (keys(%{$values})) {
@@ -502,6 +506,10 @@ sub edit {
 		($values,$errors) = $self->validate_edit($p);
 
 		if (scalar keys %{$errors}) {
+			# Preserve backward compatibility
+			# since add returned HAS_ERRORS (upper-case),
+			# and edit returned has_errors (lower-case).
+			$errors->{'HAS_ERRORS'} = 1;
 			$errors->{'has_errors'} = 1;
 
 			# copy values into template
