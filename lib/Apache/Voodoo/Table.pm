@@ -363,7 +363,7 @@ sub validate_edit {
 			undef,
 			$values->{$_},
 		$params->{$self->{'pkey'}});
-		if ($res->[0]->[0] == 1) {
+		if (defined($res->[0]) && $res->[0]->[0] == 1) {
 			$errors->{"DUP_$_"} = 1;
 		}
 	}
