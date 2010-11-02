@@ -9,10 +9,10 @@ BEGIN {
 }
 
 use Data::Dumper;
-use Test::More tests => 42;
+use Test::More tests => 48;
 
-my $mysql_skip = 16;
-my $sqlite_skip = 11;
+my $mysql_skip  = 19;
+my $sqlite_skip = 14;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -781,6 +781,50 @@ sub edit_tests {
         },
 		"($type) basic edit"
 	);
+
+	#
+	# Duplicate column checking.
+	#
+	my $table = Apache::Voodoo::Table->new({
+		table => 'avt_table',
+		primary_key => 'id',
+		columns => {
+			id        => { type => 'unsigned_int', bytes => 4,  required => 1 },
+			a_unique  => { type => 'varchar',      bytes => 16, unique   => 1 },
+			a_varchar => { type => 'varchar',      bytes => 16 },
+		}
+	});
+
+	$r = $table->edit({
+		dbh => $dbh,
+		params => {
+			cm => 'update',
+			id => 1,
+			a_varchar => "updated",
+            a_unique  => 'row 2',
+		}
+	});
+	ok($r->{'DUP_a_unique'}, 'Catches duplicate column value');
+
+	$r = $table->edit({
+		dbh => $dbh,
+		params => {
+			cm => 'update',
+			id => 1,
+			a_varchar => "updated",
+		}
+	});
+	is($r,1,"($type) edit ignoring unqiue column");
+
+	$r = $table->edit({
+		dbh => $dbh,
+		params => {
+			cm => 'update',
+			id => 1,
+			a_varchar => "updated",
+		}
+	});
+	is($r,1,"($type) edit replacing unqiue column with same value");
 }
 
 sub probe_tests {

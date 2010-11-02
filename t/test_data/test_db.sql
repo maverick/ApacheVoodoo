@@ -25,9 +25,9 @@ INSERT INTO avt_xref_table VALUES (3,1);
 INSERT INTO avt_xref_table VALUES (3,2);
 INSERT INTO avt_xref_table VALUES (3,3);
 
-INSERT INTO avt_table VALUES(1,1,0,'2009-01-01','13:00:00','2000-02-01 12:00:00','a text string',             'a much larger text string');
-INSERT INTO avt_table VALUES(2,2,1,'2010-01-01','17:00:00','2010-02-01 14:00:00','another text string',       'different much longer string');
-INSERT INTO avt_table VALUES(3,4,1,'2010-03-15','16:00:00','2010-01-01 12:00:00','loren ipsum solor sit amet','consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.');
+INSERT INTO avt_table VALUES(1,1,0,'2009-01-01','13:00:00','2000-02-01 12:00:00','a text string',             'row 1', 'a much larger text string');
+INSERT INTO avt_table VALUES(2,2,1,'2010-01-01','17:00:00','2010-02-01 14:00:00','another text string',       'row 2', 'different much longer string');
+INSERT INTO avt_table VALUES(3,4,1,'2010-03-15','16:00:00','2010-01-01 12:00:00','loren ipsum solor sit amet','row 3', 'consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.');
 
 DROP TABLE IF EXISTS avt_all_types;
 CREATE TABLE avt_all_types (

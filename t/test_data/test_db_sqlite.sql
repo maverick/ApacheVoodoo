@@ -7,5 +7,6 @@ CREATE TABLE avt_table (
 	a_time time,
 	a_datetime datetime,
 	a_varchar varchar(128),
+	a_unique varchar(16) UNIQUE,
 	a_text text
 );
