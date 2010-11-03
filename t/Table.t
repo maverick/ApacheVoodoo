@@ -1,18 +1,11 @@
 use strict;
 use warnings;
 
-BEGIN {
-    # fall back to is_deeply if we don't have Test::Differences
-    if (!eval q{ use Test::Differences; 1 }) {
-        *eq_or_diff = \&is_deeply;
-    }
-}
-
 use Data::Dumper;
-use Test::More tests => 48;
+use Test::More tests => 54;
 
-my $mysql_skip  = 19;
-my $sqlite_skip = 14;
+my $mysql_skip  = 22;
+my $sqlite_skip = 17;
 
 use_ok('File::Temp');
 use_ok('DBI');
@@ -35,7 +28,7 @@ is($join->primary_key,'id',    'primary key accessor');
 is($join->foreign_key,'bar_id','foreign key accessor');
 
 is($join->table,$join->alias,"join alias defaults correctly");
-eq_or_diff([$join->columns],['foo.name','foo.thing'],"column name namespaced correctly");
+is_deeply([$join->columns],['foo.name','foo.thing'],"column name namespaced correctly");
 is($join->context,'common','context defaults correctly');
 is($join->type,'LEFT','join type defautls correctly');
 is($join->enabled,1,'join enabled by default');
@@ -191,7 +184,7 @@ sub simple_view_list {
 	my $type = shift;
 	my $dbh  = shift;
 
-	eq_or_diff(
+	is_deeply(
 		$simple_table->view({dbh => $dbh,'params' => {'id' => 1}}),
 		{
           'a_text' => 'a much larger text string',
@@ -213,7 +206,7 @@ sub simple_view_list {
 	$e = Exception::Class->caught();
 	isa_ok($e,"Apache::Voodoo::Exception::Application::DisplayError");
 
-	eq_or_diff(
+	is_deeply(
 		$simple_table->list({ dbh => $dbh }),
 		{
 			'PATTERN' => '',
@@ -225,8 +218,8 @@ sub simple_view_list {
 					'a_varchar' => 'a text string',
 					'avt_ref_table.name' => 'First Value',
 					'a_datetime' => '2000-02-01 12:00:00',
-					'avt_ref_table_id' => '1',
-					'id' => '1',
+					'avt_ref_table_id' => 1,
+					'id' => 1,
 					'a_time' => ' 1:00 PM'
 				},
 				{
@@ -235,8 +228,8 @@ sub simple_view_list {
 					'a_varchar' => 'another text string',
 					'avt_ref_table.name' => 'Second Value',
 					'a_datetime' => '2010-02-01 14:00:00',
-					'avt_ref_table_id' => '2',
-					'id' => '2',
+					'avt_ref_table_id' => 2,
+					'id' => 2,
 					'a_time' => ' 5:00 PM'
 				},
 				{
@@ -245,12 +238,12 @@ sub simple_view_list {
 					'a_date' => '03/15/2010',
 					'avt_ref_table.name' => 'Fourth Value',
 					'a_datetime' => '2010-01-01 12:00:00',
-					'avt_ref_table_id' => '4',
-					'id' => '3',
+					'avt_ref_table_id' => 4,
+					'id' => 3,
 					'a_time' => ' 4:00 PM'
 				}
 			],
-			'NUM_MATCHES' => '3',
+			'NUM_MATCHES' => 3,
 			'LIMIT' => [
 				{
 					'ID' => 'a_varchar',
@@ -271,7 +264,7 @@ sub simple_view_list {
 		"($type) list results"
 	);
 
-	eq_or_diff(
+	is_deeply(
 		$simple_table->list({ dbh => $dbh, params => { 'search_a_varchar' => 'a text' }}),
 		{
 			'PATTERN' => '',
@@ -283,12 +276,12 @@ sub simple_view_list {
 					'a_varchar' => 'a text string',
 					'avt_ref_table.name' => 'First Value',
 					'a_datetime' => '2000-02-01 12:00:00',
-					'avt_ref_table_id' => '1',
-					'id' => '1',
+					'avt_ref_table_id' => 1,
+					'id' => 1,
 					'a_time' => ' 1:00 PM'
 				}
 			],
-			'NUM_MATCHES' => '1',
+			'NUM_MATCHES' => 1,
 			'LIMIT' => [
 				{
 					'ID' => 'a_varchar',
@@ -309,7 +302,7 @@ sub simple_view_list {
 		"($type) list search results"
 	);
 
-	eq_or_diff(
+	is_deeply(
 		$simple_table->list({ dbh => $dbh, params => { 'limit' => 'a_text', 'pattern' => 'elit' }}),
 		{
 			'PATTERN' => 'elit',
@@ -321,12 +314,12 @@ sub simple_view_list {
 					'a_varchar' => 'loren ipsum solor sit amet',
 					'avt_ref_table.name' => 'Fourth Value',
 					'a_datetime' => '2010-01-01 12:00:00',
-					'avt_ref_table_id' => '4',
-					'id' => '3',
+					'avt_ref_table_id' => 4,
+					'id' => 3,
 					'a_time' => ' 4:00 PM'
 				}
 			],
-			'NUM_MATCHES' => '1',
+			'NUM_MATCHES' => 1,
 			'LIMIT' => [
 				{
 					'ID' => 'a_varchar',
@@ -346,7 +339,7 @@ sub simple_view_list {
         }
 	);
 
-	eq_or_diff(
+	is_deeply(
 		$simple_table->list({ dbh => $dbh, params => {'sort' => 'datetime'}}),
 		{
 			'PATTERN' => '',
@@ -358,8 +351,8 @@ sub simple_view_list {
 					'a_varchar' => 'a text string',
 					'avt_ref_table.name' => 'First Value',
 					'a_datetime' => '2000-02-01 12:00:00',
-					'avt_ref_table_id' => '1',
-					'id' => '1',
+					'avt_ref_table_id' => 1,
+					'id' => 1,
 					'a_time' => ' 1:00 PM'
 				},
 				{
@@ -368,8 +361,8 @@ sub simple_view_list {
 					'a_date' => '03/15/2010',
 					'avt_ref_table.name' => 'Fourth Value',
 					'a_datetime' => '2010-01-01 12:00:00',
-					'avt_ref_table_id' => '4',
-					'id' => '3',
+					'avt_ref_table_id' => 4,
+					'id' => 3,
 					'a_time' => ' 4:00 PM'
 				},
 				{
@@ -378,12 +371,12 @@ sub simple_view_list {
 					'a_varchar' => 'another text string',
 					'avt_ref_table.name' => 'Second Value',
 					'a_datetime' => '2010-02-01 14:00:00',
-					'avt_ref_table_id' => '2',
-					'id' => '2',
+					'avt_ref_table_id' => 2,
+					'id' => 2,
 					'a_time' => ' 5:00 PM'
 				}
 			],
-			'NUM_MATCHES' => '3',
+			'NUM_MATCHES' => 3,
 			'LIMIT' => [
 				{
 					'ID' => 'a_varchar',
@@ -445,14 +438,14 @@ sub complex_view_list {
 		}
 	});
 
-	eq_or_diff(
+	is_deeply(
 		$table->view({dbh => $dbh,'params' => {'id' => 1}}),
 		{
           'a_text' => 'a much larger text string',
           'a_date' => '01/01/2009',
           'a_varchar' => 'a text string',
           'a_time' => ' 1:00 PM',
-          'id' => '1',
+          'id' => 1,
           'avt_ref_table.name' => 'First Value',
           'a_datetime' => '2000-02-01 12:00:00'
         },
@@ -466,7 +459,7 @@ sub complex_view_list {
 	$e = Exception::Class->caught();
 	isa_ok($e,"Apache::Voodoo::Exception::Application::DisplayError");
 
-	eq_or_diff(
+	is_deeply(
 		$table->list({ dbh => $dbh }),
 		{
           'PATTERN' => '',
@@ -479,7 +472,7 @@ sub complex_view_list {
                         'second_ref.name' => 'First Value',
                         'avt_ref_table.name' => 'First Value',
                         'a_datetime' => '2000-02-01 12:00:00',
-                        'id' => '1',
+                        'id' => 1,
                         'a_time' => ' 1:00 PM'
                       },
                       {
@@ -489,7 +482,7 @@ sub complex_view_list {
                         'second_ref.name' => 'Second Value',
                         'avt_ref_table.name' => 'Second Value',
                         'a_datetime' => '2010-02-01 14:00:00',
-                        'id' => '2',
+                        'id' => 2,
                         'a_time' => ' 5:00 PM'
                       },
                       {
@@ -499,11 +492,11 @@ sub complex_view_list {
                         'second_ref.name' => 'Fourth Value',
                         'avt_ref_table.name' => 'Fourth Value',
                         'a_datetime' => '2010-01-01 12:00:00',
-                        'id' => '3',
+                        'id' => 3,
                         'a_time' => ' 4:00 PM'
                       }
                     ],
-          'NUM_MATCHES' => '3',
+          'NUM_MATCHES' => 3,
           'LIMIT' => []
         },
 		"($type) complex list results");
@@ -511,7 +504,7 @@ sub complex_view_list {
 	my @joins = $table->joins('second_ref');
 	$joins[0]->enabled(0);
 
-	eq_or_diff(
+	is_deeply(
 		$table->list({ dbh => $dbh }),
 		{
           'PATTERN' => '',
@@ -523,7 +516,7 @@ sub complex_view_list {
                         'a_varchar' => 'a text string',
                         'avt_ref_table.name' => 'First Value',
                         'a_datetime' => '2000-02-01 12:00:00',
-                        'id' => '1',
+                        'id' => 1,
                         'a_time' => ' 1:00 PM'
                       },
                       {
@@ -532,7 +525,7 @@ sub complex_view_list {
                         'a_varchar' => 'another text string',
                         'avt_ref_table.name' => 'Second Value',
                         'a_datetime' => '2010-02-01 14:00:00',
-                        'id' => '2',
+                        'id' => 2,
                         'a_time' => ' 5:00 PM'
                       },
                       {
@@ -541,11 +534,11 @@ sub complex_view_list {
                         'a_varchar' => 'loren ipsum solor sit amet',
                         'avt_ref_table.name' => 'Fourth Value',
                         'a_datetime' => '2010-01-01 12:00:00',
-                        'id' => '3',
+                        'id' => 3,
                         'a_time' => ' 4:00 PM'
                       }
                     ],
-          'NUM_MATCHES' => '3',
+          'NUM_MATCHES' => 3,
           'LIMIT' => []
         },
 		"($type) complex list results with disabled join");
@@ -566,7 +559,7 @@ sub nested_join_list {
 				'sec_ref.name' => undef,
 				'avt_ref_table.name' => 'First Value',
 				'a_datetime' => '2000-02-01 12:00:00',
-				'id' => '1',
+				'id' => 1,
 				'a_time' => ' 1:00 PM'
 			},
 			{
@@ -576,7 +569,7 @@ sub nested_join_list {
 				'sec_ref.name' => 'Second Value',
 				'avt_ref_table.name' => 'First Value',
 				'a_datetime' => '2010-02-01 14:00:00',
-				'id' => '2',
+				'id' => 2,
 				'a_time' => ' 5:00 PM'
 			},
 			{
@@ -586,11 +579,11 @@ sub nested_join_list {
 				'sec_ref.name' => 'Second Value',
 				'avt_ref_table.name' => 'First Value',
 				'a_datetime' => '2010-01-01 12:00:00',
-				'id' => '3',
+				'id' => 3,
 				'a_time' => ' 4:00 PM'
 			}
 		],
-		'NUM_MATCHES' => '3',
+		'NUM_MATCHES' => 3,
 		'LIMIT' => []
 	};
 
@@ -634,7 +627,7 @@ sub nested_join_list {
 		}
 	});
 
-	eq_or_diff($table->list({dbh => $dbh}),$result,'nest join style 1');
+	is_deeply($table->list({dbh => $dbh}),$result,'nest join style 1');
 
 	$table = Apache::Voodoo::Table->new({
 		table => 'avt_table',
@@ -674,7 +667,7 @@ sub nested_join_list {
 		}
 	});
 
-	eq_or_diff($table->list({dbh => $dbh}),$result,'nest join style 2');
+	is_deeply($table->list({dbh => $dbh}),$result,'nest join style 2');
 }
 
 sub having_clause {
@@ -702,7 +695,7 @@ sub having_clause {
 		}
 	});
 
-	eq_or_diff($table->list({dbh => $dbh},{'having' => 'a_datetime > "2010-01-01"'}),
+	is_deeply($table->list({dbh => $dbh},{'having' => 'a_datetime > "2010-01-01"'}),
 	{
 		DATA => [
 			{
@@ -711,7 +704,7 @@ sub having_clause {
 				a_text => 'different much longer string',
 				a_time => ' 5:00 PM',
 				a_varchar => 'another text string',
-				id => '2',
+				id => 2,
 			},
 			{
 				a_date => '03/15/2010',
@@ -719,11 +712,11 @@ sub having_clause {
 				a_text => 'consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
 				a_time => ' 4:00 PM',
 				a_varchar => 'loren ipsum solor sit amet',
-				id => '3',
+				id => 3,
 			}
 		],
 		LIMIT => [],
-		NUM_MATCHES => '2',
+		NUM_MATCHES => 2,
 		PATTERN => '',
 		SORT_PARAMS => 'desc=1&amp;last_sort=varchar&amp;showall=0'
 	},
@@ -747,6 +740,29 @@ sub add_tests {
 			'a_time' => '1:00 PM'
         }
 	});
+
+	#
+	# Duplicate column checking.
+	#
+	my $table = Apache::Voodoo::Table->new({
+		table => 'avt_table',
+		primary_key => 'id',
+		columns => {
+			id        => { type => 'unsigned_int', bytes => 4,  required => 1 },
+			a_unique  => { type => 'varchar',      bytes => 16, unique   => 1 },
+			a_varchar => { type => 'varchar',      bytes => 16 },
+		}
+	});
+
+	$r = $table->add({
+		dbh => $dbh,
+		params => {
+			cm => 'add',
+			a_varchar => "inserted",
+            a_unique  => 'row 1',
+		}
+	});
+	ok($r->{'DUP_a_unique'}, 'add catches duplicate column value');
 }
 
 sub edit_tests {
@@ -767,7 +783,7 @@ sub edit_tests {
         }
 	});
 
-	eq_or_diff(
+	is_deeply(
 		$simple_table->view({dbh=>$dbh,params=>{'id' => 1}}),
 		{
           'a_text' => 'a very much larger text string',
@@ -775,8 +791,8 @@ sub edit_tests {
           'a_varchar' => 'a updated text string',
           'avt_ref_table.name' => 'Second Value',
           'a_datetime' => '2010-02-01 12:00:00',
-          'avt_ref_table_id' => '2',
-          'id' => '1',
+          'avt_ref_table_id' => 2,
+          'id' => 1,
           'a_time' => ' 2:00 PM'
         },
 		"($type) basic edit"
@@ -825,6 +841,35 @@ sub edit_tests {
 		}
 	});
 	is($r,1,"($type) edit replacing unqiue column with same value");
+
+	$table->add_update_callback(sub {
+		my $dbh    = shift;
+		my $params = shift;
+
+		my $return = {};
+		$return->{'BAD_VARCHAR'} = 1 unless $params->{'a_varchar'} eq "good";
+		return $return;
+	});
+
+	$r = $table->edit({
+		dbh => $dbh,
+		params => {
+			cm => 'update',
+			id => 1,
+			a_varchar => 'bad'
+		}
+	});
+	ok(ref($r) && $r->{'BAD_VARCHAR'}, 'edit callback works (fail)');
+
+	$r = $table->edit({
+		dbh => $dbh,
+		params => {
+			cm => 'update',
+			id => 1,
+			a_varchar => 'good'
+		}
+	});
+	is($r,1,'edit callback works (pass)');
 }
 
 sub probe_tests {
