@@ -16,6 +16,7 @@ use Apache2::Response;
 use Apache2::Request;
 use Apache2::Upload;
 use Apache2::Cookie;
+use Apache2::Connection;
 
 use base("Apache::Voodoo::MP::Common");
 
