@@ -1141,7 +1141,7 @@ sub new {
 	$self->{'foreign_key'} = $j->{'foreign_key'};
 
 
-	$self->{'enabled'} = $j->{'enabled'} || 1;
+	$self->{'enabled'} = defined($j->{'enabled'}) ? $j->{'enabled'} : 1;
 
 	return $self;
 }
