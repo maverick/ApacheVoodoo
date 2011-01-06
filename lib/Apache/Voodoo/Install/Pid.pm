@@ -7,7 +7,7 @@
 ###############################################################################
 package Apache::Voodoo::Install::Pid;
 
-$VERSION = "3.0204";
+$VERSION = "3.0205";
 
 use base("Apache::Voodoo::Install");
 

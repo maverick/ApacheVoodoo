@@ -7,7 +7,7 @@
 ################################################################################
 package Apache::Voodoo::View::HTML;
 
-$VERSION = "3.0204";
+$VERSION = "3.0205";
 
 use strict;
 use warnings;

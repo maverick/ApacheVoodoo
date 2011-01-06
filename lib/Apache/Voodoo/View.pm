@@ -1,6 +1,6 @@
 package Apache::Voodoo::View;
 
-$VERSION = "3.0204";
+$VERSION = "3.0205";
 
 use strict;
 use warnings;
