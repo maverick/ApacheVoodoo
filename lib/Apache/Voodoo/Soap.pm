@@ -70,7 +70,6 @@ sub handler {
 		return $self->{'mp'}->server_error();
 	}
 
-	my $return;
 	if ($self->{'mp'}->is_get() && $r->unparsed_uri =~ /\?wsdl$/) {
 		my $uri = $self->{'mp'}->uri();
 
@@ -111,10 +110,10 @@ sub handler {
 		}
 
 		$self->{'mp'}->flush();
-		$return = $self->{'mp'}->ok;
+		$self->{'status'} = $self->{'mp'}->ok;
 	}
 	else {
-		$return = $self->{'soap'}->handle($r);
+		$self->{'soap'}->handle($r);
 	}
 
 	$self->{'engine'}->status($self->{'status'});
