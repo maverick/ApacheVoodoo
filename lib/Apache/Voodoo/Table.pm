@@ -763,9 +763,9 @@ sub list {
 		push(@columns,$join->columns);
 	}
 
-	if (defined($additional_contraints->{'additional_join'})) {
-		$additional_contraints->{'additional_join'} = [$additional_constraints->{'additional_join'}] unless ref $additional_constraints->{'additional_join'};
-		push(@joins, @{$additional_constraints->{'additional_join'}});
+	if (defined($additional_constraint->{'additional_join'})) {
+		$additional_constraint->{'additional_join'} = [$additional_constraint->{'additional_join'}] unless ref $additional_constraint->{'additional_join'};
+		push(@joins, @{$additional_constraint->{'additional_join'}});
 	}
 
 	if ($self->{'list_options'}->valid_search($limit) && $self->safe_text($pattern)) {
