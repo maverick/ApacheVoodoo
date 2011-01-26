@@ -1,3 +1,20 @@
+3.0206 - 1/26/2010
+===================
+Included support for conditional joins in Voodoo::Table
+
+3.0205 - 1/6/2011
+===================
+Fixed return status bug on WSDL requests.
+
+3.0204 - 10/14/2010
+===================
+Added automatic setup of the native debugging handler.  This technique doesn't
+work in Apache 1.x so anybody still using it has to configure the handler by hand.
+
+3.0203 - 10/13/2010
+===================
+Setting debug != true correctly disables it.
+
 3.0202 - 10/12/2010
 ===================
 Fixed dynamic reloading bug on models.
