@@ -8,7 +8,7 @@
 ################################################################################
 package Apache::Voodoo::Loader;
 
-$VERSION = "3.0205";
+$VERSION = "3.0206";
 
 use strict;
 use warnings;

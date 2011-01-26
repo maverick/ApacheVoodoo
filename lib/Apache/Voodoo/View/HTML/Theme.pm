@@ -1,6 +1,6 @@
 package Apache::Voodoo::View::HTML::Theme;
 
-$VERSION = "3.0205";
+$VERSION = "3.0206";
 
 use strict;
 use warnings;
