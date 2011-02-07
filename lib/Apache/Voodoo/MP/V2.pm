@@ -5,7 +5,7 @@ $VERSION = "3.0206";
 use strict;
 use warnings;
 
-use Apache2::Const qw(OK REDIRECT DECLINED FORBIDDEN AUTH_REQUIRED SERVER_ERROR NOT_FOUND M_GET);
+use Apache2::Const -compile => qw(OK REDIRECT DECLINED FORBIDDEN AUTH_REQUIRED SERVER_ERROR NOT_FOUND M_GET);
 
 use Apache2::RequestRec;
 use Apache2::RequestIO;
