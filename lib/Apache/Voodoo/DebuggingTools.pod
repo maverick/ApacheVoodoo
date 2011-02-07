@@ -1,0 +1,204 @@
+=head1 Debugging Tools
+
+=head1 Backend Configuration
+
+Apache::Voodoo currently supports 3 different debugging backends, a built in "Native" backend, FirePHP,
+and L<Log::Log4perl>.  Each controlled via the C<< <debug> >> block in the applications 
+F<etc/voodoo.conf> file.  Each have different configuration rules and requirements as described below. 
+You're not restricted to picking just one, you can use any combination of them in any configuration you like.
+
+=head2 Native
+
+Native debugging captures debugging messages to either to a SQLlite or MySQL database.
+A separate Apache handler handles the display of the captured data.
+
+=head3 Initial Setup
+
+This only needs to be done once for all applications that want to use the Native debugging backend.
+
+=head4 Configure Voodoo
+
+First Apache::Voodoo needs to be told where the debug database is going to stored.  Execute B<voodoo-control setconfig>
+and set the values of C<Debug DB Connection>, C<Debug DB Username>, C<Debug DB Password>, and C<Debug URL Path>.  
+The first three are the parameters are passed to C<< DBI->connect >> to establish the connection the debugging database.
+C<Debug URL Path> tells the debug panel where on the server the debug handler is setup.  For example:
+
+	Debug DB Connection: dbi:SQLite:dbname=/tmp/apachevoodoo.db
+	  Debug DB Username:
+	  Debug DB Password:
+	     Debug URL Path: /debug
+
+uses a local SQLite database to store the debugging information.  If you use MySQL for storage, give each instance 
+of Apache its database; don't try sharing the same one.
+
+=head4 Configure Apache
+
+In your F<modperl-startup.pl> add
+
+	use Apache::Voodoo::Debug::Handler;
+	$Apache::Voodoo::Debug = Apache::Voodoo::Debug::Handler->new();
+
+If you have multiple vhosts running Apache::Voodoo add the following block *outside* of the vhost configuration 
+to enable it for all the vhosts at once.  If you only have one vhost running Apache::Voodoo then place this inside
+the vhost configuration block so that it is only enabled for that vhost.
+
+	<Location /debug>
+		SetHandler modperl
+		PerlResponseHandler $Apache::Voodoo::Debug->handler
+		Order allow,deny
+		Allow from all
+		Deny from none
+	</Location>
+
+The location here I<must> match the setting of C<Debug URL Path> in B<voodoo-control>.
+
+I<*Note:*> you can set the C<Order>, C<Allow>, and C<Deny> params to whatever is appropriate for your environment.
+
+=head3 Configuration Options
+
+Each of the following flags controls the display of the output from their corresponding functions.
+
+=over
+
+=item * debug = (0|1)
+
+=item * info = (0|1)
+
+=item * warn = (0|1)
+
+=item * error = (0|1)
+
+=item * exception = (0|1)
+
+=item * table = (0|1)
+
+=item * trace = (0|1)
+
+=item * profile = (0|1) - enables or disables the display of the timing messages produced by the C<mark()> function.
+
+=item * params =  (0|1) - enables or disables the display of the URL parameters or form post variables.
+
+=item * return_data = (0|1) - enables or disables the display of the data returned from each controller.
+
+=item * template_conf = (0|1) - enables of disables the inclusion of the C<< $p->{template_conf} >> as passed to the controller.
+
+=item * session = (0|1) - enables of disables the display of the contents of the session store at it exists at the end of the request.
+
+=back
+
+Setting C<all> to 1 is a shortcut for turning on everything.
+
+Example:
+
+	<debug>
+		<Native>
+			debug  = 1
+			info = 1
+			warn  = 1
+			error  = 1
+			exception = 1
+			table  = 1
+			trace  = 1
+	
+			profile = 1
+			params  = 1
+			return_data  = 1
+			template_conf  = 1
+			session = 1
+		</Native>
+	</debug>
+
+=head2 FirePHP
+
+Once you have installed the FirePHP plugin for Firefox, this backend will make your debug
+messages appear in your browser.  If you don't have the plugin installed, enabling this backend has no
+noticeable effect.
+
+Each of the following flags controls the display of the output from their corresponding functions.
+
+=over
+
+=item * debug = (0|1)
+
+=item * info = (0|1)
+
+=item * warn = (0|1)
+
+=item * error = (0|1)
+
+=item * exception = (0|1)
+
+=item * table = (0|1)
+
+=item * trace = (0|1)
+
+=back
+
+Setting C<all> to 1 is a shortcut for turning on everything.
+
+Example:
+
+	<debug>
+		<FirePHP>
+			debug  = 1
+			info = 1
+			warn  = 1
+			error  = 1
+			exception = 1
+			table  = 1
+			trace  = 1
+		</FirePHP>
+	</debug>
+
+=head2 Log4perl
+
+Once L<Log::Log4perl> has been installed, the Log4perl backend can be enabled by adding a C<< <Log4perl> >>
+configuration inside the C<< <debug> >> block in your application's F<voodoo.conf>.  The contents of that 
+block are treated as the configuration file for Log4perl.  Since Log4perl creates a single instance of itself 
+for Apache, as opposed to an instance for every application, it is important to make sure that each Log4perl 
+configuration does not effect the configuration of another.
+
+Example:
+
+	<debug>
+		<Log4perl>
+			log4perl.logger.test = TRACE, testfile
+			log4perl.appender.testfile = Log::Log4perl::Appender::File
+			log4perl.appender.testfile.filename = /tmp/test.log
+			log4perl.appender.testfile.layout = Log::Log4perl::Layout::PatternLayout
+			log4perl.appender.testfile.layout.ConversionPattern = %p [%d] %c: %m%n
+		</Log4perl>
+	</debug>
+
+
+Would enable all logging messages for the C<test> application.  You can control what things get logged based on the
+name of the package.  For example if you have a modules named C<Foo::Bar> and C<Foo::Baz> then
+
+	log4perl.logger.Foo.Bar = INFO, testfile
+	log4perl.logger.Foo.Bar = ERROR, testfile
+
+would log everything C<info()> and above from C<Foo::Bar> (and its subclasses) and everything C<error()> and above from
+C<Foo::Baz> (and its subclasses).
+
+It is important to be aware of how the names of Voodoo's debugging methods correspond to the logging levels in Log4perl.
+
+=over
+
+=item * trace() maps to C<TRACE>
+
+=item * debug() maps to C<DEBUG>
+
+=item * table() maps to C<DEBUG>
+
+=item * info() maps to C<INFO>
+
+=item * warn() maps to C<WARN>
+
+=item * error() maps to C<ERROR>
+
+=item * exception() maps to C<FATAL>
+
+=back 
+
+This is only a small example.  Log4perl is a very flexible and powerful system, please see the Log4perl website for
+details.

@@ -1,0 +1,34 @@
+%META:TOPICINFO{author="MaverickEdwards" date="1244575183" format="1.1" reprev="1.1" version="1.1"}%
+%META:TOPICPARENT{name="ViewAPI"}%
+---++ Basic Templates
+In =&lt;ServerRoot&gt;/sites/&lt;name_of_site&gt;/html= directory, create a file named =skeleton.tmpl= (or whatever you specified in the "skeleton" parameter above), and place (at least) this in it:
+<verbatim>
+<html>
+<TMPL_VAR _MAIN_BODY_>
+<TMPL_VAR _DEBUG_>
+</html>
+</verbatim>
+
+Here's the logic.  The vast majority of the time, every page on a site has the same basic look; the same header, the same footer, the same menu, etc.  What changes page to page is the core content, the meat so to speak.  Why write the HTML for the headers, etc over and over?  Why have to remember to include header and footer templates in every file?  Why have to go back and edit every file if you want to move the menu from the left to the right side?
+
+This method allows you to write all header/footer stuff once and have a single point of alteration for it. The core content (your other template files), are simply inlined where =_MAIN_BODY_= is in the skeleton.
+
+Let's say your =index.tmpl= file contains:
+<verbatim>
+<h1>Hello, welcome to my site</h1>
+Enjoy your stay.
+</verbatim>
+
+The resulting html as sent to the browser would be:
+<verbatim>
+<html>
+<h1>Hello, welcome to my site</h1>
+Enjoy your stay.
+<!-- Voodoo Debug info omitted for clarity-->
+</html>
+</verbatim>
+
+Any HTML::Template directives in the skeleton can be controlled by the [[ControllerAPI][Controller]].  You can think of it this way: The individual page template is inserted into the skeleton first and then normal [[CPAN:HTML::Template][HTML::Template]] processing is done on the entire thing.
+
+
+%META:REVCOMMENT{ncomments="0"}%

@@ -1,0 +1,10 @@
+=head1 Trouble Shooting Common Problems
+
+
+=head1 I upgraded from Version 2 to 3 and now I get...
+
+
+=head2 Not a HASH reference at /Apache/Voodoo/Handler.pm line 4x.
+
+One of the changed between Version 2 and 3 was moving from the procedural mod_perl calling style to the object one.  If you find that this error occurs on a line which has C<$self> in it, then most likely Voodoo isn't being called like a method as it should be.  Check that your perl startup file and the directory configuration blocks in your Apache configuration have been updated to the new syntax.  See the L<Updating the Apache Configuration|L<Apache::Voodoo::MigratingToVersion3>#Updating_the_Apache_Configuration> section of the L<Apache::Voodoo::MigratingToVersion3> doc for details.
+

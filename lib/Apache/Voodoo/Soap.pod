@@ -1,0 +1,245 @@
+=head1 Serving SOAP Requests
+
+
+=head1 Overview
+
+Voodoo can handle serving soap requests to your applications in a nearly transparent manner.
+Because of the number of differences in the way that requests are made for in a standard web
+browser type environment versus in a SOAP environment, Voodoo uses a separate Apache handler
+for dealing with SOAP requests.  Any application can be configured to either be accessible via
+Native HTTP, SOAP or both at once.
+
+=head1 Configuration 
+
+First, install L<SOAP::Lite>.  When it comes to the configuration section be sure to set the
+option C<Apache/mod_perl server> to yes.
+
+Inside your F<modperl-startup.pl> for Apache add the following:
+
+	use Apache::Voodoo::Soap;
+	$Apache::Voodoo::Soap = Apache::Voodoo::Soap->new();
+
+You can either configure the handler to be attached to a virtual host or url path in same way
+that you can for the standard HTTP handler.
+
+=head2 Example Virtual Host Configuration
+
+	<VirtualHost *:80>
+		ServerName soap.host.com
+		DocumentRoot /data/apache/sites/my_app/html
+	
+		<Directory /data/apache/sites/my_app/html/>
+			SetHandler modperl
+	
+			PerlResponseHandler $Apache::Voodoo::Soap->handler
+			PerlSetVar ID my_app
+		</Directory>
+	</VirtualHost>
+
+=head2 Example URL path Configuration
+
+	<Location /soap>
+		SetHandler modperl
+
+		PerlResponseHandler $Apache::Voodoo::Soap->handler
+		PerlSetVar ID my_app
+		PerlSetVar SiteRoot /soap
+	</Location>
+
+Would make everything under /soap handled by the SOAP handler.  The C<SiteRoot> parameter must match
+the value of the location.  This is necessary to deal with the fact that there isn't a good way from
+inside mod_perl to know if the URL that's being requested is part of a C<Location> or C<Alias> directive.
+
+=head1 Behavioural differences when dealing with SOAP
+
+=head2 URL and Method Names
+
+In the web environment there is only the URL to define what controller and method should be called
+within your application, in SOAP you have both a URL and a method.  The URL maps to the name of the
+controller, and the SOAP method is the same as the method in the controller.
+
+|*web*| *soap* | *voodoo controller* |
+|/foo/bar_index|/foo/index->bar()    | my_app::C::foo::index->bar()|
+|/foo/index    |/foo/index->handle() | my_app::C::foo::index->handle()|
+
+I<*NOTE*> Even if you are running your application only under the SOAP handler, the rule concerning
+the existence of a F<.tmpl> still applies.  See L<Apache::Voodoo::ControllerAPI>.
+
+=head2 Parameter handling
+
+The largest difference between the web and SOAP calls is in parameter handling.  With standard HTTP
+requests you always get key/value pairs, a SOAP method call can have any number of,
+or types of parameters in any combination imaginable.  To help make your applications as unaware of
+their environment as possible, the parameters to the SOAP method get pre-processed according to two rules.
+
+=over
+
+=item * any parameter which is a hash reference has its key value pairs inserted into C<$p->{params}>.  Duplicated keys cause the value to be turned into an array reference and the new value appended.  This is in keeping with the way duplicate keys are handled in the web environment.
+
+=item * The original parameter list is stored verbatim as an array reference in C<$p->{params}->{ARGV}>.
+
+=back
+
+So, if you dictate that your services always take a single hash reference as the parameter, then C<< $p->{params} >> will look the same for both web and SOAP requests.
+Examples:
+
+|* SOAP Parameters* | *$p->{params} Contents* |
+
+	 key => 'foo',
+	 key2 => 'bar',
+	 ARGV => [
+	    { key => 'foo', key2 => 'bar}
+	 ]
+
+
+	 key => 'foo',
+	 key2 => 'bar',
+	 ARGV => [
+	    { key => 'foo' },
+	    { key2 => 'bar' }
+	 ]
+
+
+	 key => ['foo', 'baz'],
+	 key2 => 'bar',
+	 ARGV => [
+	    { key => 'foo' },
+	    { key2 => 'bar', key => 'baz' }
+	 ]
+
+
+	 {key => 'foo'},
+	 [ 'a', 'b', {c => 'd'} ],
+	 {key2 => 'bar' }
+
+	 key => 'foo',
+	 key2 => 'bar',
+	 ARGV => [
+	    { key => 'foo' },
+	    [ 'a', 'b', {c => 'd'} ],
+	    { key2 => 'bar' }
+	 ]
+
+
+	 ARGV => [
+	   'key',
+	   'not',
+	   'key2',
+	   'a',
+	   'key3',
+	   'hash',
+	   'key4',
+	   'ref'
+	 ]
+
+
+=head2 Debugging
+
+All the debugging methods inherited from Apache::Voodoo work as expected with some caveats for the
+Native and L<Apache::Voodoo::FirePHP> debugging backends.  The Log4perl backend is not effected in
+any way by which environment it's in.
+
+=head3 Native backend
+
+All the debugging data is captured as usual, however it is not included in the SOAP response in any
+form.  See the L<Native Backend Internals|L<Apache::Voodoo::InternalsDebugNative>> for more details
+about how to access that data.
+
+=head3 L<Apache::Voodoo::FirePHP> backend
+
+Doesn't do anything since, to my knowledge, there are no SOAP clients which support the FirePHP Protocol.
+
+=head2 Methods inherited from Apache::Voodoo
+
+The following methods don't have a direct analog in the SOAP universe (for example SOAP has no concept
+of browser redirection), so they attempt to DWIM as much as possible.
+
+=head3 redirect($url)
+
+Returns a L<SOAP::Fault> object with the following properties to the calling client
+
+=over
+
+=item * faultcode: 301
+
+=item * faultstring: Redirected
+
+=item * detail: $url
+
+=back
+
+=head3 display_error($message, [$url])
+
+Returns a L<SOAP::Fault> object with the following properties to the calling client
+
+=over
+
+=item * faultcode: 600
+
+=item * faultstring: $message
+
+=item * detail: { nextservice => $url }
+
+=back
+
+=head3 access_denied($message)
+
+Returns a L<SOAP::Fault> object with the following properties to the calling client
+
+=over
+
+=item * faultcode: 401
+
+=item * faultstring: $message
+
+=item * detail: undefined
+
+=back
+
+=head3 exception($message)
+
+Returns a L<SOAP::Fault> object with the following properties to the calling client
+
+=over
+
+=item * faultcode: 500
+
+=item * faultstring: $message
+
+=back
+
+=head3 raw_mode($content_type,$data,[$headers])
+
+Returns a soap message of the form
+
+	{
+		'error'        => 0,
+		'success'      => 1,
+		'rawdata'      => 1,
+		'content-type' => $content_type,
+		'headers'      => $headers,
+		'data'         => $data
+	}
+
+=head3 set_view()
+
+Silently does nothing
+
+=head2 Views
+
+The SOAP response itself is a view, and by nature of the SOAP protocol, the only one you get.  
+Any view objects loaded by the applications F<voodoo.conf> file are inaccessible. The C<default_view> 
+directive in C<template_conf> section doesn't do anything, and the C<set_view()> silently does nothing.
+
+=head1 Client Cookie Handling
+
+Soap clients need to accept and pass back http cookies with each request in order for sessions to work
+correctly.  You can enable cookie support for L<SOAP::Lite> using L<HTTP::Cookies> like this:
+
+	$cookie_jar = HTTP::Cookies->new(ignore_discard => 1);
+	
+	$soap_client->proxy('http://proxy.url', cookie_jar => $cookie_jar);
+
+Be sure to use one cookie jar object for all your soap client objects, otherwise the soap server will
+have multiple sessions which can not share information...this probably isn't what you want.
+

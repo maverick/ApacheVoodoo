@@ -1,0 +1,12 @@
+%META:TOPICINFO{author="MaverickEdwards" date="1247092604" format="1.1" version="1.2"}%
+---+ !!Fundamental Concepts
+
+%TOC%
+
+---++ Overview
+     <img src="%ATTACHURLPATH%/voodoo.png" alt="voodoo.png" width='675' height='774' />
+
+[[Wikipedia:Model-View-Controller][Model View Controller Pattern]]
+
+%META:FILEATTACHMENT{name="voodoo.png" attachment="voodoo.png" attr="" comment="" date="1246461535" path="voodoo.png" size="85003" stream="voodoo.png" tmpFilename="/tmp/aJYjDr3Qpy" user="MaverickEdwards" version="1"}%
+%META:REVCOMMENT{comment_1="Attached file !voodoo.png" minor_1="0" ncomments="1" rev_1="1" t_1="Upload1246461536"}%

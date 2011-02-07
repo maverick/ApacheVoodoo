@@ -1,0 +1,206 @@
+=head1 Native Debugging Backend Internals
+
+
+=head1 Database Schema
+
+<dot>
+digraph G {
+    rankdir="RL";
+    node[shapeC<plaintext,fontsize>9];
+
+    request[rankC<"min",label><
+        <table cellspacing="0">
+        <tr>
+           <td colspanC<"3" bgcolor>"grey">request</td>
+        </tr>
+        <tr>
+           <td bgcolorC<"grey" width>"80">column</td>
+           <td bgcolorC<"grey" width>"100">type</td>
+           <td bgcolorC<"grey" width>"125">extra</td>
+        </tr>
+        <tr><td alignC<"left">id</td>                <td align>"left">int unsigned</td>         <td alignC<"left" port>"id">auto increment primary key</td> </tr>
+        <tr><td alignC<"left">request_timestamp</td> <td align>"left">varchar(64) not null</td> <td align="left">key</td></tr>
+        <tr><td alignC<"left">application</td>       <td align>"left">varchar(64) not null</td> <td align="left">key</td></tr>
+        <tr><td alignC<"left">session_id</td>        <td align>"left">varchar(64)</td>          <td align="left">key</td></tr>
+        <tr><td alignC<"left">url</td>               <td align>"left">varchar(255)</td>         <td align="left">key</td></tr>
+        <tr><td alignC<"left">status</td>            <td align>"left">varchar(128)</td>         <td></td></tr>
+        </table>
+    >];
+
+    debug[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspanC<"3" bgcolor>"grey">debug</td>
+        </tr>
+        <tr>
+            <td bgcolorC<"grey" width>"50">column</td>
+            <td bgcolorC<"grey" width>"100">type</td>
+            <td bgcolorC<"grey" width>"50">extra</td>
+        </tr>
+        <tr><td alignC<"left" port>"request_id">request_id</td><td alignC<"left">int unsigned</td>        <td align>"left">key</td></tr>
+        <tr><td alignC<"left">seq</td>                         <td align>"left">int unsigned</td>        <td align="left">key</td></tr>
+        <tr><td alignC<"left">level</td>                       <td align>"left">varchar(64) not null</td><td align="left">key</td></tr>
+        <tr><td alignC<"left">stack</td>                       <td align>"left">text</td>                <td></td></tr>
+        <tr><td alignC<"left">data</td>                        <td align>"left">text</td>                <td></td></tr>
+        </table>
+    >];
+
+    params[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspanC<"3" bgcolor>"grey">params</td>
+        </tr>
+        <tr>
+            <td bgcolorC<"grey" width>"50">column</td>
+            <td bgcolorC<"grey" width>"100">type</td>
+            <td bgcolorC<"grey" width>"50">extra</td>
+        </tr>
+        <tr><td alignC<"left" port>"request_id">request_id</td><td alignC<"left">int unsigned</td>   <td align>"left">key</td></tr>
+        <tr><td alignC<"left">data</td>                        <td align>"left">text not null</td>  <td></td></tr>
+        </table>
+    >];
+
+    profile[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspanC<"3" bgcolor>"grey">profile</td>
+        </tr>
+        <tr>
+            <td bgcolorC<"grey" width>"50">column</td>
+            <td bgcolorC<"grey" width>"100">type</td>
+            <td bgcolorC<"grey" width>"50">extra</td>
+        </tr>
+        <tr><td alignC<"left" port>"request_id">request_id</td><td alignC<"left">int unsigned</td>        <td align>"left">key</td></tr>
+        <tr><td alignC<"left">timestamp</td>                   <td align>"left">varchar(64) not null</td><td align="left">key</td></tr>
+        <tr><td alignC<"left">data</td>                        <td align>"left">text not null</td>       <td></td></tr>
+        </table>
+    >];
+
+    return_data[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspanC<"3" bgcolor>"grey">return_data</td>
+        </tr>
+        <tr>
+            <td bgcolorC<"grey" width>"50">column</td>
+            <td bgcolorC<"grey" width>"100">type</td>
+            <td bgcolorC<"grey" width>"50">extra</td>
+        </tr>
+        <tr><td alignC<"left" port>"request_id">request_id</td> <td alignC<"left">int unsigned</td>         <td align>"left">key</td></tr>
+        <tr><td alignC<"left">seq</td>                          <td align>"left">int unsigned</td>         <td align="left">key</td></tr>
+        <tr><td alignC<"left">handler</td>                      <td align>"left">varchar(128) not null</td><td></td></tr>
+        <tr><td alignC<"left">method</td>                       <td align>"left">varchar(64) not null</td> <td></td></tr>
+        <tr><td alignC<"left">data</td>                         <td align>"left">text</td>                 <td></td></tr>
+        </table>
+    >];
+
+    session[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspanC<"3" bgcolor>"grey">session</td>
+        </tr>
+        <tr>
+            <td bgcolorC<"grey" width>"50">column</td>
+            <td bgcolorC<"grey" width>"100">type</td>
+            <td bgcolorC<"grey" width>"50">extra</td>
+        </tr>
+        <tr><td alignC<"left" port>"request_id">request_id</td><td alignC<"left">int unsigned</td>   <td align>"left">key</td></tr>
+        <tr><td alignC<"left">data</td>                        <td align>"left">text not null</td>  <td></td></tr>
+        </table>
+    >];
+
+    template_conf[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspanC<"3" bgcolor>"grey">template_conf</td>
+        </tr>
+        <tr>
+            <td bgcolorC<"grey" width>"50">column</td>
+            <td bgcolorC<"grey" width>"100">type</td>
+            <td bgcolorC<"grey" width>"50">extra</td>
+        </tr>
+        <tr><td alignC<"left" port>"request_id">request_id</td><td alignC<"left">int unsigned</td>   <td align>"left">key</td></tr>
+        <tr><td alignC<"left">data</td>                        <td align>"left">text not null</td>  <td></td></tr>
+        </table>
+    >];
+
+    session:request_id:w-> request:id:e;
+    return_data:request_id:w->request:id:e;
+    debug:request_id:w->request:id:e;
+    profile:request_id:w->request:id:e;
+    params:request_id:w->request:id:e;
+    template_conf:request_id:w->request:id:e;
+
+    version[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspanC<"3" bgcolor>"grey">version</td>
+        </tr>
+        <tr>
+            <td bgcolorC<"grey" width>"50">column</td>
+            <td bgcolorC<"grey" width>"100">type</td>
+            <td bgcolorC<"grey" width>"50">extra</td>
+        </tr>
+        <tr><td alignC<"left">version</td><td align>"left">varchar(64) not null</td><td></td></tr>
+        </table>
+    >];
+}
+
+</dot>
+
+=head2 request
+
+Each record uniquely identifies a single request.
+   * request_timestamp: L<:Time::L<Apache::Voodoo::HiRes>> timestamp for when the request began.
+   * application: which application this goes with.  Same as the C<ID> parameter in the L<Apache::Voodoo::ApacheConfiguration>.
+   * session_id: session id.
+   * url: the URL this request was for.
+   * status: the HTTP status code returned at the end of this request.
+
+=head2 debug
+
+Each record contains the data related to single call from one of the L<Debugging Methods|L<Apache::Voodoo::DebuggingTools>#Methods>.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * seq: the order in which this debug data was generated for this request.
+   * level: the debug level associated with this record, the possible values correspond one to one with the names of the methods.
+   * stack: JSON encoded stack trace from the point the debug method was called.
+   * data: JSON encoded data from the debug method.
+
+=head2 params
+
+Contains the GET/POST params for each request.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * data: JSON encoded contents of C<$p->{params}>.
+
+=head2 profile
+
+Contains the benchmarking data associated with this request.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * timestamp: L<:Time::L<Apache::Voodoo::HiRes>> timestamp of when the event occurred.
+   * data: value of the parameter passed to C<$self->mark()>
+
+=head2 return_data
+
+Contains the data that was returned from each controller for this request.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * seq: the order in which the controller was called during this request.
+   * handler: name of the controller that produced this data.
+   * method: name of the method that produced this data.
+   * data: the data the controller returned, JSON encoded.
+
+=head2 session
+
+Contains the state of the session at the end of each request.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * data: JSON encoded contents of C<$p->{session}>.
+
+=head2 template_conf
+
+Contains C<$p->{template_conf}> as it was passed to the controller.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * data: JSON encoded contents of C<$p->{template_conf}>.
+
+=head2 version
+
+Contains the schema version number of the database.  Voodoo uses this internally to know if the db schema needs to be updated.
+

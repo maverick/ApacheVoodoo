@@ -1,0 +1,201 @@
+%META:TOPICINFO{author="MaverickEdwards" date="1245355642" format="1.1" reprev="1.2" version="1.2"}%
+---+ !!Native Debugging Backend Internals
+%TOC%
+
+---++ Database Schema
+<dot>
+digraph G {
+    rankdir="RL";
+    node[shape=plaintext,fontsize=9];
+
+    request[rank="min",label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspan="3" bgcolor="grey">request</td>
+        </tr>
+        <tr>
+           <td bgcolor="grey" width="80">column</td>
+           <td bgcolor="grey" width="100">type</td>
+           <td bgcolor="grey" width="125">extra</td>
+        </tr>
+        <tr><td align="left">id</td>                <td align="left">int unsigned</td>         <td align="left" port="id">auto increment primary key</td> </tr>
+        <tr><td align="left">request_timestamp</td> <td align="left">varchar(64) not null</td> <td align="left">key</td></tr>
+        <tr><td align="left">application</td>       <td align="left">varchar(64) not null</td> <td align="left">key</td></tr>
+        <tr><td align="left">session_id</td>        <td align="left">varchar(64)</td>          <td align="left">key</td></tr>
+        <tr><td align="left">url</td>               <td align="left">varchar(255)</td>         <td align="left">key</td></tr>
+        <tr><td align="left">status</td>            <td align="left">varchar(128)</td>         <td></td></tr>
+        </table>
+    >];
+
+    debug[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspan="3" bgcolor="grey">debug</td>
+        </tr>
+        <tr>
+            <td bgcolor="grey" width="50">column</td>
+            <td bgcolor="grey" width="100">type</td>
+            <td bgcolor="grey" width="50">extra</td>
+        </tr>
+        <tr><td align="left" port="request_id">request_id</td><td align="left">int unsigned</td>        <td align="left">key</td></tr>
+        <tr><td align="left">seq</td>                         <td align="left">int unsigned</td>        <td align="left">key</td></tr>
+        <tr><td align="left">level</td>                       <td align="left">varchar(64) not null</td><td align="left">key</td></tr>
+        <tr><td align="left">stack</td>                       <td align="left">text</td>                <td></td></tr>
+        <tr><td align="left">data</td>                        <td align="left">text</td>                <td></td></tr>
+        </table>
+    >];
+
+    params[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspan="3" bgcolor="grey">params</td>
+        </tr>
+        <tr>
+            <td bgcolor="grey" width="50">column</td>
+            <td bgcolor="grey" width="100">type</td>
+            <td bgcolor="grey" width="50">extra</td>
+        </tr>
+        <tr><td align="left" port="request_id">request_id</td><td align="left">int unsigned</td>   <td align="left">key</td></tr>
+        <tr><td align="left">data</td>                        <td align="left">text not null</td>  <td></td></tr>
+        </table>
+    >];
+
+    profile[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspan="3" bgcolor="grey">profile</td>
+        </tr>
+        <tr>
+            <td bgcolor="grey" width="50">column</td>
+            <td bgcolor="grey" width="100">type</td>
+            <td bgcolor="grey" width="50">extra</td>
+        </tr>
+        <tr><td align="left" port="request_id">request_id</td><td align="left">int unsigned</td>        <td align="left">key</td></tr>
+        <tr><td align="left">timestamp</td>                   <td align="left">varchar(64) not null</td><td align="left">key</td></tr>
+        <tr><td align="left">data</td>                        <td align="left">text not null</td>       <td></td></tr>
+        </table>
+    >];
+
+    return_data[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspan="3" bgcolor="grey">return_data</td>
+        </tr>
+        <tr>
+            <td bgcolor="grey" width="50">column</td>
+            <td bgcolor="grey" width="100">type</td>
+            <td bgcolor="grey" width="50">extra</td>
+        </tr>
+        <tr><td align="left" port="request_id">request_id</td> <td align="left">int unsigned</td>         <td align="left">key</td></tr>
+        <tr><td align="left">seq</td>                          <td align="left">int unsigned</td>         <td align="left">key</td></tr>
+        <tr><td align="left">handler</td>                      <td align="left">varchar(128) not null</td><td></td></tr>
+        <tr><td align="left">method</td>                       <td align="left">varchar(64) not null</td> <td></td></tr>
+        <tr><td align="left">data</td>                         <td align="left">text</td>                 <td></td></tr>
+        </table>
+    >];
+
+    session[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspan="3" bgcolor="grey">session</td>
+        </tr>
+        <tr>
+            <td bgcolor="grey" width="50">column</td>
+            <td bgcolor="grey" width="100">type</td>
+            <td bgcolor="grey" width="50">extra</td>
+        </tr>
+        <tr><td align="left" port="request_id">request_id</td><td align="left">int unsigned</td>   <td align="left">key</td></tr>
+        <tr><td align="left">data</td>                        <td align="left">text not null</td>  <td></td></tr>
+        </table>
+    >];
+
+    template_conf[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspan="3" bgcolor="grey">template_conf</td>
+        </tr>
+        <tr>
+            <td bgcolor="grey" width="50">column</td>
+            <td bgcolor="grey" width="100">type</td>
+            <td bgcolor="grey" width="50">extra</td>
+        </tr>
+        <tr><td align="left" port="request_id">request_id</td><td align="left">int unsigned</td>   <td align="left">key</td></tr>
+        <tr><td align="left">data</td>                        <td align="left">text not null</td>  <td></td></tr>
+        </table>
+    >];
+
+    session:request_id:w-> request:id:e;
+    return_data:request_id:w->request:id:e;
+    debug:request_id:w->request:id:e;
+    profile:request_id:w->request:id:e;
+    params:request_id:w->request:id:e;
+    template_conf:request_id:w->request:id:e;
+
+    version[label=<
+        <table cellspacing="0">
+        <tr>
+           <td colspan="3" bgcolor="grey">version</td>
+        </tr>
+        <tr>
+            <td bgcolor="grey" width="50">column</td>
+            <td bgcolor="grey" width="100">type</td>
+            <td bgcolor="grey" width="50">extra</td>
+        </tr>
+        <tr><td align="left">version</td><td align="left">varchar(64) not null</td><td></td></tr>
+        </table>
+    >];
+}
+
+</dot>
+
+---+++ request
+Each record uniquely identifies a single request.
+   * request_timestamp: CPAN::Time::HiRes timestamp for when the request began.
+   * application: which application this goes with.  Same as the =ID= parameter in the ApacheConfiguration.
+   * session_id: session id.
+   * url: the URL this request was for.
+   * status: the HTTP status code returned at the end of this request.
+
+---+++ debug
+Each record contains the data related to single call from one of the [[DebuggingTools#Methods][Debugging Methods]].
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * seq: the order in which this debug data was generated for this request.
+   * level: the debug level associated with this record, the possible values correspond one to one with the names of the methods.
+   * stack: JSON encoded stack trace from the point the debug method was called.
+   * data: JSON encoded data from the debug method.
+
+---+++ params
+Contains the GET/POST params for each request.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * data: JSON encoded contents of =$p->{params}=.
+
+---+++ profile
+Contains the benchmarking data associated with this request.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * timestamp: CPAN::Time::HiRes timestamp of when the event occurred.
+   * data: value of the parameter passed to =$self->mark()=
+
+---+++ return_data
+Contains the data that was returned from each controller for this request.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * seq: the order in which the controller was called during this request.
+   * handler: name of the controller that produced this data.
+   * method: name of the method that produced this data.
+   * data: the data the controller returned, JSON encoded.
+
+---+++ session
+Contains the state of the session at the end of each request.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * data: JSON encoded contents of =$p->{session}=.
+
+---+++ template_conf
+Contains =$p->{template_conf}= as it was passed to the controller.
+   * request_id: foreign key back to the corresponding entry in the request table.
+   * data: JSON encoded contents of =$p->{template_conf}=.
+
+---+++ version
+Contains the schema version number of the database.  Voodoo uses this internally to know if the db schema needs to be updated.
+
+%META:FILEATTACHMENT{name="DirectedGraphPlugin_1.png" attachment="DirectedGraphPlugin_1.png" attr="h" comment="<nop>DirectedGraphPlugin: DOT graph" date="1245354038" size="10711" stream="GLOB(0x8a68d98)" tmpFilename="/tmp/e6wdDVuRg5" user="MaverickEdwards" version="71"}%
+%META:TOPICMOVED{by="MaverickEdwards" date="1245355315" from="Voodoo.NativeDebuggingDatabaseSchema" to="Voodoo.NativeDebuggingInternals"}%
+%META:REVCOMMENT{comment_1="Attached file !DirectedGraphPlugin_1.png" comment_10="Attached file !DirectedGraphPlugin_1.png" comment_11="Attached file !DirectedGraphPlugin_1.png" comment_12="Attached file !DirectedGraphPlugin_1.ps" comment_13="Attached file !DirectedGraphPlugin_1.png" comment_14="Attached file !DirectedGraphPlugin_1.ps" comment_15="Attached file !DirectedGraphPlugin_1.png" comment_16="Attached file !DirectedGraphPlugin_1.ps" comment_17="Attached file !DirectedGraphPlugin_1.png" comment_18="Attached file !DirectedGraphPlugin_1.ps" comment_19="Attached file !DirectedGraphPlugin_1.png" comment_2="Attached file !DirectedGraphPlugin_1.png" comment_20="Attached file !DirectedGraphPlugin_1.ps" comment_21="Attached file !DirectedGraphPlugin_1.png" comment_22="Attached file !DirectedGraphPlugin_1.ps" comment_23="Attached file !DirectedGraphPlugin_1.png" comment_24="Attached file !DirectedGraphPlugin_1.ps" comment_25="Attached file !DirectedGraphPlugin_1.png" comment_26="Attached file !DirectedGraphPlugin_1.ps" comment_27="Attached file !DirectedGraphPlugin_1.png" comment_28="Attached file !DirectedGraphPlugin_1.ps" comment_29="Attached file !DirectedGraphPlugin_1.png" comment_3="Attached file !DirectedGraphPlugin_1.png" comment_30="Attached file !DirectedGraphPlugin_1.png" comment_31="Attached file !DirectedGraphPlugin_1.png" comment_32="Attached file !DirectedGraphPlugin_1.png" comment_33="Attached file !DirectedGraphPlugin_1.png" comment_34="Attached file !DirectedGraphPlugin_1.png" comment_35="Attached file !DirectedGraphPlugin_1.png" comment_36="Attached file !DirectedGraphPlugin_1.png" comment_37="Attached file !DirectedGraphPlugin_1.png" comment_38="Attached file !DirectedGraphPlugin_1.png" comment_39="Attached file !DirectedGraphPlugin_1.png" comment_4="Attached file !DirectedGraphPlugin_1.png" comment_40="Attached file !DirectedGraphPlugin_1.png" comment_41="Attached file !DirectedGraphPlugin_1.png" comment_42="Attached file !DirectedGraphPlugin_1.png" comment_43="Attached file !DirectedGraphPlugin_1.png" comment_44="Attached file !DirectedGraphPlugin_1.png" comment_45="Attached file !DirectedGraphPlugin_1.png" comment_46="Attached file !DirectedGraphPlugin_1.png" comment_47="Attached file !DirectedGraphPlugin_1.png" comment_48="Attached file !DirectedGraphPlugin_1.png" comment_49="Attached file !DirectedGraphPlugin_1.png" comment_5="Attached file !DirectedGraphPlugin_1.png" comment_50="Attached file !DirectedGraphPlugin_1.png" comment_51="Attached file !DirectedGraphPlugin_1.png" comment_52="Attached file !DirectedGraphPlugin_1.png" comment_53="Attached file !DirectedGraphPlugin_1.png" comment_54="Attached file !DirectedGraphPlugin_1.png" comment_55="Attached file !DirectedGraphPlugin_1.png" comment_56="Attached file !DirectedGraphPlugin_1.png" comment_57="Attached file !DirectedGraphPlugin_1.png" comment_58="Attached file !DirectedGraphPlugin_1.png" comment_59="Attached file !DirectedGraphPlugin_1.png" comment_6="Attached file !DirectedGraphPlugin_1.png" comment_60="Attached file !DirectedGraphPlugin_1.png" comment_61="Attached file !DirectedGraphPlugin_1.png" comment_62="Attached file !DirectedGraphPlugin_1.png" comment_63="Attached file !DirectedGraphPlugin_1.png" comment_64="Attached file !DirectedGraphPlugin_1.png" comment_65="Attached file !DirectedGraphPlugin_1.png" comment_66="Attached file !DirectedGraphPlugin_1.png" comment_67="Attached file !DirectedGraphPlugin_1.png" comment_68="Attached file !DirectedGraphPlugin_1.png" comment_69="Attached file !DirectedGraphPlugin_1.png" comment_7="Attached file !DirectedGraphPlugin_1.png" comment_70="Attached file !DirectedGraphPlugin_1.png" comment_71="Attached file !DirectedGraphPlugin_1.png" comment_72="Attached file !DirectedGraphPlugin_1.png" comment_73="Attached file !DirectedGraphPlugin_1.png" comment_74="Attached file !DirectedGraphPlugin_1.png" comment_75="Attached file !DirectedGraphPlugin_1.png" comment_76="Attached file !DirectedGraphPlugin_1.png" comment_77="Attached file !DirectedGraphPlugin_1.png" comment_78="Attached file !DirectedGraphPlugin_1.png" comment_79="Attached file !DirectedGraphPlugin_1.png" comment_8="Attached file !DirectedGraphPlugin_1.png" comment_80="Attached file !DirectedGraphPlugin_1.png" comment_81="Attached file !DirectedGraphPlugin_1.png" comment_82="Attached file !DirectedGraphPlugin_1.png" comment_83="Attached file !DirectedGraphPlugin_1.png" comment_84="Attached file !DirectedGraphPlugin_1.png" comment_85="Attached file !DirectedGraphPlugin_1.png" comment_86="Attached file !DirectedGraphPlugin_1.png" comment_87="Attached file !DirectedGraphPlugin_1.png" comment_88="Attached file !DirectedGraphPlugin_1.png" comment_89="Attached file !DirectedGraphPlugin_1.png" comment_9="Attached file !DirectedGraphPlugin_1.png" comment_90="Attached file !DirectedGraphPlugin_1.png" comment_91="Attached file !DirectedGraphPlugin_1.png" comment_92="Attached file !DirectedGraphPlugin_1.png" comment_93="Attached file !DirectedGraphPlugin_1.png" comment_94="Attached file !DirectedGraphPlugin_1.png" comment_95="Attached file !DirectedGraphPlugin_1.png" comment_96="Attached file !DirectedGraphPlugin_1.png" minor_1="0" minor_10="0" minor_11="0" minor_12="0" minor_13="0" minor_14="0" minor_15="0" minor_16="0" minor_17="0" minor_18="0" minor_19="0" minor_2="0" minor_20="0" minor_21="0" minor_22="0" minor_23="0" minor_24="0" minor_25="0" minor_26="0" minor_27="0" minor_28="0" minor_29="0" minor_3="0" minor_30="0" minor_31="0" minor_32="0" minor_33="0" minor_34="0" minor_35="0" minor_36="0" minor_37="0" minor_38="0" minor_39="0" minor_4="0" minor_40="0" minor_41="0" minor_42="0" minor_43="0" minor_44="0" minor_45="0" minor_46="0" minor_47="0" minor_48="0" minor_49="0" minor_5="0" minor_50="0" minor_51="0" minor_52="0" minor_53="0" minor_54="0" minor_55="0" minor_56="0" minor_57="0" minor_58="0" minor_59="0" minor_6="0" minor_60="0" minor_61="0" minor_62="0" minor_63="0" minor_64="0" minor_65="0" minor_66="0" minor_67="0" minor_68="0" minor_69="0" minor_7="0" minor_70="0" minor_71="0" minor_72="0" minor_73="0" minor_74="0" minor_75="0" minor_76="0" minor_77="0" minor_78="0" minor_79="0" minor_8="0" minor_80="0" minor_81="0" minor_82="0" minor_83="0" minor_84="0" minor_85="0" minor_86="0" minor_87="0" minor_88="0" minor_89="0" minor_9="0" minor_90="0" minor_91="0" minor_92="0" minor_93="0" minor_94="0" minor_95="0" minor_96="0" ncomments="96" rev_1="2" rev_10="2" rev_11="2" rev_12="2" rev_13="2" rev_14="2" rev_15="2" rev_16="2" rev_17="2" rev_18="2" rev_19="2" rev_2="2" rev_20="2" rev_21="2" rev_22="2" rev_23="2" rev_24="2" rev_25="2" rev_26="2" rev_27="2" rev_28="2" rev_29="2" rev_3="2" rev_30="2" rev_31="2" rev_32="2" rev_33="2" rev_34="2" rev_35="2" rev_36="2" rev_37="2" rev_38="2" rev_39="2" rev_4="2" rev_40="2" rev_41="2" rev_42="2" rev_43="2" rev_44="2" rev_45="2" rev_46="2" rev_47="2" rev_48="2" rev_49="2" rev_5="2" rev_50="2" rev_51="2" rev_52="2" rev_53="2" rev_54="2" rev_55="2" rev_56="2" rev_57="2" rev_58="2" rev_59="2" rev_6="2" rev_60="2" rev_61="2" rev_62="2" rev_63="2" rev_64="2" rev_65="2" rev_66="2" rev_67="2" rev_68="2" rev_69="2" rev_7="2" rev_70="2" rev_71="2" rev_72="2" rev_73="2" rev_74="2" rev_75="2" rev_76="2" rev_77="2" rev_78="2" rev_79="2" rev_8="2" rev_80="2" rev_81="2" rev_82="2" rev_83="2" rev_84="2" rev_85="2" rev_86="2" rev_87="2" rev_88="2" rev_89="2" rev_9="2" rev_90="2" rev_91="2" rev_92="2" rev_93="2" rev_94="2" rev_95="2" rev_96="2" t_1="Upload1245346940" t_10="Upload1245347960" t_11="Upload1245348096" t_12="Upload1245348096" t_13="Upload1245348134" t_14="Upload1245348134" t_15="Upload1245348152" t_16="Upload1245348152" t_17="Upload1245348215" t_18="Upload1245348215" t_19="Upload1245348235" t_2="Upload1245346975" t_20="Upload1245348235" t_21="Upload1245348342" t_22="Upload1245348342" t_23="Upload1245348357" t_24="Upload1245348357" t_25="Upload1245348489" t_26="Upload1245348489" t_27="Upload1245348500" t_28="Upload1245348500" t_29="Upload1245348512" t_3="Upload1245347006" t_30="Upload1245348524" t_31="Upload1245348533" t_32="Upload1245348571" t_33="Upload1245348971" t_34="Upload1245349077" t_35="Upload1245349173" t_36="Upload1245349195" t_37="Upload1245349230" t_38="Upload1245349321" t_39="Upload1245349358" t_4="Upload1245347042" t_40="Upload1245349761" t_41="Upload1245350576" t_42="Upload1245350735" t_43="Upload1245350804" t_44="Upload1245350894" t_45="Upload1245350929" t_46="Upload1245350988" t_47="Upload1245351144" t_48="Upload1245351174" t_49="Upload1245351207" t_5="Upload1245347059" t_50="Upload1245351249" t_51="Upload1245351286" t_52="Upload1245351299" t_53="Upload1245351311" t_54="Upload1245351342" t_55="Upload1245351354" t_56="Upload1245351507" t_57="Upload1245351546" t_58="Upload1245351569" t_59="Upload1245351594" t_6="Upload1245347096" t_60="Upload1245351898" t_61="Upload1245352330" t_62="Upload1245352379" t_63="Upload1245352652" t_64="Upload1245352691" t_65="Upload1245352780" t_66="Upload1245352816" t_67="Upload1245352845" t_68="Upload1245352929" t_69="Upload1245352991" t_7="Upload1245347287" t_70="Upload1245353024" t_71="Upload1245353041" t_72="Upload1245353059" t_73="Upload1245353182" t_74="Upload1245353243" t_75="Upload1245353309" t_76="Upload1245353346" t_77="Upload1245353383" t_78="Upload1245353450" t_79="Upload1245353482" t_8="Upload1245347352" t_80="Upload1245353540" t_81="Upload1245353553" t_82="Upload1245353675" t_83="Upload1245353731" t_84="Upload1245353741" t_85="Upload1245353768" t_86="Upload1245353795" t_87="Upload1245353806" t_88="Upload1245353850" t_89="Upload1245353891" t_9="Upload1245347548" t_90="Upload1245353922" t_91="Upload1245353949" t_92="Upload1245353967" t_93="Upload1245354004" t_94="Upload1245354017" t_95="Upload1245354027" t_96="Upload1245354039"}%

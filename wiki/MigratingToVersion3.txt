@@ -1,0 +1,141 @@
+%META:TOPICINFO{author="MaverickEdwards" date="1245191933" format="1.1" version="1.5"}%
+%META:TOPICPARENT{name="WebHome"}%
+---+!! Migrating From Version 2 to Version 3
+%TOC%
+
+---++ Prerequisites
+
+---+++ Unchanged From Version 2.x
+   * CPAN:CPAN (1.9205)
+   * CPAN:Apache::Session (1.6)
+   * CPAN:Config::General (2.27)
+   * CPAN:Digest::MD5 (2.36)
+   * CPAN:Email::Valid (0.15)
+   * CPAN:File::Pid (1.01)
+   * CPAN:HTML::Template (2.7)
+   * CPAN:IPC::SharedCache (1.3)
+   * CPAN:Time::HiRes (1.65)
+   * CPAN:XML::Checker::Parser
+
+---+++ New in 3.x
+   * CPAN:Devel::StackTrace (1.20)
+   * CPAN:Daemon::Generic (0.51)
+   * CPAN:Exception::Class (1.26)
+   * CPAN:Exception::Class::DBI (1.00)
+   * CPAN:IO::Handle::Record (0.13)
+   * CPAN:JSON::DWIW (0.32),
+   * CPAN:Proc::UID (0.05)
+
+---+++ Removed from 3.x
+   * CPAN:Apache::DBI (superseded by DBI-&gt;connect_cached)
+
+---+++ Optional
+   * CPAN:Log::Log4perl (1.23) if you want to use the new Log4perl debugging backend
+   * CPAN:SOAP::Lite (0.710) if you want to server SOAP requests with Apache::Voodoo
+
+---++ Updating the Apache Configuration
+ The old Apache configuration access Voodoo through the procedural interface, the new configuration uses the object interface. Replace each occurrence of
+
+<verbatim>
+SetHandler perl-script
+PerlHandler Apache::Voodoo::Handler
+</verbatim>
+
+with
+
+<verbatim>
+SetHandler modperl
+PerlResponseHandler $Apache::Voodoo::Handler->handler
+</verbatim>
+
+and then either inside a =&lt;Perl&gt;= configuration block or your =modperl-startup.pl= file add
+<verbatim>
+$Apache::Voodoo::Handler = Apache::Voodoo::Handler->new();
+</verbatim>
+
+---++ Using the New Debugging Tools
+ The new debugging tools support multiple debugging backends, Native (V2 style), [[http://www.firephp.org][FirePHP]], and [[http://mschilli.github.com/log4perl/][Log4perl]]. You can can mix and match which debugging system you want to use and control the behavior of each individually. As a side effect, the =debug= flag in =voodoo.conf= is no longer a boolean, but a block. For sake of backwards compatibility, =debug=1= enables Native and <nop>FirePHP in log everything mode, =debug=0= disable all debugging.
+
+=debug=1= is equivalent to:
+<verbatim>
+<debug>
+    <FirePHP>
+        debug     = 1
+        info      = 1
+        warn      = 1
+        error     = 1
+        exception = 1
+        table     = 1
+        trace     = 1
+    </FirePHP>
+
+    <Native>
+        debug     = 1
+        info      = 1
+        warn      = 1
+        error     = 1
+        exception = 1
+        table     = 1
+        trace     = 1
+
+        profile = 1
+        params  = 1
+        return_data  = 1
+        template_conf  = 1
+        params  = 1
+        session = 1
+    </Native>
+</debug>
+</verbatim>
+
+---+++ Native
+ Due to the expanding use of AJAX in web development, simply injecting the debugging messages into the generated HTML was no longer a viable option. That technique basically left you blind to what was going on server side with your AJAX requests, (or anything with didn't generate HTML for that matter). Since one action in the UI might trigger multiple AJAX requests, it became necessary to save the debugging information across multiple requests, and display it later.
+
+Native debugging does this by passing off the data to a separate logging daemon which writes it to either to a SQLlite or <nop>MySQL database. A separate apache handler handles the display of the captured data.
+
+---++++ Configuring Voodoo
+ First voodoo needs to told how where the debug database is going to stored. Execute =voodoo-control setconfig= and set the values of =Debug DB Connection=, =Debug DB Username=, =Debug DB Password=, and =Debug URL Path=. The first three are the parameters are passed to =DBI-&gt;connect= to establish the connection the debugging database. =Debug URL Path= tells the debug panel where on the server the debug handler is setup. For example:
+
+<verbatim>
+Debug DB Connection: dbi:SQLite:dbname=/tmp/apachevoodoo.db
+  Debug DB Username:
+  Debug DB Password:
+     Debug URL Path: /debug
+</verbatim>
+
+uses a local SQLite database to store the debugging information. If you use <nop>MySQL for storage, give each instance of Apache its database; don't try sharing the same one.
+
+---++++ Start the logging daemon.
+ Start the logging daemon by executing =voodoo-daemon start=, it should be in the same directory as =voodoo-control=. Be sure to do this *before* you start Apache, or at the very least before the first request. The Native debugging module will automatically disable itself if it can't contact the logging daemon.
+
+---++++ Configure Apache
+ In your =modperl-startup.pl= add <verbatim>
+use Apache::Voodoo::Debug::Handler;
+$Apache::Voodoo::Debug = Apache::Voodoo::Debug::Handler->new();
+</verbatim>
+
+If you have multiple vhosts running Apache::Voodoo add the following block *outside* of the vhost configuration to enable it for all the vhosts at once. If you only have one vhost running Apache::Voodoo then place this inside the vhost configuration block so that it is only enabled for that vhost.
+
+<verbatim>
+<Location /debug>
+        SetHandler modperl
+        PerlResponseHandler $Apache::Voodoo::Debug->handler
+        Order allow,deny
+        Allow from all
+        Deny from none
+</Location>
+</verbatim> The location here *must* match the setting of =Debug URL Path= in =voodoo-control=.
+
+*Note:* you can set the =Order=, =Allow=, and =Deny= params to whatever is appropriate for your environment.
+
+---+++ <nop>FirePHP
+ <nop>FirePHP makes your debugging messages appear in the [[http://www.firephp.org][FirePHP plugin for Firefox]].
+
+---+++ Log4perl
+%INCLUDE{"DebuggingTools" section="Log4perl"}%
+
+---++ Deprecated Things
+
+Exception handling via [[CPAN:Exception::Class::DBI]] has been enable for DBI, therefore *db_error()* doesn't do anything useful anymore and can be omitted from now on.
+
+%META:REVCOMMENT{ncomments="0"}%
