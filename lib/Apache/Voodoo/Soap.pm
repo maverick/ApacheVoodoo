@@ -59,6 +59,7 @@ sub handler {
 	my $self = shift;
 	my $r    = shift;
 
+	$self->{'status'} = 0;
 	$self->{'mp'}->set_request($r);
 	$self->{'engine'}->set_request($r);
 
@@ -105,7 +106,7 @@ sub handler {
 			$self->{'mp'}->print($s);
 		}
 		else {
-			$self->{'mp'}->content_type('text/xml');
+			$self->{'mp'}->content_type('application/wsdl+xml');
 			$self->{'mp'}->print($wsdl->WSDL);
 		}
 
