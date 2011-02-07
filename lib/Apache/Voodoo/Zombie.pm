@@ -8,7 +8,8 @@ Apache::Voodoo::Zombie - Internal module used by Voodoo when a end user module d
 
 This module is used by Apache::Voodoo::Application as a stand in for a module that didn't compile
 when either devel_mode or debug is 1 in the application's voodoo.conf.  Any calls to this module simply
-throw an exception describing the describing the compilation error.
+throw an exception describing the compilation error.
+
 This is a development tool...you shouldn't have any Zombies in your production environment :)
 
 =cut ################################################################################
