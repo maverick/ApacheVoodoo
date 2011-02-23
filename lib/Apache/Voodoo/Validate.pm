@@ -198,7 +198,7 @@ sub _configure {
 		}
 
 		if (defined($field->errors)) {
-			push(@errors,$field->errors);
+			push(@errors,@{$field->errors});
 			next;
 		}
 

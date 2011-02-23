@@ -40,7 +40,7 @@ sub new {
 		}
 	}
 
-	$self->{'errors'} = \@e if scalar(@e);
+	$self->{'errors'} = \@e if (scalar(@e) && defined($e[0]));
 
 	return $self;
 }
