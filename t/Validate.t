@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 117;
+use Test::More tests => 121;
 use Data::Dumper;
 
 BEGIN {
@@ -49,6 +49,8 @@ my %email  = ( type => 'varchar', 'length' => 64, 'valid'  => 'email'   );
 my %url    = ( type => 'varchar', 'length' => 64, 'valid'  => 'url'     );
 my %regexp = ( type => 'varchar', 'length' => 64, 'regexp' => '^aab+a$' );
 
+my %set = ( type => 'set', 'values' => [ 'first', 'second', 'third'] );
+
 my $full_monty = {
 	'u_int_old_r' => { %u_int_old, required => 1 },
 	'u_int_new_r' => { %u_int_new, required => 1 },
@@ -82,7 +84,8 @@ my $full_monty = {
 			return $vals{$v};
 		}
 	},
-	'datetime' => { %datetime }
+	'datetime' => { %datetime },
+	'set'      => { %set }
 };
 
 my $V;
@@ -135,6 +138,7 @@ ok(!defined $e->{MISSING_text},       'varchar text');
 ok(!defined $e->{MISSING_email_opt},  'email optional'); 
 ok(!defined $e->{MISSING_regexp_opt}, 'regexp optional'); 
 ok(!defined $e->{MISSING_datetime},   'datetime optional'); 
+ok(!defined $e->{MISSING_set},        'set optional'); 
 
 # bogus values
 my $params = {
@@ -151,7 +155,8 @@ my $params = {
 	valid => 'notok',
 	varchar_req => 'docheck',
 	varchar_opt => 'bogus',
-	datetime => '2009-01-01 asdfasdf'
+	datetime => '2009-01-01 asdfasdf',
+	set => 'not there'
 };
 
 ($v,$e) = $V->validate($params);
@@ -170,6 +175,7 @@ ok(defined $e->{BAD_regexp_opt}, 'bad regexp 2');
 ok(defined $e->{BAD_valid},      'bad valid sub');
 
 ok(defined $e->{BAD_datetime},   'bad datetime');
+ok(defined $e->{BAD_set},        'bad set');
 
 ok(defined $e->{BOGUS_varchar_req}, 'bad valid sub');
 ok(defined $e->{BOGUS_varchar_opt}, 'bad valid sub');
@@ -177,8 +183,8 @@ ok(defined $e->{BOGUS_varchar_opt}, 'bad valid sub');
 
 # valid values
 ($v,$e) = $V->validate({
-	varchar_req => ' abc ',		# also sneek in trim test
-	varchar_opt => 'abcdef ',	# also sneek in trim test
+	varchar_req => ' abc ',		# also sneak in trim test
+	varchar_opt => 'abcdef ',	# also sneak in trim test
 	u_int_new_r => '1234',
 	u_int_new_o => '1234',
 	u_int_old_r => '1234',
@@ -190,7 +196,8 @@ ok(defined $e->{BOGUS_varchar_opt}, 'bad valid sub');
 	regexp_req => 'aabbbba',
 	regexp_opt => 'aaba',
 	valid => 'ok',
-	datetime => '2009-01-01 12:00am'
+	datetime => '2009-01-01 12:00am',
+	set => 'first'
 });
 
 ok(scalar keys %{$e} == 0,'$errors is empty');
@@ -208,12 +215,13 @@ ok($v->{regexp_req}  eq 'aabbbba',              'good regexp 1');
 ok($v->{regexp_opt}  eq 'aaba',                 'good regexp 2');
 ok($v->{valid}       eq 'ok',                   'good valid sub');
 ok($v->{datetime}    eq '2009-01-01 00:00:00',  'good datetime');
+ok($v->{set}         eq 'first',                'good set');
 
 # fence post values
 ($v,$e) = $V->validate({
 	text        => 'a' x 500,	            # should not yell about length
 	varchar_req => 'a' x 64,
-	varchar_opt => '  '.('a' x 64).'   ',	# also sneek in trim test
+	varchar_opt => '  '.('a' x 64).'   ',	# also sneak in trim test
 	u_int_new_r => 4294967295,
 	u_int_new_o => 4294967295,
 	u_int_old_r => 4294967295,
@@ -229,7 +237,7 @@ ok(scalar keys %{$e} == 0,'$errors is empty');
 # and over the line values
 ($v,$e) = $V->validate({
 	varchar_req => 'a' x 65,
-	varchar_opt => '  '.('a' x 100).'   ',	# also sneek in trim test
+	varchar_opt => '  '.('a' x 100).'   ',	# also sneak in trim test
 	u_int_new_r => 4294967296,
 	u_int_new_o => 4294967296,
 	u_int_old_r => 4294967296,
@@ -457,7 +465,12 @@ ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Empty configurati
 eval {
 	$E = Apache::Voodoo::Validate->new({ 'foo' => { type=>'unsigned_int', required => 1 }});
 };
-ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Empty missing size on varchar throws exception 1 ');
+ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Missing size on varchar throws exception 1 ');
+
+eval {
+	$E = Apache::Voodoo::Validate->new({ 'set' => { type=>'set' }});
+};
+ok(ref($@) eq "Apache::Voodoo::Exception::RunTime::BadConfig",'Missing values on set throws exception ');
 
 my $bit = $B->get_by_name('bit');
 is($bit->required,1,'accessor for required');
