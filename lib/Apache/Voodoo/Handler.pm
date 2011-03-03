@@ -12,6 +12,7 @@ package Apache::Voodoo::Handler;
 $VERSION = "3.0206";
 
 use strict;
+use warnings;
 
 use Time::HiRes;
 
@@ -121,8 +122,8 @@ sub handler {
 			# Apache::Voodoo::Exception::RunTime::BadCommand
 			# Apache::Voodoo::Exception::RunTime::BadReturn
 			# Exception::Class::DBI
+			warn $e;
 			unless ($self->{'engine'}->is_devel_mode()) {
-				warn "$@";
 				$self->{'engine'}->status($self->{mp}->server_error);
 				return $self->{mp}->server_error;
 			}
