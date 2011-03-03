@@ -189,31 +189,25 @@ sub handle_request {
 			$self->{'status'} = $self->{'mp'}->ok;
 			$self->_client_fault(700, $e->error, $e->target);
 		}
-		elsif ($self->{'engine'}->is_devel_mode) {
-			if ($e->isa("Apache::Voodoo::Exception::RunTime")) {
-				# Apache::Voodoo::Exception::RunTime
-				# Apache::Voodoo::Exception::RunTime::BadCommand
-				# Apache::Voodoo::Exception::RunTime::BadReturn
-				$self->{'status'} = $self->{'mp'}->server_error;
-				$self->_server_fault($self->{'mp'}->server_error, $e->error, undef, $e->trace);
-			}
-			elsif ($e->isa("Exception::Class::DBI")) {
-				$self->{'status'} = $self->{'mp'}->server_error;
-				$self->_server_fault($self->{'mp'}->server_error, $@->description, {
-					"message" => $@->errstr,
-					"package" => $@->package,
-					"line"    => $@->line,
-					"query"   => $@->statement
-				});
-			}
-			else {
-				$self->{'status'} = $self->{'mp'}->server_error;
-				$self->_server_fault($self->{'mp'}->server_error, ref($e)?$e->error:"$e");
-			}
+		elsif ($e->isa("Apache::Voodoo::Exception::RunTime")) {
+			# Apache::Voodoo::Exception::RunTime
+			# Apache::Voodoo::Exception::RunTime::BadCommand
+			# Apache::Voodoo::Exception::RunTime::BadReturn
+			$self->{'status'} = $self->{'mp'}->server_error;
+			$self->_server_fault($self->{'mp'}->server_error, $e->error, undef, $e->trace);
+		}
+		elsif ($e->isa("Exception::Class::DBI")) {
+			$self->{'status'} = $self->{'mp'}->server_error;
+			$self->_server_fault($self->{'mp'}->server_error, $e->description, {
+				"message" => $e->errstr,
+				"package" => $e->package,
+				"line"    => $e->line,
+				"query"   => $e->statement
+			});
 		}
 		else {
 			$self->{'status'} = $self->{'mp'}->server_error;
-			$self->_server_fault($self->{'mp'}->server_error, "Internal Server Error");
+			$self->_server_fault($self->{'mp'}->server_error, ref($e)?$e->error:"$e");
 		}
 	}
 
@@ -223,12 +217,19 @@ sub handle_request {
 
 sub _client_fault {
 	my $self = shift;
-	$self->_make_fault('Client',@_);
+	die SOAP::Fault->new($self->_make_fault('Client',@_));
 }
 
 sub _server_fault {
 	my $self = shift;
-	$self->_make_fault('Server',@_);
+	my %fault = $self->_make_fault('Server',@_);
+	warn Dumper \%fault;
+
+	unless ($self->{'engine'}->is_devel_mode) {
+		die SOAP::Fault->new($self->_make_fault('Server',500,'Internal Server Error'));
+	}
+
+	die SOAP::Fault->new(%fault);
 }
 
 sub _make_fault {
@@ -249,11 +250,11 @@ sub _make_fault {
 	if (defined($detail)) {
 		$message{'faultdetail'} = $detail;
 	}
-	elsif ($self->{'engine'}->is_devel_mode() && defined($trace)) {
+	elsif (defined($trace)) {
 		$message{'faultdetail'} = Apache::Voodoo::Exception::parse_stack_trace($trace);
 	}
 
-	die SOAP::Fault->new(%message);
+	return %message;
 }
 
 1;
