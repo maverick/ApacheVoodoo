@@ -74,10 +74,12 @@ sub probe_table {
 		# figure out the column type
 		#
 		my $type = $row->[1];
-		my ($size) = ($type =~ /\(([\d,]+)\)/);
+		$type =~ s/\(.*\)//g;
+		$type =~ s/ +/_/g;
 
-		$type =~ s/[,\d\(\) ]+/_/g;
-		$type =~ s/_$//g;
+		my $size = $row->[1];
+		$size =~ s/.*\(//;
+		$size =~ s/\).*//;
 
 		if ($self->can($type)) {
 			$self->$type(\%column,$size);
@@ -242,6 +244,13 @@ sub datetime {
 	my ($self,$column,$size) = @_;
 
 	$column->{'type'} = 'datetime';
+}
+
+sub enum {
+	my ($self,$column,$size) = @_;
+
+	$column->{'type'} = 'set';
+	$column->{'values'} = [ map { $_ =~ s/['"`]//g; $_ } split(/,/,$size) ];
 }
 
 sub timestamp {
