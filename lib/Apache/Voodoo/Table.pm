@@ -107,11 +107,11 @@ sub set_configuration {
 		# for it every time anyway outside of A::V::Validate.
 		if ($conf->{'primary_key_user_supplied'}) {
 			$self->{'pkey_user_supplied'} = 1;
-			$self->{valid}->get_by_name($self->{'pkey'})->required(1);
+			$self->{valid}->get_by_name($self->{'pkey'})->required(1) if $self->{valid};
 		}
 		else {
 			$self->{'pkey_user_supplied'} = 0;
-			$self->{valid}->get_by_name($self->{'pkey'})->required(0);
+			$self->{valid}->get_by_name($self->{'pkey'})->required(0) if $self->{valid};
 		}
 	}
 	$self->{'pkey_regexp'} = ($conf->{'primary_key_regexp'})?$conf->{'primary_key_regexp'}:'^\d+$';
