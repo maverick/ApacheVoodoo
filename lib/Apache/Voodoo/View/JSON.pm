@@ -47,7 +47,7 @@ sub exception {
 			"query"       => $self->_format_query($e->statement)
 		};
 	}
-	elsif ($e->isa("Apache::Voodoo::Exception::RunTime")) {
+	elsif ($e->isa("Apache::Voodoo::Exception")) {
 		$d = {
 			"description" => $e->description,
 			"message"     => $e->error,
