@@ -21,6 +21,9 @@ sub init {
 	});
 }
 
+# There's no inlineing of debug output for JSON
+sub debug {};
+
 sub params {
 	my $self = shift;
 

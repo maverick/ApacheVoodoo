@@ -384,8 +384,8 @@ sub execute_controllers {
 sub execute_view {
 	my $self    = shift;
 	my $content = shift;
+	my $view    = shift;
 
-	my $view;
 	if (defined($self->{'p'}->{'_view_'}) &&
 		defined($self->_app->{'views'}->{$self->{'p'}->{'_view_'}})) {
 
@@ -395,6 +395,9 @@ sub execute_view {
 	       defined($self->_app->{'views'}->{$self->{'p'}->{'template_conf'}->{'default_view'}})) {
 
 		$view = $self->_app->{'views'}->{$self->{'p'}->{'template_conf'}->{'default_view'}};
+	}
+	elsif ($view) {
+		$view = $self->_app->{'views'}->{$view};
 	}
 	else {
 		$view = $self->_app->{'views'}->{'HTML'};
@@ -412,7 +415,7 @@ sub execute_view {
 	}
 
 	# add any params from the debugging handlers
-	$view->params($debug->finalize());
+	$view->debug($debug->finalize());
 
 	return $view;
 }

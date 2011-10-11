@@ -60,6 +60,8 @@ sub parse_params {
 
 	my $apr = Apache2::Request->new($self->{r}, POST_MAX => $upload_max*5);
 
+	warn scalar $apr->param;
+
 	my %params;
 	foreach ($apr->param) {
 		my @value = $apr->param($_);

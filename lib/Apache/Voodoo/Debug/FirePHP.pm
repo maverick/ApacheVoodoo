@@ -147,6 +147,7 @@ sub _detectClientExtension {
 
 	my $useragent = $self->{mp}->header_in('User-Agent');
 
+	return 1;
 	if ($useragent =~ /\bFirePHP\/([.\d]+)/ && $self->_compareVersion($1,'0.0.6')) {
 		return 1;
 	}
