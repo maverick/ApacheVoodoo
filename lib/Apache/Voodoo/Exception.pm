@@ -59,12 +59,12 @@ use Exception::Class (
 	},
 	'Apache::Voodoo::Exception::Application::Redirect' => {
 		isa => 'Apache::Voodoo::Exception::Application',
-		description => "Controller redirected the request to another location",
+		description => "The request has been redirected to another location",
 		fields => ['target']
 	},
 	'Apache::Voodoo::Exception::Application::DisplayError' => {
 		isa => 'Apache::Voodoo::Exception::Application',
-		description => "Controller request the display of an error message",
+		description => "Controller requested the display of an error message",
 		fields => ['code','target','detail']
 	},
 	'Apache::Voodoo::Exception::Application::AccessDenied' => {
@@ -78,7 +78,7 @@ use Exception::Class (
 	},
 	'Apache::Voodoo::Exception::Application::RawData' => {
 		isa => 'Apache::Voodoo::Exception::Application',
-		description => "Controller returned a raw data stream",
+		description => "The server is returning a raw data stream",
 		fields => ['headers','content_type','data']
 	},
 );

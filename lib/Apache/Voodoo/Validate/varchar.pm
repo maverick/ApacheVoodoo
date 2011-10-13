@@ -26,7 +26,11 @@ sub config {
 	}
 
 	if (defined($c->{valid})) {
-		if ($c->{valid} =~ /^(url|email)$/ ) {
+		if (   $c->{valid} eq "email") {
+			$self->{'email_valid'} = Email::Valid->new('-mxcheck' => 0, '-fqdn' => 1);
+			$self->{'valid'} = $c->{valid};
+		}
+		elsif ($c->{valid} eq "url") {
 			$self->{'valid'} = $c->{valid};
 		}
 		elsif (ref($c->{valid}) ne "CODE") {
@@ -55,16 +59,14 @@ sub valid {
 
 		my $addr;
 		eval {
-			$addr = Email::Valid->address('-address' => $v,
-			                              '-mxcheck' => 1,
-			                              '-fqdn'    => 1 );
+			$addr = $self->{'email_valid'}->address($v);
 		};
 		if ($@) {
 			Apache::Voodoo::Exception::Runtime->throw("Email::Valid produced an exception: $@");
 			$e = 'BAD';
 		}
 		elsif(!defined($addr)) {
-			$e = 'BAD';
+			$e = "BAD";
 		}
 	}
 	elsif (defined($self->{'valid'}) && $self->{'valid'} eq 'url') {

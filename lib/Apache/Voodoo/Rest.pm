@@ -45,10 +45,9 @@ sub handler {
 	if ($uri =~ /\/$/o) {
 		$uri .= 'index';
 	}
-    else {
-        $uri =~ s:([^/]+)/([^/]*)$:$2_$1:;
-    }
-	warn $uri;
+	else {
+		$uri =~ s:([^/]+)/([^/]*)$:$2_$1:;
+	}
 
 	my $filename = $self->{'mp'}->document_root().$uri;
 	unless (-e "$filename.tmpl") { return $self->{mp}->declined;  }
@@ -95,13 +94,15 @@ sub handler {
 			#	return {};
 			#}
 		}
-		my $jp = JSON::DWIW::deserialize_json($data);
-		if (ref($jp) eq "ARRAY") {
-			$params->{ARGV} = $jp;
-		}
-		elsif (ref($jp) eq "HASH") {
-			foreach (keys %{$jp}) {
-				$params->{$_} = $jp->{$_};
+		if ($data) {
+			my $jp = JSON::DWIW::deserialize_json($data);
+			if (ref($jp) eq "ARRAY") {
+				$params->{ARGV} = $jp;
+			}
+			elsif (ref($jp) eq "HASH") {
+				foreach (keys %{$jp}) {
+					$params->{$_} = $jp->{$_};
+				}
 			}
 		}
 	}

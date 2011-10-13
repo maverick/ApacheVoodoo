@@ -12,6 +12,8 @@ $VERSION = "3.0206";
 use strict;
 use warnings;
 
+no warnings 'uninitialized';
+
 use base("Apache::Voodoo");
 
 use Apache::Voodoo::Validate;
@@ -779,7 +781,6 @@ sub list {
 		push(@search_params,$ac) if length($ac);
 	}
 
-	$self->debug(\@search_params);
 	# Make sure the search params are sane
 	my @where;
 	my @values;
@@ -881,7 +882,6 @@ sub list {
 
 	$select_stmt .= "LIMIT $count OFFSET $offset\n" unless $showall;
 
-	$self->debug($select_stmt);
 	my $page_set = $dbh->selectall_arrayref($select_stmt,undef,@values);
 
 	my $res_count;
