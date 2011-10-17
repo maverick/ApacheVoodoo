@@ -82,7 +82,12 @@ sub set_configuration {
 	}
 
 	eval {
-		$self->{valid} = Apache::Voodoo::Validate->new($conf->{'columns'});
+		$self->{valid} = Apache::Voodoo::Validate->new(
+			{
+				map { $_ => $conf->{'columns'}->{$_} }          # turn it back into a hashref
+				grep { !$conf->{'columns'}->{$_}->{readonly} }	# remove those marked readonly
+				keys %{$conf->{'columns'}}
+			});
 	};
 	if (my $e = Apache::Voodoo::Exception::RunTime::BadConfig->caught()) {
 		# FIXME hack!  need to figure out to store the list of errors as a data structure and override the stringification operation.
@@ -124,8 +129,12 @@ sub set_configuration {
 			push(@errors,"Column $name allows multiple values but Apache::Voodoo::Table can't handle that currently.");
 		}
 
-		if (defined($conf->{'unique'})) {
+		if ($conf->{'unique'}) {
 			push(@{$self->{'unique'}},$name);
+		}
+
+		if ($conf->{'readonly'}) {
+			$self->{'readonly'}->{$name} = 1;
 		}
 
 		# keep a local list of column names for query construction.
@@ -407,7 +416,8 @@ sub add {
 #				$values->{$_} = $values->{$_."_CLEAN"};
 #			}
 
-			my @cols = grep{ exists($values->{$_})} @{$self->{'columns'}}; # columns with values
+			# columns with values that are not readonly
+			my @cols = grep{ exists($values->{$_}) && !defined($self->{readonly}->{$_}) } @{$self->{'columns'}}; 
 
 			my $c = join(",",          @cols);              # the column names
 			my $q = join(",",map {"?"} @cols);              # the ? mark placeholders
@@ -481,10 +491,12 @@ sub edit {
 		return $self->display_error("Invalid ID");
 	}
 
+	my @columns = grep { !defined($self->{'readonly'}->{$_}) } @{$self->{'columns'}};
+
 	# find the record to be updated
 	my $res = $dbh->selectall_arrayref("
 		SELECT ".
-			join(",",@{$self->{'columns'}}). "
+			join(",",@columns)."
 		FROM
 			$self->{'table'}
 		WHERE
@@ -498,8 +510,8 @@ sub edit {
 	}
 
 	my %original_values;
-	for (my $i=0; $i <= $#{$self->{'columns'}}; $i++) {
-		$original_values{$self->{'columns'}->[$i]} = $res->[0]->[$i];
+	for (my $i=0; $i <= $#columns; $i++) {
+		$original_values{$columns[$i]} = $res->[0]->[$i];
 	}
 
 	my $errors = {};
@@ -527,7 +539,7 @@ sub edit {
 #			}
 
 			# let's figure out what they changed so caller can do something with that info if they want
-			foreach (@{$self->{'columns'}}) {
+			foreach (@columns) {
 				if (exists($values->{$_})) {
 					if ($values->{$_} ne $original_values{$_}) {
 						push(@{$self->{'edit_details'}},[$_,$original_values{$_},$values->{$_}]);
@@ -542,17 +554,17 @@ sub edit {
 				UPDATE
 					$self->{'table'}
 				SET ".
-					join("=?,",@{$self->{'columns'}})."=?
+					join("=?,",@columns)."=?
 				WHERE
 					$self->{'pkey'} = ?
 				$additional_constraint";
 
 			# $self->debug($update_statement);
-			# $self->debug((map {$values->{$_}} @{$self->{'columns'}}),$params->{$self->{'pkey'}});
+			# $self->debug((map {$values->{$_}} @columns),$params->{$self->{'pkey'}});
 
 			$dbh->do($update_statement,
 			          undef,
-			          (map { $values->{$_} } @{$self->{'columns'}}),
+			          (map { $values->{$_} } @columns),
 			          $params->{$self->{'pkey'}});
 
 			$self->{'success'} = 1;
@@ -560,7 +572,7 @@ sub edit {
 		}
 	}
 	else {
-		foreach (@{$self->{'columns'}}) {
+		foreach (@columns) {
 			$errors->{$_} = $original_values{$_};
 		}
 
@@ -781,6 +793,7 @@ sub list {
 		push(@search_params,$ac) if length($ac);
 	}
 
+	#$self->debug(\@search_params);
 	# Make sure the search params are sane
 	my @where;
 	my @values;
@@ -882,6 +895,7 @@ sub list {
 
 	$select_stmt .= "LIMIT $count OFFSET $offset\n" unless $showall;
 
+	#$self->debug($select_stmt);
 	my $page_set = $dbh->selectall_arrayref($select_stmt,undef,@values);
 
 	my $res_count;
