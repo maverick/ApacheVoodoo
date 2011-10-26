@@ -363,10 +363,16 @@ sub validate_edit {
 	my ($values,$e) = $self->{valid}->validate($params);
 
 	# copy the errors from the process_params
-	$errors = { %{$errors}, %{$e} } if ref($e) eq "HASH";
+	if (ref($e) eq "HASH") {
+		foreach (grep { !/MISSING/ } keys %{$e}) {
+			$errors->{$_} = $e->{$_};
+		}
+	}
 
 	# check all the unique columns
 	foreach (@{$self->{'unique'}}) {
+		next unless defined $values->{$_};
+
 		my $res = $dbh->selectall_arrayref("
 			SELECT 1
 			FROM   $self->{'table'}
@@ -491,28 +497,25 @@ sub edit {
 		return $self->display_error("Invalid ID");
 	}
 
-	my @columns = grep { !defined($self->{'readonly'}->{$_}) } @{$self->{'columns'}};
-
 	# find the record to be updated
 	my $res = $dbh->selectall_arrayref("
 		SELECT ".
-			join(",",@columns)."
+			join(",",
+				grep { !defined($self->{'readonly'}->{$_}) } @{$self->{'columns'}})
+			."
 		FROM
 			$self->{'table'}
 		WHERE
 			$self->{'pkey'} = ?
 			$additional_constraint",
-		undef,
+		{Slice=>{}},
 		$params->{$self->{'pkey'}});
 
 	unless (defined($res->[0])) {
 		return $self->display_error("No record with that ID found");
 	}
 
-	my %original_values;
-	for (my $i=0; $i <= $#columns; $i++) {
-		$original_values{$columns[$i]} = $res->[0]->[$i];
-	}
+	my %original_values = %{$res->[0]};
 
 	my $errors = {};
 	if ($params->{'cm'} eq "update") {
@@ -533,46 +536,43 @@ sub edit {
 			}
 		}
 		else {
-			# copy clean dates,times into params for insertion
-#			foreach (@{$self->{'dates'}},@{$self->{'times'}}) {
-#				$values->{$_} = $values->{$_."_CLEAN"};
-#			}
+			my @columns;
+			my @values;
 
 			# let's figure out what they changed so caller can do something with that info if they want
-			foreach (@columns) {
-				if (exists($values->{$_})) {
-					if ($values->{$_} ne $original_values{$_}) {
-						push(@{$self->{'edit_details'}},[$_,$original_values{$_},$values->{$_}]);
-					}
-				}
-				else {
-					# val not passed in, but needed for update
-					$values->{$_} = $original_values{$_};
-				}
+			foreach my $field (keys %{$values}) {
+				next if ($field eq $self->{'pkey'} && !$self->{pkey_user_supplied});
+				next if ($values->{$field} eq $original_values{$field});
+
+				push(@columns,$field);
+				push(@values, $values->{$field});
+
+				push(@{$self->{'edit_details'}},[$field,$original_values{$field},$values->{$field}]);
 			}
-			my $update_statement = "
-				UPDATE
-					$self->{'table'}
-				SET ".
-					join("=?,",@columns)."=?
-				WHERE
-					$self->{'pkey'} = ?
-				$additional_constraint";
 
-			# $self->debug($update_statement);
-			# $self->debug((map {$values->{$_}} @columns),$params->{$self->{'pkey'}});
+			if (@values) {
+				# if they didn't actually change anything, there's not point in running a query.
+				my $update_statement = "
+					UPDATE
+						$self->{'table'}
+					SET ".
+						join("=?,",@columns)."=?
+					WHERE
+						$self->{'pkey'} = ?
+					$additional_constraint";
 
-			$dbh->do($update_statement,
-			          undef,
-			          (map { $values->{$_} } @columns),
-			          $params->{$self->{'pkey'}});
+				$dbh->do($update_statement,
+						undef,
+						@values,
+						$params->{$self->{'pkey'}});
+			}
 
 			$self->{'success'} = 1;
 			return 1;
 		}
 	}
 	else {
-		foreach (@columns) {
+		foreach (keys %original_values) {
 			$errors->{$_} = $original_values{$_};
 		}
 
