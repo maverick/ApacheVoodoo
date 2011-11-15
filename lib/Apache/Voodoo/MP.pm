@@ -15,13 +15,20 @@ use warnings;
 sub new {
 	my $class = shift;
 
-	if (exists $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2 ) {
-		require Apache::Voodoo::MP::V2;
-		return Apache::Voodoo::MP::V2->new();
+	if (exists $ENV{MOD_PERL_API_VERSION}) {
+		if ($ENV{MOD_PERL_API_VERSION} >= 2 ) {
+			require Apache::Voodoo::MP::V2;
+			return Apache::Voodoo::MP::V2->new();
+		}
+		else {
+			require Apache::Voodoo::MP::V1;
+			return Apache::Voodoo::MP::V1->new();
+		}
 	}
-	else {
-		require Apache::Voodoo::MP::V1;
-		return Apache::Voodoo::MP::V1->new();
+	elsif (eval { require nginx; } ) {
+		warn("Voodoo appears to be running under NGINX\n");
+		require Apache::Voodoo::MP::nginx;
+		return Apache::Voodoo::MP::nginx->new();
 	}
 }
 
