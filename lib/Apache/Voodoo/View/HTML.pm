@@ -114,6 +114,9 @@ sub _load_internal_template {
 	);
 }
 
+# debug data is handled the same way parameter data is.
+sub debug { shift->params(@_); }
+
 sub params {
 	my $self = shift;
 

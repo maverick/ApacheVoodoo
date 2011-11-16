@@ -253,7 +253,7 @@ sub prep_select {
 	unless (ref($select)) {
 		$select = [ $select ];
 	}
-	my %selected = map { $_ => 1 } @{$select};
+	my %selected = (scalar @{$select})?map { $_ => 1 } @{$select}:();
 
 	return [
 		map {

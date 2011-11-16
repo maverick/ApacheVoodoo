@@ -17,9 +17,14 @@ sub init {
 
 	$self->{json} = JSON::DWIW->new({
 		'bad_char_policy' => 'convert',
-		'pretty' => ($config->{dynamic_loading})?1:0
+		'pretty'    => ($config->{dynamic_loading})?1:0,
+		'sort_keys' => ($config->{dynamic_loading})?1:0,
+
 	});
 }
+
+# There's no inlineing of debug output for JSON
+sub debug {};
 
 sub params {
 	my $self = shift;
@@ -44,12 +49,14 @@ sub exception {
 			"query"       => $self->_format_query($e->statement)
 		};
 	}
-	elsif ($e->isa("Apache::Voodoo::Exception::RunTime")) {
+	elsif ($e->isa("Apache::Voodoo::Exception")) {
 		$d = {
 			"description" => $e->description,
 			"message"     => $e->error,
 			"stack"       => $self->_stack_trace($e->trace())
 		};
+
+		$d->{"detail"} = $e->detail if ($e->can("detail"));
 	}
 	else {
 		$d = {
