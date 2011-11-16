@@ -19,9 +19,11 @@ sub server_error { return 500; }
 
 sub document_root  { shift()->{'r'}->variable('document_root'); }
 sub content_type   { shift()->{'r'}->send_http_header(@_); }
-sub err_header_out { shift()->{'r'}->header_out(@_); }
-sub header_in      { shift()->{'r'}->header_in->{shift()}; }
-sub header_out     { shift()->{'r'}->header_out(@_); }
+sub err_header_out { shift()->{'r'}->header_out(@_);     }
+sub header_in      { shift()->{'r'}->header_in(@_);      }
+sub header_out     { shift()->{'r'}->header_out(@_);     }
+sub method         { shift()->{'r'}->request_method(@_); }
+sub dir_config     { shift()->{'r'}->variable(@_);       }
 
 sub get_app_id{ 
 	my $self = shift;
@@ -97,6 +99,7 @@ sub parse_params {
 
 	return \%params;
 =cut
+	return {};
 }
 
 sub set_cookie {

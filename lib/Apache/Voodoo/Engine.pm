@@ -310,7 +310,6 @@ sub execute_controllers {
 		"document_root" => $self->_app->config->{'template_dir'},
 
 		# these are deprecated.  In the future get them from $p->{mp} or $p->{config}
-		"dir_config"    => $self->{'mp'}->dir_config,
 		"user-agent"    => $self->{'mp'}->header_in('User-Agent'),
 		"r"             => $self->{'mp'}->{'r'},
 		"themes"        => $self->_app->config->{'themes'}

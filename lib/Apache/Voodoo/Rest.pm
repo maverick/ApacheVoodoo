@@ -17,6 +17,8 @@ use Apache::Voodoo::Constants;
 use Apache::Voodoo::Engine;
 use JSON::DWIW;
 
+my $self = Apache::Voodoo::Rest->new();
+
 sub new {
 	my $class = shift;
 	my $self = {};
@@ -31,8 +33,7 @@ sub new {
 }
 
 sub handler {
-	my $self = shift;
-	my $r    = shift;
+	my $r = shift;
 
 	$self->{'mp'}->set_request($r);
 

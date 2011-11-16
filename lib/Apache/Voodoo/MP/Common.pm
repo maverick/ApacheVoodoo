@@ -35,9 +35,9 @@ sub method        { shift()->{r}->method(@_); }
 sub print         { shift()->{r}->print(@_); }
 sub uri           { shift()->{r}->uri(); }
 
-sub is_get     { return ($_[0]->{r}->method eq "GET"); }
-sub get_app_id { return $_[0]->{r}->dir_config("ID"); }
-sub site_root  { return $_[0]->{r}->dir_config("SiteRoot") || "/"; }
+sub is_get     { return ($_[0]->method eq "GET"); }
+sub get_app_id { return $_[0]->dir_config("ID"); }
+sub site_root  { return $_[0]->dir_config("SiteRoot") || "/"; }
 
 sub remote_ip {
 	return $_[0]->{r}->connection->remote_ip();
