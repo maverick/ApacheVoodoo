@@ -70,6 +70,24 @@ sub if_modified_since {
 	return $self->{r}->meets_conditions;
 }
 
+sub request_body {
+	my $self = shift;
+
+	my $data;
+	my $buffer;
+	my $offset=0;
+	while (my $c = $self->{mp}->{r}->read($buffer,4096,$offset)) {
+		$offset += $c;
+		$data   .= $buffer;
+		$buffer  = '';
+		#if ($offset > $upload_max) {
+			# yell loudly
+		#	return {};
+		#}
+	}
+	return $data;
+}
+
 1;
 
 ################################################################################

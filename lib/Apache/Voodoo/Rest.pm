@@ -83,18 +83,7 @@ sub handler {
 
 	if ($self->{mp}->method eq "POST" && 
 		$self->{mp}->header_in('Content-type') eq "application/json") {
-		my $buffer;
-		my $data;
-		my $offset=0;
-		while (my $c = $self->{mp}->{r}->read($buffer,4096,$offset)) {
-			$offset += $c;
-			$data   .= $buffer;
-			$buffer  = '';
-			#if ($offset > $upload_max) {
-				# yell loudly
-			#	return {};
-			#}
-		}
+		my $data = $self->{mp}->request_body;
 		if ($data) {
 			my $jp = JSON::DWIW::deserialize_json($data);
 			if (ref($jp) eq "ARRAY") {

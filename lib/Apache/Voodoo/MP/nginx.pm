@@ -64,7 +64,7 @@ sub parse_params {
 
 	my $params = {};
 
-	foreach my $p (split('&',$self->{r}->args)) {
+	foreach my $p (split('&',$self->{r}->args || '')) {
 		my ($k,$v) = split('=',$p);
 		if (!defined($params->{$k})) {
 			$params->{$k} = $self->unescape($v);
@@ -115,6 +115,20 @@ sub parse_params {
 
 	return $params;
 }
+
+sub request_body {
+	my $self = shift;
+
+	my $data;
+	$self->{r}->has_request_body(
+		sub {
+			my $r = shift;
+			$data = $r->request_body;
+			return 1;
+		}
+	);
+	return $data;
+} 
 
 sub set_cookie {
 	my $self = shift;
