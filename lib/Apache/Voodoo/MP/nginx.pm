@@ -62,6 +62,21 @@ sub parse_params {
 	my $self       = shift;
 	my $upload_max = shift;
 
+	my $params = {};
+
+	foreach my $p (split('&',$self->{r}->args)) {
+		my ($k,$v) = split('=',$p);
+		if (!defined($params->{$k})) {
+			$params->{$k} = $self->unescape($v);
+		}
+		elsif (ref($params->{$k}) eq "ARRAY") {
+			push(@{$params->{$k}},$self->unescape($v));
+		}
+		else {
+			$params->{$k} = [ $params->{$k}, $self->unescape($v) ];
+		}
+	}
+
 =pod
 	my $apr = Apache2::Request->new($self->{r}, POST_MAX => $upload_max*5);
 
@@ -96,10 +111,9 @@ sub parse_params {
 			}
 		}
 	}
-
-	return \%params;
 =cut
-	return {};
+
+	return $params;
 }
 
 sub set_cookie {
@@ -131,6 +145,14 @@ sub register_cleanup {
 	my $self = shift;
 	my $obj  = shift;
 	my $sub  = shift;
+}
+
+sub unescape {
+	my $self = shift;
+	my $v    = shift;
+
+	$v =~ s/\+/ /g;
+	return $self->{r}->unescape($v);
 }
 
 1;
